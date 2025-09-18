@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>설정 - DICD 측정 관리 시스템</title>
+    <link rel="stylesheet" href="../lib/css/source-sans-pro.css">
+    <link rel="stylesheet" href="../lib/css/all.min.css">
+    <link rel="stylesheet" href="../lib/css/adminlte.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- 메인 사이드바 -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- 브랜드 제목 -->
+            <a href="../index.html" class="brand-link text-center">
+                <span class="brand-text font-weight-light">DICD 관리 시스템</span>
+            </a>
+
+            <!-- 사이드바 -->
+            <div class="sidebar">
+                <!-- 사이드바 메뉴 -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <li class="nav-item">
+                            <a href="../index.html" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>대시보드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="input.html" class="nav-link">
+                                <i class="nav-icon fas fa-edit"></i>
+                                <p>데이터 입력</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="view.html" class="nav-link">
+                                <i class="nav-icon fas fa-table"></i>
+                                <p>데이터 조회</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>
+                                    데이터 분석
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="analysis/trend.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>추이 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="analysis/spc.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>SPC 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="analysis/distribution.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>분포 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="analysis/boxplot.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>박스플롯 분석</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-file-alt"></i>
+                                <p>
+                                    보고서
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="reports/trend_view.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>보고서 조회</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="settings.html" class="nav-link active">
+                                <i class="nav-icon fas fa-cog"></i>
+                                <p>설정</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="bulk_upload.html" class="nav-link">
+                                <i class="nav-icon fas fa-upload"></i>
+                                <p>데이터 일괄 업로드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pr_thickness.html" class="nav-link">
+                                <i class="nav-icon fas fa-ruler"></i>
+                                <p>PR Thickness 관리</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- 콘텐츠 래퍼 -->
+        <div class="content-wrapper">
+            <!-- 콘텐츠 헤더 -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">설정</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
+                                <li class="breadcrumb-item active">설정</li>
+                                <li class="breadcrumb-item">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="logoutSettings()">
+                                        <i class="fas fa-sign-out-alt mr-1"></i> 로그아웃
+                                    </button>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 -->
+            <section class="content">
+                <div class="container-fluid">
+                    <!-- 설정 탭 영역 전체 구조 -->
+                    <div class="card">
+                        <div class="card-header p-2">
+                            <ul class="nav nav-pills">
+                                <li class="nav-item"><a class="nav-link" href="#product-process-settings" data-toggle="tab">제품군/공정 관리</a></li>
+                                <li class="nav-item"><a class="nav-link active" href="#spec-settings" data-toggle="tab">SPEC 설정</a></li>
+                                <li class="nav-item"><a class="nav-link" href="#equipment-settings" data-toggle="tab">장비 관리</a></li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content">
+                                <!-- 제품군/공정 관리 탭 -->
+                                <div class="tab-pane" id="product-process-settings">
+                                    <div class="row">
+                                        <!-- 제품군 관리 영역 -->
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">제품군 관리</h3>
+                                                    <div class="card-tools">
+                                                        <button type="button" class="btn btn-tool" id="add-product-group-btn">
+                                                            <i class="fas fa-plus"></i> 새 제품군 추가
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered table-striped" id="product-group-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>제품군 이름</th>
+                                                                    <th>설명</th>
+                                                                    <th>작업</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="product-group-list">
+                                                                <!-- 제품군 목록이 여기에 동적으로 추가됩니다 -->
+                                                                <tr>
+                                                                    <td colspan="3" class="text-center">로딩 중...</td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 공정 관리 영역 -->
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">공정 관리</h3>
+                                                    <div class="card-tools">
+                                                        <button type="button" class="btn btn-tool" id="add-process-btn" disabled>
+                                                            <i class="fas fa-plus"></i> 새 공정 추가
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="form-group">
+                                                        <label for="product-group-filter">제품군 선택</label>
+                                                        <select class="form-control" id="product-group-filter">
+                                                            <option value="">제품군 선택</option>
+                                                            <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                                        </select>
+                                                    </div>
+                                                    <div class="table-responsive mt-3">
+                                                        <table class="table table-bordered table-striped" id="process-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>공정 이름</th>
+                                                                    <th>설명</th>
+                                                                    <th>작업</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="process-list">
+                                                                <!-- 공정 목록이 여기에 동적으로 추가됩니다 -->
+                                                                <tr>
+                                                                    <td colspan="3" class="text-center">제품군을 선택하세요</td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- SPEC 설정 탭 -->
+                                <div class="active tab-pane" id="spec-settings">
+                                    <div class="row">
+                                        <!-- 타겟 선택 영역 -->
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">타겟 선택</h3>
+                                                </div>
+                                                <div class="card-body">
+                                                    <!-- 제품군 선택 -->
+                                                    <div class="form-group">
+                                                        <label for="spec-product-group">제품군</label>
+                                                        <select class="form-control" id="spec-product-group">
+                                                            <option value="">제품군 선택</option>
+                                                            <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <!-- 공정 선택 -->
+                                                    <div class="form-group">
+                                                        <label for="spec-process">공정</label>
+                                                        <select class="form-control" id="spec-process" disabled>
+                                                            <option value="">공정 선택</option>
+                                                            <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <!-- 타겟 선택 -->
+                                                    <div class="form-group">
+                                                        <label for="spec-target">타겟</label>
+                                                        <select class="form-control" id="spec-target" disabled>
+                                                            <option value="">타겟 선택</option>
+                                                            <!-- 타겟 옵션이 여기에 동적으로 추가됩니다 -->
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <!-- 타겟 관리 버튼 영역 -->
+                                                    <div class="form-group mt-4">
+                                                        <button type="button" class="btn btn-primary" id="add-target-btn">
+                                                            <i class="fas fa-plus mr-1"></i> 새 타겟 추가
+                                                        </button>
+                                                        <button type="button" class="btn btn-danger ml-2" id="delete-target-btn" disabled>
+                                                            <i class="fas fa-trash mr-1"></i> 선택한 타겟 삭제
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- SPEC 관리 영역 -->
+                                        <div class="col-md-8">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">SPEC 관리</h3>
+                                                    <div class="card-tools">
+                                                        <button type="button" class="btn btn-tool" id="add-spec-btn">
+                                                            <i class="fas fa-plus"></i> 새 SPEC 추가
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div id="spec-content">
+                                                        <div class="text-center py-5">
+                                                            <i class="fas fa-info-circle fa-2x text-info mb-3"></i>
+                                                            <p>타겟을 선택하면 해당 타겟의 SPEC 정보가 여기에 표시됩니다.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 장비 관리 탭 -->
+                                <div class="tab-pane" id="equipment-settings">
+                                    <div class="row">
+                                        <!-- 장비 관리 영역 -->
+                                        <div class="col-md-7">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">장비 관리</h3>
+                                                    <div class="card-tools">
+                                                        <button type="button" class="btn btn-tool" id="add-equipment-btn">
+                                                            <i class="fas fa-plus"></i> 새 장비 추가
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="table-responsive mt-3">
+                                                        <table class="table table-bordered table-striped" id="equipment-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>장비 이름</th>
+                                                                    <th>장비 타입</th>
+                                                                    <th>설명</th>
+                                                                    <th>상태</th>
+                                                                    <th>작업</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="equipment-list">
+                                                                <!-- 장비 목록이 여기에 동적으로 추가됩니다 -->
+                                                                <tr>
+                                                                    <td colspan="5" class="text-center">장비 타입을 선택하세요</td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 푸터 -->
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2025 <a href="#">DICD 측정 관리 시스템</a>.</strong>
+            All rights reserved.
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 1.0.0
+            </div>
+        </footer>
+    </div>
+    
+    <!-- SPEC 추가/수정 모달 -->
+    <div class="modal fade" id="spec-modal" tabindex="-1" role="dialog" aria-labelledby="spec-modal-title" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="spec-modal-title">새 SPEC 추가</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="spec-form">
+                        <input type="hidden" id="spec-id">
+                        <div class="form-group">
+                            <label for="spec-lsl">하한 규격 한계(LSL)</label>
+                            <input type="number" class="form-control" id="spec-lsl" step="0.001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="spec-usl">상한 규격 한계(USL)</label>
+                            <input type="number" class="form-control" id="spec-usl" step="0.001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="spec-reason">변경 사유</label>
+                            <textarea class="form-control" id="spec-reason" rows="3" placeholder="SPEC 변경 사유를 입력하세요"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="save-spec-btn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 타겟 추가 모달 -->
+    <div class="modal fade" id="target-modal" tabindex="-1" role="dialog" aria-labelledby="target-modal-title" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="target-modal-title">새 타겟 추가</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="target-form">
+                        <div class="form-group">
+                            <label for="new-target-product-group">제품군</label>
+                            <select class="form-control" id="new-target-product-group" required>
+                                <option value="">제품군 선택</option>
+                                <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-target-process">공정</label>
+                            <select class="form-control" id="new-target-process" disabled required>
+                                <option value="">공정 선택</option>
+                                <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-target-name">타겟 이름</label>
+                            <input type="text" class="form-control" id="new-target-name" placeholder="예: 1.0, 2.5 등" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-target-description">설명</label>
+                            <textarea class="form-control" id="new-target-description" rows="2" placeholder="타겟에 대한 설명을 입력하세요"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="save-target-btn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 제품군 추가/편집 모달 -->
+    <div class="modal fade" id="product-group-modal" tabindex="-1" role="dialog" aria-labelledby="product-group-modal-title" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="product-group-modal-title">새 제품군 추가</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="product-group-form">
+                        <input type="hidden" id="product-group-id">
+                        <div class="form-group">
+                            <label for="product-group-name">제품군 이름</label>
+                            <input type="text" class="form-control" id="product-group-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-group-description">설명</label>
+                            <textarea class="form-control" id="product-group-description" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="save-product-group-btn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 공정 추가/편집 모달 -->
+    <div class="modal fade" id="process-modal" tabindex="-1" role="dialog" aria-labelledby="process-modal-title" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="process-modal-title">새 공정 추가</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="process-form">
+                        <input type="hidden" id="process-id">
+                        <div class="form-group">
+                            <label for="process-product-group">제품군</label>
+                            <select class="form-control" id="process-product-group" required>
+                                <option value="">제품군 선택</option>
+                                <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="process-name">공정 이름</label>
+                            <input type="text" class="form-control" id="process-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="process-description">설명</label>
+                            <textarea class="form-control" id="process-description" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="save-process-btn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 비밀번호 인증 모달 -->
+    <div class="modal fade" id="auth-modal" tabindex="-1" role="dialog" aria-labelledby="auth-modal-title" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="auth-modal-title">관리자 인증</h5>
+                </div>
+                <div class="modal-body">
+                    <form id="auth-form">
+                        <div class="form-group">
+                            <label for="password-input">관리자 비밀번호</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password-input" placeholder="비밀번호를 입력하세요" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" id="toggle-password" onclick="togglePasswordVisibility('password-input')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">설정에 접근하려면 관리자 비밀번호가 필요합니다.</small>
+                            <div class="alert alert-danger mt-2" id="auth-error-msg" style="display: none;">
+                                비밀번호가 일치하지 않습니다.
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" id="change-password-btn">비밀번호 변경</button>
+                            <button type="submit" class="btn btn-primary">인증</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 비밀번호 변경 모달 -->
+    <div class="modal fade" id="change-password-modal" tabindex="-1" role="dialog" aria-labelledby="change-password-modal-title" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="change-password-modal-title">비밀번호 변경</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="change-password-form">
+                        <div class="form-group">
+                            <label for="current-password">현재 비밀번호</label>
+                            <input type="password" class="form-control" id="current-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">새 비밀번호</label>
+                            <input type="password" class="form-control" id="new-password" required>
+                            <small class="form-text text-muted">비밀번호는 6자 이상이어야 합니다.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">비밀번호 확인</label>
+                            <input type="password" class="form-control" id="confirm-password" required>
+                        </div>
+                        <div class="alert alert-danger" id="change-error-msg" style="display: none;">
+                            오류 메시지가 여기에 표시됩니다.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('change-password-form').requestSubmit()">변경</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 장비 추가/편집 모달 -->
+    <div class="modal fade" id="equipment-modal" tabindex="-1" role="dialog" aria-labelledby="equipment-modal-title" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="equipment-modal-title">새 장비 추가</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="equipment-form">
+                        <input type="hidden" id="equipment-id">
+                        <div class="form-group">
+                            <label for="equipment-name">장비 이름</label>
+                            <input type="text" class="form-control" id="equipment-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="equipment-type">장비 타입</label>
+                            <select class="form-control" id="equipment-type" required>
+                                <option value="">타입 선택</option>
+                                <option value="코팅">코팅</option>
+                                <option value="노광">노광</option>
+                                <option value="현상">현상</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="equipment-description">설명</label>
+                            <textarea class="form-control" id="equipment-description" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="equipment-active" checked>
+                                <label class="custom-control-label" for="equipment-active">활성화</label>
+                            </div>
+                            <small class="form-text text-muted">비활성화된 장비는 데이터 입력 페이지에 표시되지 않습니다.</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="save-equipment-btn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 비밀번호 표시/숨기기 토글 함수
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = document.querySelector('#toggle-password i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+
+    <!-- 스크립트 -->
+    <script src="../lib/js/jquery-3.6.0.min.js"></script>
+    <script src="../lib/js/bootstrap.bundle.min.js"></script>
+    <script src="../lib/js/adminlte.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/settings.js"></script>
+    <script src="../js/auth.js"></script>
+</body>
+</html>

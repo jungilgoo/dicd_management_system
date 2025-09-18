@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>박스플롯 분석 - DICD 측정 관리 시스템</title>
+    <link rel="stylesheet" href="../../lib/css/source-sans-pro.css">
+    <link rel="stylesheet" href="../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../lib/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- 메인 사이드바 -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- 브랜드 제목 -->
+            <a href="../../index.html" class="brand-link text-center">
+                <span class="brand-text font-weight-light">DICD 관리 시스템</span>
+            </a>
+
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <!-- 사이드바 메뉴 -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    <li class="nav-item">
+                        <a href="../../index.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>대시보드</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="../input.html" class="nav-link">
+                            <i class="nav-icon fas fa-edit"></i>
+                            <p>데이터 입력</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="../view.html" class="nav-link">
+                            <i class="nav-icon fas fa-table"></i>
+                            <p>데이터 조회</p>
+                        </a>
+                    </li>
+                    <li class="nav-item menu-open">
+                        <a href="#" class="nav-link active">
+                            <i class="nav-icon fas fa-chart-bar"></i>
+                            <p>
+                                데이터 분석
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="trend.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>추이 분석</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="spc.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>SPC 분석</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="distribution.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>분포 분석</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="boxplot.html" class="nav-link active">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>박스플롯 분석</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-file-alt"></i>
+                            <p>
+                                보고서
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="../reports/trend_view.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>보고서 조회</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a href="../settings.html" class="nav-link">
+                            <i class="nav-icon fas fa-cog"></i>
+                            <p>설정</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                            <a href="../bulk_upload.html" class="nav-link">
+                                <i class="nav-icon fas fa-upload"></i>
+                                <p>데이터 일괄 업로드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../pr_thickness.html" class="nav-link">
+                                <i class="nav-icon fas fa-ruler"></i>
+                                <p>PR Thickness 관리</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- 콘텐츠 래퍼 -->
+        <div class="content-wrapper">
+        <!-- 콘텐츠 헤더 -->
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0">박스플롯 분석</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="../../index.html">홈</a></li>
+                            <li class="breadcrumb-item">데이터 분석</li>
+                            <li class="breadcrumb-item active">박스플롯 분석</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 콘텐츠 -->
+        <section class="content">
+            <div class="container-fluid">
+                <!-- 필터 카드 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">분석 조건</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="product-group-select">제품군</label>
+                                    <select class="form-control" id="product-group-select">
+                                        <option value="">제품군 선택</option>
+                                        <!-- 옵션은 자바스크립트로 동적 생성 -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="process-select">공정</label>
+                                    <select class="form-control" id="process-select" disabled>
+                                        <option value="">공정 선택</option>
+                                        <!-- 옵션은 자바스크립트로 동적 생성 -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="target-select">타겟</label>
+                                    <select class="form-control" id="target-select" disabled>
+                                        <option value="">타겟 선택</option>
+                                        <!-- 옵션은 자바스크립트로 동적 생성 -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="days-select">기간</label>
+                                    <select class="form-control" id="days-select">
+                                        <option value="7">최근 7일</option>
+                                        <option value="14">최근 14일</option>
+                                        <option value="30" selected>최근 30일</option>
+                                        <option value="60">최근 60일</option>
+                                        <option value="90">최근 90일</option>
+                                        <option value="custom">사용자 지정</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="custom-date-container" style="display: none;">
+                                <div class="form-group">
+                                    <label>사용자 지정 기간</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">
+                                                <i class="far fa-calendar-alt"></i>
+                                            </span>
+                                        </div>
+                                        <input type="date" class="form-control" id="start-date">
+                                        <div class="input-group-prepend input-group-append">
+                                            <span class="input-group-text">~</span>
+                                        </div>
+                                        <input type="date" class="form-control" id="end-date">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>그룹화 기준</label>
+                                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                        <label class="btn btn-outline-primary active">
+                                            <input type="radio" name="group-by" id="group-by-equipment" value="equipment" checked> 장비 기준
+                                        </label>
+                                        <label class="btn btn-outline-primary">
+                                            <input type="radio" name="group-by" id="group-by-device" value="device"> 디바이스 기준
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <label class="invisible">버튼</label>
+                                <div class="form-group">
+                                    <button type="button" class="btn btn-primary" id="analyze-btn" disabled>
+                                        <i class="fas fa-chart-bar mr-1"></i> 분석 수행
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 박스플롯 결과 카드 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-bar mr-1"></i> 박스플롯 분석 결과
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-sm btn-success" id="download-boxplot-chart-btn">
+                                <i class="fas fa-download mr-1"></i> 차트 다운로드
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="boxplot-container" class="chart-container">
+                            <p class="text-muted text-center py-5">
+                                상단의 필터 조건을 설정하고 분석 수행 버튼을 클릭하세요.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <div class="text-muted small mb-2">
+                            <i class="fas fa-info-circle"></i> 박스플롯 정보:
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="mb-0 text-muted small">
+                                    <li><strong>박스</strong>: 제1사분위수(Q1)와 제3사분위수(Q3)를 의미하며, 데이터의 중간 50%를 표현합니다.</li>
+                                    <li><strong>가운데 선</strong>: 중앙값(median)을 나타냅니다.</li>
+                                    <li><strong>위스커(세로 선)</strong>: 박스 위아래로 1.5 IQR(사분위 범위) 내에 있는 최소/최대 값까지 표시합니다.</li>
+                                    <li><strong>점</strong>: 이상치(outliers)로, 1.5 IQR을 벗어난 값을 의미합니다.</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="mb-0 text-muted small">
+                                    <li><strong>파란색 점선</strong>: USL (상한 규격 한계) 표시입니다.</li>
+                                    <li><strong>파란색 점선</strong>: LSL (하한 규격 한계) 표시입니다.</li>
+                                    <li><strong>그룹별 색상</strong>: 각 장비 또는 디바이스별로 다른 색상을 사용합니다.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 요약 통계 테이블 카드 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-table mr-1"></i> 통계 요약
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover table-striped" id="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>그룹명</th>
+                                    <th>데이터 수</th>
+                                    <th>최소값</th>
+                                    <th>Q1 (25%)</th>
+                                    <th>중앙값</th>
+                                    <th>Q3 (75%)</th>
+                                    <th>최대값</th>
+                                    <th>이상치 수</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 통계 데이터는 자바스크립트로 동적 생성 -->
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">데이터가 없습니다.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 푸터 -->
+    <footer class="main-footer">
+    <strong>Copyright &copy; 2025 <a href="#">DICD 측정 관리 시스템</a>.</strong>
+    All rights reserved.
+    <div class="float-right d-none d-sm-inline-block">
+        <b>Version</b> 1.0.0
+    </div>
+    </footer>
+</div>
+
+<!-- 스크립트 -->
+<script src="../../lib/js/jquery-3.6.0.min.js"></script>
+<script src="../../lib/js/bootstrap.bundle.min.js"></script>
+<script src="../../lib/js/adminlte.min.js"></script>
+<script src="../../lib/js/chart.min.js"></script>
+<script src="../../js/config.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/boxplot.js"></script>
+<script src="../../js/utils.js"></script>
+</body>
+</html>

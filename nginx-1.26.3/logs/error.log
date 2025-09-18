@@ -1,0 +1,13 @@
+2025/08/22 10:18:34 [warn] 6020#8904: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored
+2025/08/22 10:18:34 [notice] 6020#8904: signal process started
+2025/08/22 10:18:34 [error] 6020#8904: OpenEvent("Global\ngx_stop_4332") failed (5: Access is denied)
+2025/08/22 10:19:40 [warn] 4488#10344: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored
+2025/08/22 10:19:40 [warn] 5364#4424: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored
+2025/08/22 10:19:47 [warn] 7036#7400: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored
+2025/08/22 10:19:47 [warn] 9808#32: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored
+2025/08/22 10:58:12 [warn] 9356#2804: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored
+2025/08/22 10:58:20 [warn] 6776#7184: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored
+2025/08/22 10:58:20 [notice] 6776#7184: signal process started
+2025/08/22 10:58:20 [warn] 3880#260: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored
+2025/09/10 17:33:26 [warn] 4900#5036: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored
+2025/09/10 17:33:26 [warn] 6172#6176: conflicting server name "192.168.32.43" on 0.0.0.0:80, ignored

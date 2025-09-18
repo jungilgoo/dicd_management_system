@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>분포 분석 - DICD 측정 관리 시스템</title>
+    <link rel="stylesheet" href="../../lib/css/source-sans-pro.css">
+    <link rel="stylesheet" href="../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../lib/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- 메인 사이드바 -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- 브랜드 제목 -->
+            <a href="../../index.html" class="brand-link text-center">
+                <span class="brand-text font-weight-light">DICD 관리 시스템</span>
+            </a>
+
+            <!-- 사이드바 -->
+            <div class="sidebar">
+                <!-- 사이드바 메뉴 -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <li class="nav-item">
+                            <a href="../../index.html" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>대시보드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../input.html" class="nav-link">
+                                <i class="nav-icon fas fa-edit"></i>
+                                <p>데이터 입력</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../view.html" class="nav-link">
+                                <i class="nav-icon fas fa-table"></i>
+                                <p>데이터 조회</p>
+                            </a>
+                        </li>
+                        <li class="nav-item menu-open">
+                            <a href="#" class="nav-link active">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>
+                                    데이터 분석
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="trend.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>추이 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="spc.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>SPC 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="distribution.html" class="nav-link active">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>분포 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="boxplot.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>박스플롯 분석</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-file-alt"></i>
+                                <p>
+                                    보고서
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="../reports/trend_view.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>보고서 조회</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../settings.html" class="nav-link">
+                                <i class="nav-icon fas fa-cog"></i>
+                                <p>설정</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../bulk_upload.html" class="nav-link">
+                                <i class="nav-icon fas fa-upload"></i>
+                                <p>데이터 일괄 업로드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../pr_thickness.html" class="nav-link">
+                                <i class="nav-icon fas fa-ruler"></i>
+                                <p>PR Thickness 관리</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- 콘텐츠 래퍼 -->
+        <div class="content-wrapper">
+            <!-- 콘텐츠 헤더 -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">분포 분석</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="../../index.html">Home</a></li>
+                                <li class="breadcrumb-item">데이터 분석</li>
+                                <li class="breadcrumb-item active">분포 분석</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 -->
+            <section class="content">
+                <div class="container-fluid">
+                    <!-- 필터 카드 -->
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">분석 대상 선택</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="product-group">제품군</label>
+                                        <select class="form-control" id="product-group">
+                                            <option value="">제품군 선택</option>
+                                            <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="process">공정</label>
+                                        <select class="form-control" id="process" disabled>
+                                            <option value="">공정 선택</option>
+                                            <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="target">타겟</label>
+                                        <select class="form-control" id="target" disabled>
+                                            <option value="">타겟 선택</option>
+                                            <!-- 타겟 옵션이 여기에 동적으로 추가됩니다 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <!-- 변경 후 -->
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="analysis-period">분석 기간</label>
+                                        <select class="form-control" id="analysis-period">
+                                            <option value="7">최근 7일</option>
+                                            <option value="14">최근 14일</option>
+                                            <option value="30" selected>최근 30일</option>
+                                            <option value="60">최근 60일</option>
+                                            <option value="90">최근 90일</option>
+                                            <option value="custom">사용자 지정</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="custom-date-range" style="display: none;">
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label for="start-date">시작 날짜</label>
+                                                <input type="date" class="form-control" id="start-date">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="end-date">종료 날짜</label>
+                                                <input type="date" class="form-control" id="end-date">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 text-right">
+                                    <button type="button" class="btn btn-primary" id="analyze-btn">
+                                        <i class="fas fa-chart-bar mr-1"></i> 분석 실행
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 분석 결과 섹션 -->
+                    <div id="analysis-result" style="display: none;">
+                        <!-- 분포 분석 결과 카드 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-chart-area mr-1"></i>
+                                    <span id="analysis-title">분포 분석 결과</span>
+                                </h3>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-sm btn-success" id="download-distribution-chart-btn">
+                                        <i class="fas fa-download mr-1"></i> 차트 다운로드
+                                    </button>
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- 히스토그램 및 정규분포 차트 -->
+                                    <div class="col-md-8">
+                                        <div class="chart-container">
+                                            <canvas id="distribution-chart"></canvas>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 분포 통계 정보 -->
+                                    <div class="col-md-4">
+                                        <div class="card card-primary card-outline">
+                                            <div class="card-header">
+                                                <h3 class="card-title">분포 통계 정보</h3>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <table class="table table-striped" id="distribution-stats">
+                                                    <tbody>
+                                                        <tr>
+                                                            <th>샘플 수</th>
+                                                            <td id="sample-count">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>평균</th>
+                                                            <td id="mean-value">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>중앙값</th>
+                                                            <td id="median-value">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>표준편차</th>
+                                                            <td id="std-dev-value">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>왜도(Skewness)</th>
+                                                            <td id="skewness-value">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>첨도(Kurtosis)</th>
+                                                            <td id="kurtosis-value">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>정규성 검정</th>
+                                                            <td id="normality-test">-</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- SPEC 정보 -->
+                                        <div class="card card-success card-outline" id="spec-info-card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">SPEC 정보</h3>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <table class="table table-striped" id="spec-info">
+                                                    <tbody>
+                                                        <tr>
+                                                            <th>LSL</th>
+                                                            <td id="lsl-value">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>USL</th>
+                                                            <td id="usl-value">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>규격 내 비율</th>
+                                                            <td id="in-spec-ratio">-</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 정규 확률도 (QQ Plot) -->
+                                <div class="row mt-4">
+                                    <!-- QQ Plot 섹션 수정 - distribution.html 파일의 기존 QQ Plot 부분 대체 -->
+                                    <!-- 정규 확률도 (QQ Plot) -->
+                                    <div class="col-md-6">
+                                        <div class="card card-info card-outline">
+                                            <div class="card-header">
+                                                <h3 class="card-title">정규 확률도 (QQ Plot)</h3>
+                                                <div class="card-tools">
+                                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                        <i class="fas fa-minus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="qq-plot-container" style="height: 300px;">
+                                                    <canvas id="qq-plot"></canvas>
+                                                </div>
+                                                <div class="mt-2 small">
+                                                    <p class="mb-1"><strong>정규성 평가:</strong> <span id="normality-test">-</span></p>
+                                                    <p class="text-muted mb-0">
+                                                        <i class="fas fa-info-circle mr-1"></i> 
+                                                        점들이 녹색 선에 가까울수록 정규분포에 가까운 데이터입니다.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 박스 플롯 -->
+                                    <div class="col-md-6">
+                                        <div class="card card-warning card-outline">
+                                            <div class="card-header">
+                                                <h3 class="card-title">박스 플롯</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="boxplot-container" style="height: 300px;">
+                                                    <canvas id="boxplot-chart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 위치별 분포 분석 -->
+                                <div class="row mt-4">
+                                    <div class="col-md-12">
+                                        <div class="card card-secondary card-outline">
+                                            <div class="card-header">
+                                                <h3 class="card-title">위치별 분포 분석</h3>
+                                                <div class="card-tools">
+                                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                        <i class="fas fa-minus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <!-- 위치 다이어그램 -->
+                                                        <div class="position-diagram-container text-center mb-3">
+                                                            <div class="measurement-positions">
+                                                                <div class="position-cell position-top" data-position="top">Top</div>
+                                                                <div class="position-cell position-left" data-position="left">Left</div>
+                                                                <div class="position-cell position-center" data-position="center">Center</div>
+                                                                <div class="position-cell position-right" data-position="right">Right</div>
+                                                                <div class="position-cell position-bottom" data-position="bottom">Bottom</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-center mt-2">
+                                                            <p class="text-muted">위치를 클릭하면 해당 위치의 분포를 확인할 수 있습니다.</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <!-- 위치별 히스토그램 -->
+                                                        <div class="position-chart-container" style="height: 300px;">
+                                                            <canvas id="position-chart"></canvas>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <!-- 위치별 통계 테이블 -->
+                                                    <div class="col-md-12">
+                                                        <table class="table table-bordered table-sm">
+                                                            <thead class="thead-light">
+                                                                <tr>
+                                                                    <th>위치</th>
+                                                                    <th>평균</th>
+                                                                    <th>중앙값</th>
+                                                                    <th>표준편차</th>
+                                                                    <th>왜도</th>
+                                                                    <th>첨도</th>
+                                                                    <th>정규성 검정</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="position-stats-table">
+                                                                <!-- 위치별 통계 정보가 동적으로 추가됩니다 -->
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 초기 안내 메시지 -->
+                    <div id="initial-message" class="card">
+                        <div class="card-body">
+                            <div class="text-center py-5">
+                                <i class="fas fa-chart-bar fa-5x text-muted mb-3"></i>
+                                <h5>분석할 타겟을 선택하고 분석 실행 버튼을 클릭하세요.</h5>
+                                <p class="text-muted">분포 분석을 통해 측정 데이터의 분포 특성과 정규성을 확인할 수 있습니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 푸터 -->
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2025 <a href="#">DICD 측정 관리 시스템</a>.</strong>
+            All rights reserved.
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 1.0.0
+            </div>
+        </footer>
+    </div>
+
+    <!-- 스크립트 -->
+    <script src="../../lib/js/jquery-3.6.0.min.js"></script>
+    <script src="../../lib/js/bootstrap.bundle.min.js"></script>
+    <script src="../../lib/js/adminlte.min.js"></script>
+    <script src="../../lib/js/chart.min.js"></script>
+    <script src="../../lib/js/d3.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/distribution.js"></script>
+    <script src="../../js/utils.js"></script>
+</body>
+</html>

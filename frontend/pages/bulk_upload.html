@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터 일괄 업로드 - DICD 측정 관리 시스템</title>
+    <link rel="stylesheet" href="../lib/css/source-sans-pro.css">
+    <link rel="stylesheet" href="../lib/css/all.min.css">
+    <link rel="stylesheet" href="../lib/css/adminlte.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- 메인 사이드바 -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- 브랜드 제목 -->
+            <a href="../index.html" class="brand-link text-center">
+                <span class="brand-text font-weight-light">DICD 관리 시스템</span>
+            </a>
+
+            <!-- 사이드바 -->
+            <div class="sidebar">
+                <!-- 사이드바 메뉴 -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <li class="nav-item">
+                            <a href="../index.html" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>대시보드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="input.html" class="nav-link">
+                                <i class="nav-icon fas fa-edit"></i>
+                                <p>데이터 입력</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="view.html" class="nav-link">
+                                <i class="nav-icon fas fa-table"></i>
+                                <p>데이터 조회</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>
+                                    데이터 분석
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="analysis/trend.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>추이 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="analysis/spc.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>SPC 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="analysis/distribution.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>분포 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="analysis/boxplot.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>박스플롯 분석</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-file-alt"></i>
+                                <p>
+                                    보고서
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="reports/trend_view.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>보고서 조회</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="settings.html" class="nav-link">
+                                <i class="nav-icon fas fa-cog"></i>
+                                <p>설정</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="bulk_upload.html" class="nav-link">
+                                <i class="nav-icon fas fa-upload"></i>
+                                <p>데이터 일괄 업로드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pr_thickness.html" class="nav-link">
+                                <i class="nav-icon fas fa-ruler"></i>
+                                <p>PR Thickness 관리</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- 콘텐츠 래퍼 -->
+        <div class="content-wrapper">
+            <!-- 콘텐츠 헤더 -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">데이터 일괄 업로드</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
+                                <li class="breadcrumb-item active">데이터 일괄 업로드</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 -->
+            <section class="content">
+                <div class="container-fluid">
+                    <!-- 템플릿 다운로드 카드 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-download mr-1"></i> 업로드 템플릿 다운로드</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <p>
+                                        일괄 업로드를 위한 데이터 템플릿을 다운로드하세요. 템플릿에는 필수 필드와 형식에 대한 안내가 포함되어 있습니다.
+                                    </p>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-primary" id="download-excel-template">
+                                            <i class="fas fa-file-excel mr-1"></i> Excel 템플릿 다운로드
+                                        </button>
+                                        <button type="button" class="btn btn-success ml-2" id="download-csv-template">
+                                            <i class="fas fa-file-csv mr-1"></i> CSV 템플릿 다운로드
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 제품/공정/타겟 선택 카드 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-filter mr-1"></i> 제품/공정/타겟 선택</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- 제품군 선택 -->
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="product-group">제품군</label>
+                                        <select class="form-control" id="product-group">
+                                            <option value="">제품군 선택</option>
+                                            <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- 공정 선택 -->
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="process">공정</label>
+                                        <select class="form-control" id="process" disabled>
+                                            <option value="">공정 선택</option>
+                                            <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- 타겟 선택 -->
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="target">타겟</label>
+                                        <select class="form-control" id="target" disabled>
+                                            <option value="">타겟 선택</option>
+                                            <!-- 타겟 옵션이 여기에 동적으로 추가됩니다 -->
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 장비 선택 카드 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-tools mr-1"></i> 장비 선택</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- 코팅 장비 선택 -->
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="coating-equipment">코팅 장비</label>
+                                        <select class="form-control" id="coating-equipment">
+                                            <option value="">선택 안함</option>
+                                            <!-- 코팅 장비 옵션이 여기에 동적으로 추가됩니다 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- 노광 장비 선택 -->
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="exposure-equipment">노광 장비</label>
+                                        <select class="form-control" id="exposure-equipment">
+                                            <option value="">선택 안함</option>
+                                            <!-- 노광 장비 옵션이 여기에 동적으로 추가됩니다 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- 현상 장비 선택 -->
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="development-equipment">현상 장비</label>
+                                        <select class="form-control" id="development-equipment">
+                                            <option value="">선택 안함</option>
+                                            <!-- 현상 장비 옵션이 여기에 동적으로 추가됩니다 -->
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 파일 업로드 카드 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-file-upload mr-1"></i> 파일 업로드</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <form id="upload-form" enctype="multipart/form-data">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="file-upload">파일 선택 (CSV 또는 Excel)</label>
+                                            <div class="input-group">
+                                                <div class="custom-file">
+                                                    <input type="file" class="custom-file-input" id="file-upload" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+                                                    <label class="custom-file-label" for="file-upload">파일 선택...</label>
+                                                </div>
+                                            </div>
+                                            <small class="form-text text-muted">최대 파일 크기: 10MB</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="author">작성자</label>
+                                            <select class="form-control" id="author" name="author" required>
+                                                <option value="">작성자 선택</option>
+                                                <!-- 작성자 목록이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle mr-1"></i> 
+                                            제품군, 공정, 타겟을 먼저 선택한 후 파일을 업로드하세요. 파일에는 다음 필수 항목이 포함되어야 합니다:
+                                            <ul class="mt-2 mb-0">
+                                                <li>device - 장비 식별자</li>
+                                                <li>lot_no - LOT 번호</li>
+                                                <li>wafer_no - WAFER 번호 (01~50)</li>
+                                                <li>value_top, value_center, value_bottom, value_left, value_right - 각 위치별 측정값</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-12 text-center">
+                                        <button type="submit" class="btn btn-primary px-4" id="upload-btn" disabled>
+                                            <i class="fas fa-upload mr-1"></i> 업로드
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- 업로드 결과 카드 -->
+                    <div class="card" id="result-card" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-list-alt mr-1"></i> 업로드 결과</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="upload-result">
+                                <!-- 업로드 결과가 여기에 동적으로 추가됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 푸터 -->
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2025 <a href="#">DICD 측정 관리 시스템</a>.</strong>
+            All rights reserved.
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 1.0.0
+            </div>
+        </footer>
+    </div>
+
+    <!-- 스크립트 -->
+    <script src="../lib/js/jquery-3.6.0.min.js"></script>
+    <script src="../lib/js/bootstrap.bundle.min.js"></script>
+    <script src="../lib/js/adminlte.min.js"></script>
+    <script src="../lib/js/bs-custom-file-input.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/bulk_upload.js"></script>
+</body>
+</html>

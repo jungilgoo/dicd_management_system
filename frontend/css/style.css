@@ -1,0 +1,506 @@
+/* 공통 스타일 */
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-title {
+    margin-bottom: 0;
+}
+
+/* 사이드바 브랜드 링크 스타일링 (로고 제거 후) */
+.brand-link {
+    text-align: center;
+    padding: 15px 0.5rem;
+    height: 57px;
+    line-height: 1.5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.brand-text {
+    font-size: 1.1rem;
+    margin-left: 0 !important; /* AdminLTE 기본 마진 제거 */
+}
+
+/* 데이터 입력 페이지 */
+.target-selection-container .btn {
+    margin-bottom: 5px;
+    margin-right: 5px;
+    min-width: 80px;
+}
+
+.target-selection-container .btn.active {
+    font-weight: bold;
+}
+
+/* 장비 그리드 공통 스타일 */
+.equipment-grid {
+    display: grid;
+    gap: 6px; /* 작은 간격 */
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 6px;
+    grid-auto-rows: 40px !important; /* 모든 행의 높이를 40px로 강제 설정 */
+}
+
+/* 장비 버튼 스타일 */
+.equipment-btn {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.25rem !important;
+    white-space: normal;
+    height: 40px !important; /* 버튼 높이 강제 고정 */
+    max-height: 40px !important; /* 최대 높이도 제한 */
+    min-height: 40px !important; /* 최소 높이도 고정 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
+    margin: 0 !important;
+    border-width: 1px !important;
+    overflow: hidden; /* 내용이 넘치면 숨김 */
+}
+
+/* 빈 셀 스타일 */
+.empty-cell {
+    border: 1px dashed #dee2e6;
+    border-radius: 0.25rem;
+    height: 40px !important; /* 높이 강제 고정 */
+    min-height: 40px !important;
+    max-height: 40px !important;
+}
+
+/* 코팅 장비 (2x4 그리드) */
+.coating-grid {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+/* 노광 장비 (2x3 그리드) */
+.exposure-grid {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+/* 현상 장비 (2x2 그리드) */
+.development-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+/* 장비 버튼 스타일 - 여백 최소화 */
+.equipment-btn {
+    font-size: 0.85rem;
+    padding: 0 0rem !important;
+    white-space: normal;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    margin: 0 !important;
+    border-width: 1px !important;
+}
+
+/* 선택된 장비 버튼 강조 */
+.equipment-btn.active {
+    background-color: #007bff;
+    color: white;
+    font-weight: normal;
+}
+
+/* 빈 셀 스타일 */
+.empty-cell {
+    border: 1px dashed #dee2e6;
+    border-radius: 0.25rem;
+}
+
+/* 선택된 장비 버튼 강조 */
+.equipment-btn.active {
+    font-weight: bold;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* 데이터 조회 페이지 */
+.filter-section {
+    margin-bottom: 20px;
+}
+
+.filter-section label {
+    margin-right: 10px;
+}
+
+/* 차트 스타일 */
+.chart-container {
+    position: relative;
+    height: 400px;
+}
+
+/* R 차트 컨테이너의 높이를 200px로 지정 */
+#r-chart-container {
+    height: 200px !important; /* !important로 기존 .chart-container의 높이 설정보다 우선 적용 */
+}
+
+/* 상태 아이콘 */
+.status-icon {
+    margin-right: 5px;
+}
+
+.status-success {
+    color: #28a745;
+}
+
+.status-warning {
+    color: #ffc107;
+}
+
+.status-danger {
+    color: #dc3545;
+}
+
+/* 테이블 스타일 */
+.table-responsive {
+    margin-bottom: 0;
+}
+
+/* Spec 라인 스타일 */
+.spec-line {
+    border-top: 2px dashed #3c8dbc;
+}
+
+.usl-line {
+    border-top: 2px dashed #dc3545;
+}
+
+.lsl-line {
+    border-top: 2px dashed #dc3545;
+}
+
+/* 로딩 스피너 */
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+/* 공정 상태 리스트 */
+.process-status-item {
+    padding: 10px;
+    border-bottom: 1px solid #f4f4f4;
+}
+
+.process-status-item:last-child {
+    border-bottom: none;
+}
+
+.process-status-light {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+.process-status-light-green {
+    background-color: #28a745;
+}
+
+.process-status-light-yellow {
+    background-color: #ffc107;
+}
+
+.process-status-light-red {
+    background-color: #dc3545;
+}
+
+/* 측정 위치 다이어그램 */
+.measurement-positions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+}
+
+.position-cell {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.position-top {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.position-left {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.position-center {
+    grid-column: 2;
+    grid-row: 2;
+    background-color: #e9ecef;
+}
+
+.position-right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.position-bottom {
+    grid-column: 2;
+    grid-row: 3;
+}
+
+/* 히트맵 스타일 */
+.cpk-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.cpk-legend .badge {
+    font-size: 0.85rem;
+    padding: 5px 8px;
+}
+
+/* 테이블 스타일 개선 */
+#cpk-heatmap-container .table {
+    margin-bottom: 0;
+}
+
+#cpk-heatmap-container .table td, 
+#cpk-heatmap-container .table th {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+/* 구분선 스타일 */
+#cpk-heatmap-container .bg-light td {
+    background-color: #f8f9fa;
+}
+
+#cpk-heatmap-container .bg-secondary td {
+    background-color: #6c757d;
+}
+
+/* 트리맵 스타일 - 더 오밀조밀하게 조정 */
+.treemap-container {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 5px;
+    gap: 5px;
+}
+
+.process-block {
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    width: calc(33.33% - 5px); /* 3개 열로 변경 */
+    min-width: 150px;
+    margin-bottom: 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.process-header {
+    background-color: #f8f9fa;
+    padding: 4px 8px;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 0.85rem;
+}
+
+.target-container {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 4px;
+    gap: 4px;
+}
+
+.target-block {
+    width: calc(50% - 2px);
+    min-width: 60px;
+    padding: 4px;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 3px;
+    text-align: center;
+}
+
+.target-value {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+.cpk-value {
+    font-size: 0.8rem;
+    margin: 2px 0;
+}
+
+.status-badge {
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+/* 반응형 조정 */
+@media (max-width: 1200px) {
+    .process-block {
+        width: calc(50% - 5px); /* 태블릿에서는 2개 열 */
+    }
+}
+
+@media (max-width: 768px) {
+    .process-block {
+        width: 100%; /* 모바일에서는 1개 열 */
+    }
+}
+
+/* 작은 IC를 위한 트리맵 스타일 */
+.small-treemap-container {
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    gap: 4px;
+}
+
+.small-process-block {
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    margin-bottom: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.small-process-header {
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 0.8rem;
+}
+
+.small-target-container {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 3px;
+    gap: 3px;
+}
+
+.small-target-block {
+    width: calc(50% - 2px);
+    min-width: 50px;
+    padding: 3px;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 2px;
+    text-align: center;
+}
+
+.small-target-value {
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+.small-cpk-value {
+    font-size: 0.7rem;
+    margin: 1px 0;
+}
+
+/* 숫자 입력 필드의 스피너(화살표) 제거 */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+
+/* 추가할 위치: frontend/css/style.css 파일 하단 */
+
+/* 데이터 테이블 스타일 개선 */
+#data-table {
+    table-layout: fixed; /* 테이블 레이아웃 고정 */
+}
+
+#data-table th, 
+#data-table td {
+    text-align: center; /* 텍스트 가운데 정렬 */
+    vertical-align: middle; /* 수직 가운데 정렬 */
+    white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+    overflow: hidden; /* 내용이 넘치면 숨김 */
+    text-overflow: ellipsis; /* 넘치는 텍스트는 ... 처리 */
+}
+
+#data-table .equipment-cell {
+    width: 18%; /* 장비 셀 너비 확장 */
+    white-space: normal; /* 장비 셀은 필요시 줄바꿈 허용 */
+}
+
+/* 시그마 구간 범례 스타일 */
+.sigma-zone-a {
+    background-color: rgba(255, 200, 200, 0.7);
+    color: #721c24;
+}
+
+.sigma-zone-b {
+    background-color: rgba(255, 230, 180, 0.7);
+    color: #856404;
+}
+
+.sigma-zone-c {
+    background-color: rgba(200, 255, 200, 0.7);
+    color: #155724;
+}
+
+.badge.sigma-zone-a,
+.badge.sigma-zone-b,
+.badge.sigma-zone-c {
+    font-weight: normal;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+}
+/* 시그마 구간 범례 스타일 */
+.sigma-zone-a {
+    background-color: rgba(255, 200, 200, 0.7);
+    color: #721c24;
+}
+
+.sigma-zone-b {
+    background-color: rgba(255, 230, 180, 0.7);
+    color: #856404;
+}
+
+.sigma-zone-c {
+    background-color: rgba(200, 255, 200, 0.7);
+    color: #155724;
+}
+
+.badge.sigma-zone-a,
+.badge.sigma-zone-b,
+.badge.sigma-zone-c {
+    font-weight: normal;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+}
+
+/* 패턴 테이블 행 호버 효과 */
+.pattern-row:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* 선택된 패턴 테이블 행 */
+.pattern-row.table-primary {
+    background-color: rgba(0, 123, 255, 0.2);
+}
+
+/* SPEC 범위 초과 스타일 */
+.spec-exceeded {
+    border: 2px solid #dc3545 !important;
+    background-color: #fff8f8 !important;
+}

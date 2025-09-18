@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PR Thickness 관리 - DICD 측정 관리 시스템</title>
+    <link rel="stylesheet" href="../lib/css/source-sans-pro.css">
+    <link rel="stylesheet" href="../lib/css/all.min.css">
+    <link rel="stylesheet" href="../lib/css/adminlte.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- 메인 사이드바 -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- 브랜드 제목 -->
+            <a href="../index.html" class="brand-link text-center">
+                <span class="brand-text font-weight-light">DICD 관리 시스템</span>
+            </a>
+
+            <!-- 사이드바 -->
+            <div class="sidebar">
+                <!-- 사이드바 메뉴 -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <li class="nav-item">
+                            <a href="../index.html" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>대시보드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="input.html" class="nav-link">
+                                <i class="nav-icon fas fa-edit"></i>
+                                <p>데이터 입력</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="view.html" class="nav-link">
+                                <i class="nav-icon fas fa-table"></i>
+                                <p>데이터 조회</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>
+                                    데이터 분석
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="analysis/trend.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>추이 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="analysis/spc.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>SPC 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="analysis/distribution.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>분포 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="analysis/boxplot.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>박스플롯 분석</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-file-alt"></i>
+                                <p>
+                                    보고서
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="reports/trend_view.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>보고서 조회</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="settings.html" class="nav-link">
+                                <i class="nav-icon fas fa-cog"></i>
+                                <p>설정</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="bulk_upload.html" class="nav-link">
+                                <i class="nav-icon fas fa-upload"></i>
+                                <p>데이터 일괄 업로드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pr_thickness.html" class="nav-link active">
+                                <i class="nav-icon fas fa-ruler"></i>
+                                <p>PR Thickness 관리</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- 콘텐츠 래퍼 -->
+        <div class="content-wrapper">
+            <!-- 콘텐츠 헤더 -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">PR Thickness 관리</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
+                                <li class="breadcrumb-item active">PR Thickness 관리</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 -->
+            <section class="content">
+                <div class="container-fluid">
+                    <!-- 탭 카드 -->
+                    <div class="card card-primary card-tabs">
+                        <div class="card-header p-0 pt-1">
+                            <ul class="nav nav-tabs" id="pr-thickness-tabs" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="input-tab" data-toggle="tab" href="#input" role="tab" aria-controls="input" aria-selected="true">
+                                        <i class="fas fa-edit mr-1"></i> 데이터 입력
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="chart-tab" data-toggle="tab" href="#chart" role="tab" aria-controls="chart" aria-selected="false">
+                                        <i class="fas fa-chart-line mr-1"></i> 실시간 차트
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="data-tab" data-toggle="tab" href="#data" role="tab" aria-controls="data" aria-selected="false">
+                                        <i class="fas fa-table mr-1"></i> 데이터 조회
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="settings-tab" data-toggle="tab" href="#settings" role="tab" aria-controls="settings" aria-selected="false">
+                                        <i class="fas fa-cog mr-1"></i> 장비 설정
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content" id="pr-thickness-tabContent">
+                                
+                                <!-- 데이터 입력 탭 -->
+                                <div class="tab-pane fade show active" id="input" role="tabpanel" aria-labelledby="input-tab">
+                                    <form id="pr-thickness-form">
+                                        <!-- 헤더 행 -->
+                                        <div class="row align-items-center mb-3 bg-light p-2 rounded">
+                                            <div class="col-md-2">
+                                                <strong>장비명</strong>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <strong>목표 두께 (Å)</strong>
+                                            </div>
+                                            <div class="col-md-1 text-center">
+                                                <strong>상</strong>
+                                            </div>
+                                            <div class="col-md-1 text-center">
+                                                <strong>중</strong>
+                                            </div>
+                                            <div class="col-md-1 text-center">
+                                                <strong>하</strong>
+                                            </div>
+                                            <div class="col-md-1 text-center">
+                                                <strong>좌</strong>
+                                            </div>
+                                            <div class="col-md-1 text-center">
+                                                <strong>우</strong>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>측정값 (Å)</strong>
+                                            </div>
+                                        </div>
+
+                                        <!-- 동적 장비 입력 컨테이너 -->
+                                        <div id="equipment-input-container">
+                                            <!-- 장비 입력 행들이 동적으로 생성됩니다 -->
+                                        </div>
+
+                                        <!-- 작성자 및 저장 버튼 -->
+                                        <div class="row mt-4">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="author">작성자</label>
+                                                    <input type="text" class="form-control form-control-sm" id="author" name="author" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 d-flex align-items-end">
+                                                <div class="form-group w-100">
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="fas fa-save mr-2"></i> 저장
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- 실시간 차트 탭 -->
+                                <div class="tab-pane fade" id="chart" role="tabpanel" aria-labelledby="chart-tab">
+                                    <!-- 장비 필터 버튼 -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h5 class="card-title mb-0"><i class="fas fa-filter mr-2"></i>장비별 차트</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="btn-group-toggle" id="chart-equipment-filter-container">
+                                                        <!-- 장비 필터 버튼들이 동적으로 생성됩니다 -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5><i class="fas fa-chart-line mr-2"></i>실시간 PR Thickness 추이 (<span id="current-chart-equipment">장비1</span>)</h5>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="btn-group mr-3">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" id="chart-7d">7일</button>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary active" id="chart-30d">30일</button>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" id="chart-90d">90일</button>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="chart-custom">사용자 지정</button>
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-primary" id="refresh-chart-btn">
+                                                        <i class="fas fa-sync-alt mr-1"></i> 새로고침
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 사용자 지정 기간 선택 영역 -->
+                                            <div class="row mb-3" id="custom-date-range-section" style="display: none;">
+                                                <div class="col-md-12">
+                                                    <div class="card">
+                                                        <div class="card-header py-2">
+                                                            <h6 class="card-title mb-0"><i class="fas fa-calendar-alt mr-2"></i>기간 선택</h6>
+                                                        </div>
+                                                        <div class="card-body py-2">
+                                                            <div class="row align-items-center">
+                                                                <div class="col-md-3">
+                                                                    <label for="chart-start-date" class="form-label mb-1">시작일</label>
+                                                                    <input type="date" class="form-control form-control-sm" id="chart-start-date">
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <label for="chart-end-date" class="form-label mb-1">종료일</label>
+                                                                    <input type="date" class="form-control form-control-sm" id="chart-end-date">
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <label class="form-label mb-1">빠른 선택</label>
+                                                                    <div class="btn-group-sm">
+                                                                        <button type="button" class="btn btn-sm btn-outline-info" id="quick-last-week">지난 주</button>
+                                                                        <button type="button" class="btn btn-sm btn-outline-info" id="quick-last-month">지난 달</button>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <label class="form-label mb-1">&nbsp;</label>
+                                                                    <div>
+                                                                        <button type="button" class="btn btn-sm btn-success" id="apply-custom-date">
+                                                                            <i class="fas fa-check mr-1"></i> 적용
+                                                                        </button>
+                                                                        <button type="button" class="btn btn-sm btn-secondary" id="cancel-custom-date">
+                                                                            <i class="fas fa-times mr-1"></i> 취소
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="chart-container" style="height: 500px;">
+                                                <canvas id="pr-thickness-chart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 데이터 조회 탭 -->
+                                <div class="tab-pane fade" id="data" role="tabpanel" aria-labelledby="data-tab">
+                                    <!-- 장비 필터 버튼 -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h5 class="card-title mb-0"><i class="fas fa-filter mr-2"></i>장비별 필터</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="btn-group-toggle" id="data-equipment-filter-container">
+                                                        <!-- 장비 필터 버튼들이 동적으로 생성됩니다 -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 데이터 테이블 -->
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover" id="pr-thickness-table">
+                                            <thead class="thead-dark">
+                                                <tr>
+                                                    <th>측정일시</th>
+                                                    <th>장비명</th>
+                                                    <th>목표 두께 (Å)</th>
+                                                    <th>상 (Å)</th>
+                                                    <th>중 (Å)</th>
+                                                    <th>하 (Å)</th>
+                                                    <th>좌 (Å)</th>
+                                                    <th>우 (Å)</th>
+                                                    <th>평균값 (Å)</th>
+                                                    <th>범위 (Å)</th>
+                                                    <th>작성자</th>
+                                                    <th>동작</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="pr-thickness-table-body">
+                                                <tr>
+                                                    <td colspan="12" class="text-center py-4">
+                                                        <div class="spinner-border text-primary" role="status">
+                                                            <span class="sr-only">로딩 중...</span>
+                                                        </div>
+                                                        <p class="mt-2 text-muted">데이터를 불러오는 중...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- 페이지네이션 -->
+                                    <div class="row mt-3">
+                                        <div class="col-sm-12 col-md-5">
+                                            <div class="dataTables_info" id="table-info">
+                                                <!-- 테이블 정보가 여기에 표시됩니다 -->
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-7">
+                                            <div class="d-flex justify-content-end">
+                                                <div class="dataTables_paginate paging_simple_numbers">
+                                                    <ul class="pagination" id="pagination">
+                                                        <!-- 페이지네이션이 여기에 동적으로 추가됩니다 -->
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 장비 설정 탭 -->
+                                <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <h5><i class="fas fa-cog mr-2"></i>장비 설정 관리</h5>
+                                            <p class="text-muted">각 장비의 이름, 목표 두께, SPEC 범위를 설정합니다.</p>
+                                            
+                                            <form id="equipment-settings-form">
+                                                <!-- 상단 컨트롤 버튼들 -->
+                                                <div class="row mb-3">
+                                                    <div class="col-md-12 text-right">
+                                                        <button type="button" class="btn btn-primary btn-sm" id="add-equipment-btn">
+                                                            <i class="fas fa-plus mr-1"></i> 장비 추가
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- 헤더 행 -->
+                                                <div class="row align-items-center mb-3 bg-light p-2 rounded">
+                                                    <div class="col-md-1 text-center">
+                                                        <strong>장비번호</strong>
+                                                    </div>
+                                                    <div class="col-md-2 text-center">
+                                                        <strong>장비명</strong>
+                                                    </div>
+                                                    <div class="col-md-2 text-center">
+                                                        <strong>목표 두께 (Å)</strong>
+                                                    </div>
+                                                    <div class="col-md-2 text-center">
+                                                        <strong>SPEC 최소값 (Å)</strong>
+                                                    </div>
+                                                    <div class="col-md-2 text-center">
+                                                        <strong>SPEC 최대값 (Å)</strong>
+                                                    </div>
+                                                    <div class="col-md-2 text-center">
+                                                        <strong>웨이퍼 수 (매)</strong>
+                                                    </div>
+                                                    <div class="col-md-1 text-center">
+                                                        <strong>삭제</strong>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- 동적 장비 설정 컨테이너 -->
+                                                <div id="equipment-settings-container">
+                                                    <!-- 장비 설정 행들이 동적으로 생성됩니다 -->
+                                                </div>
+
+
+                                                <!-- 저장 버튼 -->
+                                                <div class="row mt-4">
+                                                    <div class="col-md-12 text-center">
+                                                        <button type="button" class="btn btn-success btn-lg px-5" id="save-equipment-settings-btn">
+                                                            <i class="fas fa-save mr-2"></i> 장비 설정 저장 및 적용
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 푸터 -->
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2025 <a href="#">DICD 측정 관리 시스템</a>.</strong>
+            All rights reserved.
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 1.0.0
+            </div>
+        </footer>
+    </div>
+
+    <!-- PR Thickness 데이터 수정 모달 -->
+    <div class="modal fade" id="editPRThicknessModal" tabindex="-1" role="dialog" aria-labelledby="editPRThicknessModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPRThicknessModalLabel">
+                        <i class="fas fa-edit mr-2"></i>PR Thickness 데이터 수정
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-pr-thickness-form">
+                        <input type="hidden" id="edit-measurement-id" name="id">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="edit-equipment-name" class="form-label">장비명</label>
+                                <input type="text" class="form-control" id="edit-equipment-name" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-target-thickness" class="form-label">목표 두께 (Å)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="edit-target-thickness" min="1" max="99999" step="1" readonly>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">Å</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label font-weight-bold">측정값 (Å)</label>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label for="edit-value-top" class="form-label">상</label>
+                                <input type="number" class="form-control edit-measurement-value" id="edit-value-top" min="1" max="99999" step="1">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="edit-value-center" class="form-label">중</label>
+                                <input type="number" class="form-control edit-measurement-value" id="edit-value-center" min="1" max="99999" step="1">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="edit-value-bottom" class="form-label">하</label>
+                                <input type="number" class="form-control edit-measurement-value" id="edit-value-bottom" min="1" max="99999" step="1">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="edit-value-left" class="form-label">좌</label>
+                                <input type="number" class="form-control edit-measurement-value" id="edit-value-left" min="1" max="99999" step="1">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="edit-value-right" class="form-label">우</label>
+                                <input type="number" class="form-control edit-measurement-value" id="edit-value-right" min="1" max="99999" step="1">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">평균</label>
+                                <div class="form-control-plaintext font-weight-bold" id="edit-avg-display">-</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="edit-author" class="form-label">작성자</label>
+                                <input type="text" class="form-control" id="edit-author" maxlength="50">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">범위</label>
+                                <div class="form-control-plaintext font-weight-bold" id="edit-range-display">-</div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i>취소
+                    </button>
+                    <button type="button" class="btn btn-primary" id="save-edit-btn">
+                        <i class="fas fa-save mr-1"></i>저장
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스크립트 -->
+    <script src="../lib/js/jquery-3.6.0.min.js"></script>
+    <script src="../lib/js/bootstrap.bundle.min.js"></script>
+    <script src="../lib/js/adminlte.min.js"></script>
+    <script src="../lib/js/chart.min.js"></script>
+    <script src="../lib/js/moment.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/pr_thickness.js"></script>
+</body>
+</html>

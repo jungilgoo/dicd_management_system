@@ -1,0 +1,20 @@
+{
+    "development": {
+        "DEBUG": true,
+        "HOST": "127.0.0.1",
+        "PORT": 8080,
+        "DB_USERNAME": "dicd_user",
+        "DB_PASSWORD": "안전한_비밀번호",
+        "DB_HOST": "localhost",
+        "DB_NAME": "dicd_management"
+    },
+    "production": {
+        "DEBUG": false,
+        "HOST": "0.0.0.0",
+        "PORT": 8080,
+        "DB_USERNAME": "dicd_user",
+        "DB_PASSWORD": "실제_비밀번호_입력",
+        "DB_HOST": "localhost",
+        "DB_NAME": "dicd_management"
+    }
+}

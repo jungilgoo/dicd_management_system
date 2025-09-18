@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DICD 측정 관리 시스템</title>
+    <link rel="stylesheet" href="lib/css/source-sans-pro.css">
+    <link rel="stylesheet" href="lib/css/all.min.css">
+    <link rel="stylesheet" href="lib/css/adminlte.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- 메인 사이드바 -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- 브랜드 제목 -->
+            <a href="index.html" class="brand-link text-center">
+                <span class="brand-text font-weight-light">DICD 관리 시스템</span>
+            </a>
+
+            <!-- 사이드바 -->
+            <div class="sidebar">
+                <!-- 사이드바 메뉴 -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <li class="nav-item">
+                            <a href="index.html" class="nav-link active">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>대시보드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pages/input.html" class="nav-link">
+                                <i class="nav-icon fas fa-edit"></i>
+                                <p>데이터 입력</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pages/view.html" class="nav-link">
+                                <i class="nav-icon fas fa-table"></i>
+                                <p>데이터 조회</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>
+                                    데이터 분석
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="pages/analysis/trend.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>추이 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="pages/analysis/spc.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>SPC 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="pages/analysis/distribution.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>분포 분석</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="pages/analysis/boxplot.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>박스플롯 분석</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-file-alt"></i>
+                                <p>
+                                    보고서
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="pages/reports/trend_view.html" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>보고서 조회</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pages/settings.html" class="nav-link">
+                                <i class="nav-icon fas fa-cog"></i>
+                                <p>설정</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pages/bulk_upload.html" class="nav-link">
+                                <i class="nav-icon fas fa-upload"></i>
+                                <p>데이터 일괄 업로드</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pages/pr_thickness.html" class="nav-link">
+                                <i class="nav-icon fas fa-ruler"></i>
+                                <p>PR Thickness 관리</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- 콘텐츠 래퍼 -->
+        <div class="content-wrapper">
+            <!-- 콘텐츠 헤더 -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">대시보드</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="#">Home</a></li>
+                                <li class="breadcrumb-item active">대시보드</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 -->
+            <section class="content">
+                <div class="container-fluid">
+                    <!-- 메인 카드 -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <!-- 공정능력지수 히트맵 카드 -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-th mr-1"></i> 공정능력지수 히트맵 <small id="cpk-heatmap-period" class="text-muted">(최근 14일)</small></h3>
+                                    <div class="card-tools">
+                                        <div class="btn-group mr-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary active" id="period-14d">14일</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="period-1m">1개월</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="period-3m">3개월</button>
+                                        </div>
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="cpk-heatmap-container">
+                                        <!-- 히트맵이 여기에 동적으로 추가됩니다 -->
+                                        <div class="text-center py-3">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="sr-only">로딩 중...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="cpk-legend">
+                                            <span class="badge bg-danger">Cpk &lt; 0.67</span>
+                                            <span class="badge bg-warning">0.67 ≤ Cpk &lt; 1.00</span>
+                                            <span class="badge bg-info">1.00 ≤ Cpk &lt; 1.33</span>
+                                            <span class="badge bg-success">Cpk ≥ 1.33</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-default" id="refresh-heatmap-btn">
+                                            <i class="fas fa-sync-alt mr-1"></i> 새로고침
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 주요 타겟 모니터링 카드 -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> 주요 타겟 모니터링</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-tool dropdown-toggle" data-toggle="dropdown">
+                                                <i class="fas fa-cog"></i> 설정
+                                            </button>
+                                            <div class="dropdown-menu dropdown-menu-right" role="menu">
+                                                <a href="#" class="dropdown-item" id="configure-targets-btn">타겟 설정</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row" id="monitoring-charts-container">
+                                        <!-- 모니터링 차트가 여기에 동적으로 추가됩니다 -->
+                                        <div class="col-md-12 text-center py-3">
+                                            <p class="text-muted">모니터링할 타겟이 설정되지 않았습니다. 우측 상단의 '설정' 버튼을 클릭하여 타겟을 설정하세요.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 푸터 -->
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2025 <a href="#">DICD 측정 관리 시스템</a>.</strong>
+            All rights reserved.
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 1.0.0
+            </div>
+        </footer>
+
+        <!-- 타겟 설정 모달 -->
+        <div class="modal fade" id="target-config-modal" tabindex="-1" role="dialog" aria-labelledby="target-config-title" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="target-config-title">모니터링 타겟 설정</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>대시보드에서 모니터링할 주요 타겟을 최대 6개까지 선택할 수 있습니다.</p>
+                        
+                        <!-- 타겟 1 설정 -->
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">타겟 1</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target1-product-group">제품군</label>
+                                            <select class="form-control" id="target1-product-group">
+                                                <option value="">제품군 선택</option>
+                                                <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target1-process">공정</label>
+                                            <select class="form-control" id="target1-process" disabled>
+                                                <option value="">공정 선택</option>
+                                                <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target1-target">타겟</label>
+                                            <select class="form-control" id="target1-target" disabled>
+                                                <option value="">타겟 선택</option>
+                                                <!-- 타겟 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 타겟 2 설정 -->
+                        <div class="card card-success">
+                            <div class="card-header">
+                                <h3 class="card-title">타겟 2</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target2-product-group">제품군</label>
+                                            <select class="form-control" id="target2-product-group">
+                                                <option value="">제품군 선택</option>
+                                                <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target2-process">공정</label>
+                                            <select class="form-control" id="target2-process" disabled>
+                                                <option value="">공정 선택</option>
+                                                <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target2-target">타겟</label>
+                                            <select class="form-control" id="target2-target" disabled>
+                                                <option value="">타겟 선택</option>
+                                                <!-- 타겟 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 타겟 3 설정 -->
+                        <div class="card card-info">
+                            <div class="card-header">
+                                <h3 class="card-title">타겟 3</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target3-product-group">제품군</label>
+                                            <select class="form-control" id="target3-product-group">
+                                                <option value="">제품군 선택</option>
+                                                <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target3-process">공정</label>
+                                            <select class="form-control" id="target3-process" disabled>
+                                                <option value="">공정 선택</option>
+                                                <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target3-target">타겟</label>
+                                            <select class="form-control" id="target3-target" disabled>
+                                                <option value="">타겟 선택</option>
+                                                <!-- 타겟 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 타겟 4 설정 -->
+                        <div class="card card-warning">
+                            <div class="card-header">
+                                <h3 class="card-title">타겟 4</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target4-product-group">제품군</label>
+                                            <select class="form-control" id="target4-product-group">
+                                                <option value="">제품군 선택</option>
+                                                <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target4-process">공정</label>
+                                            <select class="form-control" id="target4-process" disabled>
+                                                <option value="">공정 선택</option>
+                                                <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target4-target">타겟</label>
+                                            <select class="form-control" id="target4-target" disabled>
+                                                <option value="">타겟 선택</option>
+                                                <!-- 타겟 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 타겟 5 설정 -->
+                        <div class="card card-danger">
+                            <div class="card-header">
+                                <h3 class="card-title">타겟 5</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target5-product-group">제품군</label>
+                                            <select class="form-control" id="target5-product-group">
+                                                <option value="">제품군 선택</option>
+                                                <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target5-process">공정</label>
+                                            <select class="form-control" id="target5-process" disabled>
+                                                <option value="">공정 선택</option>
+                                                <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target5-target">타겟</label>
+                                            <select class="form-control" id="target5-target" disabled>
+                                                <option value="">타겟 선택</option>
+                                                <!-- 타겟 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 타겟 6 설정 -->
+                        <div class="card card-secondary">
+                            <div class="card-header">
+                                <h3 class="card-title">타겟 6</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target6-product-group">제품군</label>
+                                            <select class="form-control" id="target6-product-group">
+                                                <option value="">제품군 선택</option>
+                                                <!-- 제품군 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target6-process">공정</label>
+                                            <select class="form-control" id="target6-process" disabled>
+                                                <option value="">공정 선택</option>
+                                                <!-- 공정 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="target6-target">타겟</label>
+                                            <select class="form-control" id="target6-target" disabled>
+                                                <option value="">타겟 선택</option>
+                                                <!-- 타겟 옵션이 여기에 동적으로 추가됩니다 -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-primary" id="save-target-config-btn">저장</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스크립트 -->
+    <script src="lib/js/jquery-3.6.0.min.js"></script>
+    <script src="lib/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/js/adminlte.min.js"></script>
+    <script src="lib/js/chart.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
