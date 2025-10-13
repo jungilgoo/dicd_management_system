@@ -26,6 +26,7 @@ from backend.routers import distribution as distribution_router
 from backend.routers import report_downloads
 from backend.routers import bulk_upload as bulk_upload_router
 from backend.routers import pr_thickness as pr_thickness_router
+from backend.routers import change_points as change_points_router
 
 # 데이터베이스 테이블 생성 (에러 발생 시 서버는 계속 실행)
 try:
@@ -70,6 +71,7 @@ app.include_router(distribution_router.router)
 app.include_router(report_downloads.router)
 app.include_router(bulk_upload_router.router)
 app.include_router(pr_thickness_router.router)
+app.include_router(change_points_router.router)
 print("✅ 모든 API 라우터 등록 완료")
 
 

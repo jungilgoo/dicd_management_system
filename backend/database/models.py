@@ -227,3 +227,22 @@ class PRThicknessMeasurement(Base):
     # 관계 설정
     equipment = relationship("PRThicknessEquipment", back_populates="measurements")
 
+
+# 변경점 등록 테이블
+class ChangePoint(Base):
+    __tablename__ = "change_points"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_group_id = Column(Integer, ForeignKey("product_groups.id"), nullable=False)
+    process_id = Column(Integer, ForeignKey("processes.id"), nullable=False)
+    target_id = Column(Integer, ForeignKey("targets.id"), nullable=False)
+    change_date = Column(DateTime, nullable=False, index=True)
+    description = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # 관계 설정
+    product_group = relationship("ProductGroup")
+    process = relationship("Process")
+    target = relationship("Target")
+

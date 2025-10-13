@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models
-from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness
+from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness, change_point
 import statistics
 from datetime import datetime, timedelta
 
@@ -869,3 +869,100 @@ def bulk_create_pr_thickness_measurements(db: Session, bulk_data: pr_thickness.P
     except Exception as e:
         db.rollback()
         raise e
+
+
+# 변경점 CRUD 함수
+def create_change_point(db: Session, change_point_data: change_point.ChangePointCreate):
+    db_change_point = models.ChangePoint(
+        product_group_id=change_point_data.product_group_id,
+        process_id=change_point_data.process_id,
+        target_id=change_point_data.target_id,
+        change_date=change_point_data.change_date,
+        description=change_point_data.description
+    )
+    db.add(db_change_point)
+    db.commit()
+    db.refresh(db_change_point)
+    return db_change_point
+
+
+def get_change_points(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.ChangePoint).order_by(models.ChangePoint.change_date.desc()).offset(skip).limit(limit).all()
+
+
+def get_change_points_with_details(db: Session, skip: int = 0, limit: int = 100):
+    from sqlalchemy.orm import joinedload
+    return (db.query(models.ChangePoint)
+            .options(joinedload(models.ChangePoint.product_group))
+            .options(joinedload(models.ChangePoint.process))
+            .options(joinedload(models.ChangePoint.target))
+            .order_by(models.ChangePoint.change_date.desc())
+            .offset(skip)
+            .limit(limit)
+            .all())
+
+
+def get_change_point(db: Session, change_point_id: int):
+    return db.query(models.ChangePoint).filter(models.ChangePoint.id == change_point_id).first()
+
+
+def get_change_points_by_target(db: Session, target_id: int):
+    return (db.query(models.ChangePoint)
+            .filter(models.ChangePoint.target_id == target_id)
+            .order_by(models.ChangePoint.change_date.desc())
+            .all())
+
+
+def get_change_points_by_date_range(db: Session, start_date: datetime, end_date: datetime):
+    return (db.query(models.ChangePoint)
+            .filter(models.ChangePoint.change_date >= start_date)
+            .filter(models.ChangePoint.change_date <= end_date)
+            .order_by(models.ChangePoint.change_date.desc())
+            .all())
+
+
+def get_change_points_by_target_and_date_range(
+    db: Session, 
+    target_id: int, 
+    start_date: datetime = None, 
+    end_date: datetime = None
+):
+    """특정 타겟의 날짜 범위 내 변경점을 조회합니다."""
+    query = (db.query(models.ChangePoint)
+             .filter(models.ChangePoint.target_id == target_id))
+    
+    if start_date:
+        query = query.filter(models.ChangePoint.change_date >= start_date)
+    
+    if end_date:
+        query = query.filter(models.ChangePoint.change_date <= end_date)
+    
+    return query.order_by(models.ChangePoint.change_date.asc()).all()
+
+
+def update_change_point(db: Session, change_point_id: int, change_point_data: change_point.ChangePointUpdate):
+    db_change_point = db.query(models.ChangePoint).filter(models.ChangePoint.id == change_point_id).first()
+    if db_change_point:
+        if change_point_data.product_group_id is not None:
+            db_change_point.product_group_id = change_point_data.product_group_id
+        if change_point_data.process_id is not None:
+            db_change_point.process_id = change_point_data.process_id
+        if change_point_data.target_id is not None:
+            db_change_point.target_id = change_point_data.target_id
+        if change_point_data.change_date is not None:
+            db_change_point.change_date = change_point_data.change_date
+        if change_point_data.description is not None:
+            db_change_point.description = change_point_data.description
+        
+        db.commit()
+        db.refresh(db_change_point)
+    return db_change_point
+
+
+def delete_change_point(db: Session, change_point_id: int):
+    db_change_point = db.query(models.ChangePoint).filter(models.ChangePoint.id == change_point_id).first()
+    if db_change_point:
+        db.delete(db_change_point)
+        db.commit()
+        return True
+    return False

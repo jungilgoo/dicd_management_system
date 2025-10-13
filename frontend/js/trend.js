@@ -10,13 +10,15 @@
     let dateRangeType = 'last30'; // 기본값: 최근 30일
     let customStartDate = null;
     let customEndDate = null;
+    let currentChangePoints = null; // 변경점 데이터
+    let showChangePoints = true; // 변경점 표시 여부
     
     // 페이지 초기화
     async function initTrendPage() {
         // 날짜 입력란 초기화
         utils.initDateControls({
             periodSelector: '#analysis-period',
-            containerSelector: '.date-range-container',
+            containerSelector: '#custom-date-range',
             startDateSelector: '#start-date',
             endDateSelector: '#end-date'
         });
@@ -146,6 +148,39 @@
         return title;
     }
 
+    // 변경점 데이터 로드
+    async function loadChangePoints(targetId, startDate = null, endDate = null) {
+        try {
+            let url = `/api/change-points/by-target-and-date-range/${targetId}`;
+            const params = new URLSearchParams();
+            
+            if (startDate) {
+                params.append('start_date', startDate);
+            }
+            if (endDate) {
+                params.append('end_date', endDate);
+            }
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+            
+            console.log('변경점 API 호출:', url);
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const changePoints = await response.json();
+            console.log('로드된 변경점 데이터:', changePoints);
+            return changePoints;
+        } catch (error) {
+            console.error('변경점 데이터 로드 실패:', error);
+            return [];
+        }
+    }
+
     // 추이 분석 실행
     async function analyzeTrend() {
         // 타겟 선택 확인
@@ -210,8 +245,41 @@
             const measurementsResult = await api.getMeasurements(measureParams);
             currentMeasurements = measurementsResult;
             
+            // 변경점 데이터 로드
+            let startDateForChangePoints = null;
+            let endDateForChangePoints = null;
+            
+            if (periodType === 'custom') {
+                startDateForChangePoints = $('#start-date').val();
+                endDateForChangePoints = $('#end-date').val();
+            } else {
+                // 기간별로 시작/끝 날짜 계산
+                const endDate = new Date();
+                const startDate = new Date();
+                const daysMap = {
+                    '7': 7,
+                    '14': 14,
+                    '30': 30,
+                    '60': 60,
+                    '90': 90
+                };
+                const days = daysMap[periodType] || 30;
+                startDate.setDate(endDate.getDate() - days);
+                
+                startDateForChangePoints = startDate.toISOString().split('T')[0];
+                endDateForChangePoints = endDate.toISOString().split('T')[0];
+            }
+            
+            const changePointsResult = await loadChangePoints(
+                selectedTargetId, 
+                startDateForChangePoints, 
+                endDateForChangePoints
+            );
+            currentChangePoints = changePointsResult;
+            
             // 결과 표시
-            updateTrendChart(measurementsResult, statsResult);
+            console.log('차트 업데이트 전 변경점 데이터:', changePointsResult);
+            updateTrendChart(measurementsResult, statsResult, changePointsResult);
             updateStatsTable(statsResult);
             updateChartDataTable(measurementsResult);
             
@@ -239,7 +307,7 @@
     }
     
     // 추이 차트 업데이트
-    function updateTrendChart(measurements, stats) {
+    function updateTrendChart(measurements, stats, changePoints = []) {
         // 데이터 체크
         if (!measurements || measurements.length === 0) {
             document.getElementById('trend-chart-container').innerHTML = `
@@ -348,6 +416,105 @@
             trendChart.destroy();
         }
         
+        // 변경점 annotations 생성
+        const annotations = {};
+        console.log('변경점 데이터 확인:', changePoints);
+        console.log('showChangePoints:', showChangePoints);
+        console.log('차트 라벨들:', labels);
+        
+        if (changePoints && changePoints.length > 0 && showChangePoints) {
+            console.log('변경점 annotation 생성 시작');
+            changePoints.forEach((changePoint, index) => {
+                const changeDate = new Date(changePoint.change_date);
+                const changeDateStr = changeDate.toLocaleDateString();
+                console.log(`변경점 ${index}: 날짜 ${changePoint.change_date} -> ${changeDateStr}`);
+                
+                // 가장 가까운 이후 날짜 찾기
+                let bestMatchIndex = -1;
+                let minFutureDistance = Infinity;
+                
+                labels.forEach((label, labelIndex) => {
+                    try {
+                        // 라벨 문자열을 Date 객체로 변환
+                        const labelDate = new Date(label.replace(/\. /g, '/').replace('.', ''));
+                        const timeDiff = labelDate.getTime() - changeDate.getTime();
+                        
+                        // 변경점 날짜 이후의 날짜 중에서 가장 가까운 것 찾기
+                        if (timeDiff >= 0 && timeDiff < minFutureDistance) {
+                            minFutureDistance = timeDiff;
+                            bestMatchIndex = labelIndex;
+                        }
+                    } catch (e) {
+                        // 날짜 파싱 실패 시 무시
+                    }
+                });
+                
+                // 이후 날짜가 없으면 가장 가까운 날짜 찾기
+                if (bestMatchIndex === -1) {
+                    let minDistance = Infinity;
+                    labels.forEach((label, labelIndex) => {
+                        try {
+                            const labelDate = new Date(label.replace(/\. /g, '/').replace('.', ''));
+                            const distance = Math.abs(labelDate.getTime() - changeDate.getTime());
+                            
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                bestMatchIndex = labelIndex;
+                            }
+                        } catch (e) {
+                            // 날짜 파싱 실패 시 무시
+                        }
+                    });
+                }
+                
+                console.log(`가장 가까운 이후 날짜 인덱스: ${bestMatchIndex}, 거리: ${minFutureDistance / (1000 * 60 * 60 * 24)}일`);
+                
+                if (bestMatchIndex >= 0) {
+                    const annotationKey = `changePoint${index}`;
+                    annotations[annotationKey] = {
+                        type: 'line',
+                        id: annotationKey,
+                        xMin: bestMatchIndex,
+                        xMax: bestMatchIndex,
+                        borderColor: '#dc3545',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        label: {
+                            display: true,
+                            content: '▶',
+                            position: 'start',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                x: 6,
+                                y: 4
+                            },
+                            borderRadius: 4,
+                            yAdjust: -10
+                        },
+                        click: function(ctx, event) {
+                            console.log('변경점 annotation 클릭됨');
+                            showChangePointDetails(changePoint);
+                            return true;
+                        },
+                        // 변경점 데이터 저장 (클릭 이벤트용)
+                        changePointData: changePoint
+                    };
+                    console.log(`변경점 annotation 생성됨: changePoint${index} at 인덱스 ${bestMatchIndex}`);
+                } else {
+                    console.log(`변경점 ${index}: 매칭할 수 있는 날짜를 찾지 못함`);
+                }
+            });
+        } else {
+            console.log('변경점 annotation 생성 조건 미충족');
+        }
+        
+        console.log('생성된 annotations:', annotations);
+
         // 차트 옵션
         const chartOptions = {
             responsive: true,
@@ -363,6 +530,9 @@
                 },
                 legend: {
                     position: 'top'
+                },
+                annotation: {
+                    annotations: annotations
                 }
             },
             scales: {
@@ -378,6 +548,33 @@
                         text: 'DICD 값'
                     }
                 }
+            },
+            onHover: (event, activeElements) => {
+                // 마우스 커서 변경 (변경점 라벨 위에서)
+                event.native.target.style.cursor = 'pointer';
+            },
+            onClick: (event, activeElements) => {
+                // annotation 클릭 감지
+                const chart = event.chart;
+                const canvasPosition = Chart.helpers.getRelativePosition(event, chart);
+                
+                // 모든 annotation 확인
+                Object.keys(annotations).forEach(annotationKey => {
+                    const annotation = annotations[annotationKey];
+                    if (annotation.changePointData) {
+                        // annotation 영역 내 클릭인지 확인
+                        const annotationElement = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, false);
+                        
+                        // 간단한 방법: 클릭된 x 좌표가 annotation x 좌표 근처인지 확인
+                        const dataIndex = Math.round(canvasPosition.x / (chart.chartArea.width / (labels.length - 1)));
+                        
+                        if (dataIndex === annotation.xMin || dataIndex === annotation.xMax) {
+                            console.log('변경점 클릭됨:', annotation.changePointData);
+                            showChangePointDetails(annotation.changePointData);
+                            return;
+                        }
+                    }
+                });
             }
         };
         
@@ -389,6 +586,29 @@
                 datasets: datasets
             },
             options: chartOptions
+        });
+
+        // annotation 클릭 이벤트 추가 (차트 생성 후)
+        trendChart.canvas.addEventListener('click', function(event) {
+            const rect = trendChart.canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // 변경점 위치와 비교하여 클릭 감지
+            Object.keys(annotations).forEach(annotationKey => {
+                const annotation = annotations[annotationKey];
+                if (annotation.changePointData) {
+                    // 대략적인 클릭 영역 계산
+                    const annotationX = trendChart.chartArea.left + 
+                        (annotation.xMin / (labels.length - 1)) * trendChart.chartArea.width;
+                    
+                    // 클릭 위치가 annotation 근처인지 확인 (± 20px)
+                    if (Math.abs(x - annotationX) <= 20) {
+                        console.log('변경점 클릭 감지:', annotation.changePointData);
+                        showChangePointDetails(annotation.changePointData);
+                    }
+                }
+            });
         });
     }
     
@@ -689,6 +909,12 @@
                 showBtn.style.display = 'inline-block';
             }
         });
+
+        // 변경점 토글 버튼 이벤트 (조건부 추가)
+        const toggleChangePointsBtn = document.getElementById('toggle-change-points-btn');
+        if (toggleChangePointsBtn) {
+            toggleChangePointsBtn.addEventListener('click', toggleChangePoints);
+        }
     }
     
     // 차트를 클립보드에 복사하는 함수
@@ -778,6 +1004,91 @@
         alert(message);
     }
 
+    // 변경점 상세 정보 표시
+    function showChangePointDetails(changePoint) {
+        const changeDate = new Date(changePoint.change_date);
+        const formattedDate = changeDate.toLocaleDateString('ko-KR');
+        
+        // 기존 모달과 백드롭 완전히 정리
+        const existingModal = document.getElementById('changePointModal');
+        if (existingModal) {
+            $(existingModal).modal('hide');
+            existingModal.remove();
+        }
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css('padding-right', '');
+        
+        const modal = `
+        <div class="modal fade" id="changePointModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-exclamation-triangle text-warning mr-2"></i>
+                            변경점 정보
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>변경 날짜:</strong><br>
+                                ${formattedDate}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>등록일:</strong><br>
+                                ${new Date(changePoint.created_at).toLocaleDateString('ko-KR')}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <strong>변경 내용:</strong><br>
+                            <div class="border p-2 mt-1" style="background-color: #f8f9fa;">
+                                ${changePoint.description}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        // 새 모달 추가
+        $('body').append(modal);
+        
+        // 모달 표시
+        const modalElement = $('#changePointModal');
+        modalElement.modal('show');
+        
+        // 모달이 완전히 닫힌 후 정리
+        modalElement.on('hidden.bs.modal', function () {
+            $(this).remove();
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('padding-right', '');
+        });
+    }
+
+    // 변경점 표시/숨기기 토글
+    function toggleChangePoints() {
+        showChangePoints = !showChangePoints;
+        
+        if (currentMeasurements && currentStats) {
+            updateTrendChart(currentMeasurements, currentStats, currentChangePoints);
+        }
+        
+        // 버튼 텍스트 업데이트
+        const toggleBtn = document.getElementById('toggle-change-points-btn');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = showChangePoints ? 
+                '<i class="fas fa-eye-slash mr-1"></i> 변경점 숨기기' : 
+                '<i class="fas fa-eye mr-1"></i> 변경점 표시';
+        }
+    }
+
     // 공정 능력 지수 게이지 생성 함수
     function createCapabilityGauge(value, type) {
         if (!value) return `<div>${type}: - (데이터 없음)</div>`;
@@ -827,17 +1138,14 @@
         `;
     }
 
+    // Chart.js annotation 플러그인 등록 (v3.x용)
+    if (window['chartjs-plugin-annotation']) {
+        Chart.register(window['chartjs-plugin-annotation']);
+    }
+
     // 이벤트 리스너 등록
     $(document).ready(function() {
         initTrendPage();
         setupEventListeners();
-
-        // 날짜 컨트롤 활성화
-        utils.initDateControls({
-            periodSelector: '#analysis-period',
-            containerSelector: '#custom-date-range',
-            startDateSelector: '#start-date',
-            endDateSelector: '#end-date'
-        });
     });
 })();
