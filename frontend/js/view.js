@@ -28,7 +28,7 @@
     // 날짜 범위 선택기 초기화
     function initDateRangePicker() {
         $('#date-range').daterangepicker({
-            startDate: moment().subtract(14, 'days'),
+            startDate: moment().subtract(7, 'days'),
             endDate: moment(),
             ranges: {
                '오늘': [moment(), moment()],
@@ -519,10 +519,6 @@
                     <h5>측정 데이터</h5>
                     <table class="table table-bordered">
                         <tr>
-                            <th>좌</th>
-                            <td>${UTILS.formatNumber(cachedMeasurement.value_left)}</td>
-                        </tr>
-                        <tr>
                             <th>상</th>
                             <td>${UTILS.formatNumber(cachedMeasurement.value_top)}</td>
                         </tr>
@@ -533,6 +529,10 @@
                         <tr>
                             <th>하</th>
                             <td>${UTILS.formatNumber(cachedMeasurement.value_bottom)}</td>
+                        </tr>
+                        <tr>
+                            <th>좌</th>
+                            <td>${UTILS.formatNumber(cachedMeasurement.value_left)}</td>
                         </tr>
                         <tr>
                             <th>우</th>

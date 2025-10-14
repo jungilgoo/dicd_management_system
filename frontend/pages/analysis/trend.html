@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>추이 분석 - DICD 측정 관리 시스템</title>
+    <title>추이 분석 - PHOTO 공정 관리 시스템</title>
     <link rel="stylesheet" href="../../lib/css/source-sans-pro.css">
     <link rel="stylesheet" href="../../lib/css/all.min.css">
     <link rel="stylesheet" href="../../lib/css/adminlte.min.css">
@@ -44,7 +44,7 @@
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- 브랜드 제목 -->
             <a href="../../index.html" class="brand-link text-center">
-                <span class="brand-text font-weight-light">DICD 관리 시스템</span>
+                <span class="brand-text font-weight-light">PHOTO 공정 관리 시스템</span>
             </a>
 
             <!-- 사이드바 -->
@@ -138,6 +138,12 @@
                             <a href="../pr_thickness.html" class="nav-link">
                                 <i class="nav-icon fas fa-ruler"></i>
                                 <p>PR Thickness 관리</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../change_points.html" class="nav-link">
+                                <i class="nav-icon fas fa-exchange-alt"></i>
+                                <p>변경점 관리</p>
                             </a>
                         </li>
                     </ul>
@@ -250,11 +256,8 @@
                         <div class="card-header">
                             <h3 class="card-title" id="chart-title"><i class="fas fa-chart-line mr-1"></i> DICD 추이 분석</h3>
                             <div class="card-tools">
-                                <button type="button" class="btn btn-sm btn-warning" id="toggle-change-points-btn">
-                                    <i class="fas fa-eye-slash mr-1"></i> 변경점 숨기기
-                                </button>
                                 <button type="button" class="btn btn-sm btn-success" id="copy-chart-btn">
-                                    <i class="fas fa-copy mr-1"></i> 차트 복사
+                                    <i class="fas fa-download mr-1"></i> 차트 다운로드
                                 </button>
                                 <button type="button" class="btn btn-sm btn-info" id="show-data-btn">
                                     <i class="fas fa-table mr-1"></i> 차트 데이터 보기
@@ -270,13 +273,6 @@
                                 <div class="text-center py-5">
                                     <p class="text-muted">타겟을 선택하고 분석 버튼을 클릭하세요.</p>
                                 </div>
-                            </div>
-                            <!-- 변경점 안내 -->
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    차트에서 <span class="text-danger">▶ 표시</span>는 변경점을 나타냅니다. 클릭하면 상세 정보를 확인할 수 있습니다.
-                                </small>
                             </div>
                             <!-- 데이터 테이블 섹션 -->
                             <div id="chart-data-section" style="display: none;">
@@ -339,7 +335,7 @@
 
         <!-- 푸터 -->
         <footer class="main-footer">
-            <strong>Copyright &copy; 2025 <a href="#">DICD 측정 관리 시스템</a>.</strong>
+            <strong>Copyright &copy; 2025 <a href="#">PHOTO 공정 관리 시스템</a>.</strong>
             All rights reserved.
             <div class="float-right d-none d-sm-inline-block">
                 <b>Version</b> 1.0.0
@@ -352,7 +348,6 @@
     <script src="../../lib/js/bootstrap.bundle.min.js"></script>
     <script src="../../lib/js/adminlte.min.js"></script>
     <script src="../../lib/js/chart.min.js"></script>
-    <script src="../../lib/js/chartjs-plugin-annotation.min.js"></script>
     <script src="../../lib/js/moment.min.js"></script>
     <script src="../../lib/js/daterangepicker.min.js"></script>
     <script src="../../js/config.js"></script>
