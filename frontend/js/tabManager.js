@@ -9,7 +9,7 @@
  * - 탭별 독립적인 설정 관리
  */
 
-const TabManager = (function() {
+window.TabManager = (function() {
     // 탭 설정
     const MAX_TABS = 10;
     const FIXED_TAB_ID = 'dashboard';

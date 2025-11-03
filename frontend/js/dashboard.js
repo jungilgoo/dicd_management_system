@@ -971,31 +971,46 @@ function openSpcAnalysisTab(targetId, productGroup, process, targetName, periodD
     console.log('=== openSpcAnalysisTab 호출됨 ===');
     console.log('매개변수:', { targetId, productGroup, process, targetName, periodDays });
     console.log('window.TabManager 존재 여부:', !!window.TabManager);
+    console.log('window.TabManager 타입:', typeof window.TabManager);
 
-    // TabManager를 사용하여 SPC 분석 탭 열기
-    if (window.TabManager) {
-        // 설정 정보를 TabManager에 전달
-        const settings = {
-            targetId: targetId,
-            productGroup: productGroup,
-            process: process,
-            targetName: targetName,
-            periodDays: periodDays
-        };
+    // TabManager가 로드될 때까지 최대 3초 대기
+    let attempts = 0;
+    const maxAttempts = 30;
+    const checkInterval = 100; // 100ms
 
-        console.log('TabManager.openTab 호출 시도, 설정:', settings);
+    function tryOpenTab() {
+        attempts++;
 
-        // SPC 탭 열기
-        try {
-            window.TabManager.openTab('spc', settings);
-            console.log('TabManager.openTab 호출 완료');
-        } catch (error) {
-            console.error('TabManager.openTab 호출 실패:', error);
+        if (window.TabManager && typeof window.TabManager.openTab === 'function') {
+            // 설정 정보를 TabManager에 전달
+            const settings = {
+                targetId: targetId,
+                productGroup: productGroup,
+                process: process,
+                targetName: targetName,
+                periodDays: periodDays
+            };
+
+            console.log('TabManager.openTab 호출 시도, 설정:', settings);
+
+            // SPC 탭 열기
+            try {
+                window.TabManager.openTab('spc', settings);
+                console.log('TabManager.openTab 호출 완료');
+            } catch (error) {
+                console.error('TabManager.openTab 호출 실패:', error);
+                alert('탭 열기 중 오류가 발생했습니다: ' + error.message);
+            }
+        } else if (attempts < maxAttempts) {
+            console.log('TabManager 대기 중... 시도:', attempts);
+            setTimeout(tryOpenTab, checkInterval);
+        } else {
+            console.error('TabManager 로드 타임아웃!');
+            alert('탭 시스템 초기화 오류. 페이지를 새로고침 해주세요.');
         }
-    } else {
-        console.error('TabManager가 정의되지 않았습니다!');
-        alert('탭 시스템 초기화 오류. 페이지를 새로고침 해주세요.');
     }
+
+    tryOpenTab();
 }
 
 // 유틸리티 객체 - 날짜 포맷, 상태 표시 등에 사용
