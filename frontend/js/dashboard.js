@@ -986,15 +986,27 @@ const DASHBOARD_UTILS = {
 };
 
 function navigateToSpcPage(targetId, productGroup, process, targetName) {
-    // URL 인코딩
-    const params = new URLSearchParams();
-    params.set('targetId', targetId);
-    params.set('productGroup', encodeURIComponent(productGroup));
-    params.set('process', encodeURIComponent(process));
-    params.set('targetName', encodeURIComponent(targetName));
-    
-    // SPC 분석 페이지로 이동 (URL 파라미터 사용)
-    window.location.href = `pages/analysis/spc.html?${params.toString()}`;
+    // TabManager를 사용하여 SPC 분석 탭 열기
+    if (window.TabManager) {
+        // 설정 정보를 TabManager에 전달
+        const settings = {
+            targetId: targetId,
+            productGroup: productGroup,
+            process: process,
+            targetName: targetName
+        };
+
+        // SPC 탭 열기
+        window.TabManager.openTab('spc', settings);
+    } else {
+        // TabManager가 없는 경우 (독립 실행) 기존 방식 사용
+        const params = new URLSearchParams();
+        params.set('targetId', targetId);
+        params.set('productGroup', encodeURIComponent(productGroup));
+        params.set('process', encodeURIComponent(process));
+        params.set('targetName', encodeURIComponent(targetName));
+        window.location.href = `pages/analysis/spc.html?${params.toString()}`;
+    }
 }
 
 // 페이지 로드 시 대시보드 초기화
