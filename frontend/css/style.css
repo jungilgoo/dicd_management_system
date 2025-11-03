@@ -628,7 +628,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 #main-tab-content .tab-pane {
     height: 100%;
-    overflow: hidden;
+    overflow: auto;
 }
 
 /* iframe 컨테이너 */
@@ -644,12 +644,6 @@ input[type=number]::-webkit-outer-spin-button {
     height: 100%;
     border: none;
     display: block;
-}
-
-/* 대시보드 콘텐츠 */
-#dashboard-content {
-    height: 100%;
-    overflow-y: auto;
 }
 
 /* 반응형 조정 */
