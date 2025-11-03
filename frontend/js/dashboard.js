@@ -344,6 +344,7 @@ function renderCpkHeatmap() {
                 targetBlock.style.backgroundColor = bgColor;
                 targetBlock.style.cursor = 'pointer';
                 targetBlock.addEventListener('click', function() {
+                    console.log('히트맵 셀 클릭됨 (큰 블록):', item.productGroup, item.process, item.target);
                     openSpcAnalysisTab(item.targetId, item.productGroup, item.process, item.target, currentPeriodDays);
                 });
                 targetContainer.appendChild(targetBlock);
@@ -506,6 +507,7 @@ function renderCpkHeatmap() {
                 targetBlock.style.backgroundColor = bgColor;
                 targetBlock.style.cursor = 'pointer';
                 targetBlock.addEventListener('click', function() {
+                    console.log('히트맵 셀 클릭됨 (작은 블록):', item.productGroup, item.process, item.target);
                     openSpcAnalysisTab(item.targetId, item.productGroup, item.process, item.target, currentPeriodDays);
                 });
                 targetContainer.appendChild(targetBlock);
@@ -966,6 +968,10 @@ async function createMonitoringChart(index) {
 
 // SPC 분석 탭 열기 함수
 function openSpcAnalysisTab(targetId, productGroup, process, targetName, periodDays) {
+    console.log('=== openSpcAnalysisTab 호출됨 ===');
+    console.log('매개변수:', { targetId, productGroup, process, targetName, periodDays });
+    console.log('window.TabManager 존재 여부:', !!window.TabManager);
+
     // TabManager를 사용하여 SPC 분석 탭 열기
     if (window.TabManager) {
         // 설정 정보를 TabManager에 전달
@@ -977,10 +983,18 @@ function openSpcAnalysisTab(targetId, productGroup, process, targetName, periodD
             periodDays: periodDays
         };
 
+        console.log('TabManager.openTab 호출 시도, 설정:', settings);
+
         // SPC 탭 열기
-        window.TabManager.openTab('spc', settings);
+        try {
+            window.TabManager.openTab('spc', settings);
+            console.log('TabManager.openTab 호출 완료');
+        } catch (error) {
+            console.error('TabManager.openTab 호출 실패:', error);
+        }
     } else {
-        console.warn('TabManager가 없습니다. 탭 시스템이 활성화되지 않았습니다.');
+        console.error('TabManager가 정의되지 않았습니다!');
+        alert('탭 시스템 초기화 오류. 페이지를 새로고침 해주세요.');
     }
 }
 
