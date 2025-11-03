@@ -791,7 +791,7 @@
                 const row = `
                     <tr>
                         <td>${date}</td>
-                        <td>${measurement.created_by || '-'}</td>
+                        <td>${measurement.author || '-'}</td>
                         <td>${measurement.device || '-'}</td>
                         <td>${measurement.lot_no || '-'}</td>
                         <td>${measurement.exposure_time || '-'}</td>
