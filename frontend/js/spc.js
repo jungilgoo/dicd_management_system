@@ -1739,6 +1739,81 @@
         Chart.register(window['chartjs-plugin-annotation']);
     }
 
+    // 탭에서 전달받은 설정 복원 함수
+    window.restoreSettings = function(settings) {
+        console.log('SPC 페이지 설정 복원:', settings);
+
+        if (!settings) {
+            return;
+        }
+
+        // 기간 설정 복원
+        if (settings.periodDays) {
+            const periodSelect = document.getElementById('analysis-period');
+            if (periodSelect) {
+                periodSelect.value = settings.periodDays.toString();
+            }
+        }
+
+        // 제품군, 공정, 타겟 선택 및 SPC 분석 실행
+        if (settings.targetId || settings.targetName) {
+            const targetInfo = {
+                targetId: settings.targetId,
+                productGroup: settings.productGroup,
+                process: settings.process,
+                targetName: settings.targetName
+            };
+
+            // 제품군 선택
+            const productGroupSelect = document.getElementById('product-group');
+            for (let i = 0; i < productGroupSelect.options.length; i++) {
+                if (productGroupSelect.options[i].text === targetInfo.productGroup) {
+                    productGroupSelect.selectedIndex = i;
+                    selectedProductGroupId = productGroupSelect.value;
+                    break;
+                }
+            }
+
+            // 공정 목록 로드 후 선택
+            if (selectedProductGroupId) {
+                fetchProcesses(selectedProductGroupId).then(() => {
+                    const processSelect = document.getElementById('process');
+                    for (let i = 0; i < processSelect.options.length; i++) {
+                        if (processSelect.options[i].text === targetInfo.process) {
+                            processSelect.selectedIndex = i;
+                            selectedProcessId = processSelect.value;
+                            break;
+                        }
+                    }
+
+                    // 타겟 목록 로드 후 선택
+                    if (selectedProcessId) {
+                        fetchTargets(selectedProcessId).then(() => {
+                            const targetSelect = document.getElementById('target');
+                            for (let i = 0; i < targetSelect.options.length; i++) {
+                                if (targetSelect.options[i].text === targetInfo.targetName) {
+                                    targetSelect.selectedIndex = i;
+                                    selectedTargetId = targetSelect.value;
+                                    break;
+                                }
+                            }
+
+                            // 타겟 ID가 직접 제공된 경우에는 직접 설정
+                            if (!selectedTargetId && targetInfo.targetId) {
+                                selectedTargetId = targetInfo.targetId;
+                            }
+
+                            // 타겟이 선택되었으면 SPC 분석 실행
+                            if (selectedTargetId) {
+                                analyzeSpc();
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    };
+
     // 페이지 로드 시 초기화
     $(document).ready(function() {
         initSpcPage();
