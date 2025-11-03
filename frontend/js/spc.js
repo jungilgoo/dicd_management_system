@@ -1741,77 +1741,145 @@
 
     // 탭에서 전달받은 설정 복원 함수
     window.restoreSettings = function(settings) {
-        console.log('SPC 페이지 설정 복원:', settings);
+        console.log('SPC 페이지 설정 복원 시작:', settings);
 
         if (!settings) {
+            console.log('설정이 없습니다.');
             return;
         }
 
-        // 기간 설정 복원
-        if (settings.periodDays) {
-            const periodSelect = document.getElementById('analysis-period');
-            if (periodSelect) {
-                periodSelect.value = settings.periodDays.toString();
-            }
+        // DOM이 완전히 로드되고 initSpcPage가 완료될 때까지 대기
+        function waitForInitialization() {
+            return new Promise((resolve) => {
+                let attempts = 0;
+                const maxAttempts = 50;
+                const checkInterval = 100;
+
+                function check() {
+                    attempts++;
+                    const productGroupSelect = document.getElementById('product-group');
+
+                    // 제품군 셀렉트가 존재하고 옵션이 로드되었는지 확인
+                    if (productGroupSelect && productGroupSelect.options.length > 1) {
+                        console.log('SPC 페이지 초기화 완료, 설정 적용 시작');
+                        resolve();
+                    } else if (attempts < maxAttempts) {
+                        console.log('초기화 대기 중... 시도:', attempts);
+                        setTimeout(check, checkInterval);
+                    } else {
+                        console.error('SPC 페이지 초기화 타임아웃');
+                        resolve(); // 타임아웃되어도 계속 진행
+                    }
+                }
+
+                check();
+            });
         }
 
-        // 제품군, 공정, 타겟 선택 및 SPC 분석 실행
-        if (settings.targetId || settings.targetName) {
-            const targetInfo = {
-                targetId: settings.targetId,
-                productGroup: settings.productGroup,
-                process: settings.process,
-                targetName: settings.targetName
-            };
+        // 초기화 대기 후 설정 적용
+        waitForInitialization().then(() => {
+            console.log('설정 적용 시작');
 
-            // 제품군 선택
-            const productGroupSelect = document.getElementById('product-group');
-            for (let i = 0; i < productGroupSelect.options.length; i++) {
-                if (productGroupSelect.options[i].text === targetInfo.productGroup) {
-                    productGroupSelect.selectedIndex = i;
-                    selectedProductGroupId = productGroupSelect.value;
-                    break;
+            // 기간 설정 복원
+            if (settings.periodDays) {
+                const periodSelect = document.getElementById('analysis-period');
+                if (periodSelect) {
+                    periodSelect.value = settings.periodDays.toString();
+                    console.log('기간 설정:', settings.periodDays);
                 }
             }
 
-            // 공정 목록 로드 후 선택
-            if (selectedProductGroupId) {
-                fetchProcesses(selectedProductGroupId).then(() => {
-                    const processSelect = document.getElementById('process');
-                    for (let i = 0; i < processSelect.options.length; i++) {
-                        if (processSelect.options[i].text === targetInfo.process) {
-                            processSelect.selectedIndex = i;
-                            selectedProcessId = processSelect.value;
-                            break;
+            // 제품군, 공정, 타겟 선택 및 SPC 분석 실행
+            if (settings.targetId || settings.targetName) {
+                const targetInfo = {
+                    targetId: settings.targetId,
+                    productGroup: settings.productGroup,
+                    process: settings.process,
+                    targetName: settings.targetName
+                };
+
+                console.log('타겟 정보:', targetInfo);
+
+                // 제품군 선택
+                const productGroupSelect = document.getElementById('product-group');
+                let found = false;
+                for (let i = 0; i < productGroupSelect.options.length; i++) {
+                    if (productGroupSelect.options[i].text === targetInfo.productGroup) {
+                        productGroupSelect.selectedIndex = i;
+                        selectedProductGroupId = productGroupSelect.value;
+                        found = true;
+                        console.log('제품군 선택됨:', targetInfo.productGroup, 'ID:', selectedProductGroupId);
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    console.error('제품군을 찾을 수 없음:', targetInfo.productGroup);
+                    return;
+                }
+
+                // 공정 목록 로드 후 선택
+                if (selectedProductGroupId) {
+                    fetchProcesses(selectedProductGroupId).then(() => {
+                        console.log('공정 목록 로드 완료');
+                        const processSelect = document.getElementById('process');
+                        let processFound = false;
+
+                        for (let i = 0; i < processSelect.options.length; i++) {
+                            if (processSelect.options[i].text === targetInfo.process) {
+                                processSelect.selectedIndex = i;
+                                selectedProcessId = processSelect.value;
+                                processFound = true;
+                                console.log('공정 선택됨:', targetInfo.process, 'ID:', selectedProcessId);
+                                break;
+                            }
                         }
-                    }
 
-                    // 타겟 목록 로드 후 선택
-                    if (selectedProcessId) {
-                        fetchTargets(selectedProcessId).then(() => {
-                            const targetSelect = document.getElementById('target');
-                            for (let i = 0; i < targetSelect.options.length; i++) {
-                                if (targetSelect.options[i].text === targetInfo.targetName) {
-                                    targetSelect.selectedIndex = i;
-                                    selectedTargetId = targetSelect.value;
-                                    break;
+                        if (!processFound) {
+                            console.error('공정을 찾을 수 없음:', targetInfo.process);
+                            return;
+                        }
+
+                        // 타겟 목록 로드 후 선택
+                        if (selectedProcessId) {
+                            fetchTargets(selectedProcessId).then(() => {
+                                console.log('타겟 목록 로드 완료');
+                                const targetSelect = document.getElementById('target');
+                                let targetFound = false;
+
+                                for (let i = 0; i < targetSelect.options.length; i++) {
+                                    if (targetSelect.options[i].text === targetInfo.targetName) {
+                                        targetSelect.selectedIndex = i;
+                                        selectedTargetId = targetSelect.value;
+                                        targetFound = true;
+                                        console.log('타겟 선택됨:', targetInfo.targetName, 'ID:', selectedTargetId);
+                                        break;
+                                    }
                                 }
-                            }
 
-                            // 타겟 ID가 직접 제공된 경우에는 직접 설정
-                            if (!selectedTargetId && targetInfo.targetId) {
-                                selectedTargetId = targetInfo.targetId;
-                            }
+                                // 타겟 ID가 직접 제공된 경우에는 직접 설정
+                                if (!targetFound && targetInfo.targetId) {
+                                    selectedTargetId = targetInfo.targetId;
+                                    console.log('타겟 ID로 직접 설정:', selectedTargetId);
+                                }
 
-                            // 타겟이 선택되었으면 SPC 분석 실행
-                            if (selectedTargetId) {
-                                analyzeSpc();
-                            }
-                        });
-                    }
-                });
+                                // 타겟이 선택되었으면 SPC 분석 실행
+                                if (selectedTargetId) {
+                                    console.log('SPC 분석 실행 시작');
+                                    analyzeSpc();
+                                } else {
+                                    console.error('타겟 선택 실패');
+                                }
+                            }).catch(error => {
+                                console.error('타겟 목록 로드 실패:', error);
+                            });
+                        }
+                    }).catch(error => {
+                        console.error('공정 목록 로드 실패:', error);
+                    });
+                }
             }
-        }
+        });
     };
 
     // 페이지 로드 시 초기화
