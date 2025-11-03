@@ -342,10 +342,9 @@ function renderCpkHeatmap() {
                 const targetBlock = document.createElement('div');
                 targetBlock.className = 'target-block';
                 targetBlock.style.backgroundColor = bgColor;
-                targetBlock.style.cursor = 'pointer'; // 커서를 포인터로 변경
-                targetBlock.dataset.targetId = item.targetId; // 데이터 속성으로 타겟 ID 저장
+                targetBlock.style.cursor = 'pointer';
                 targetBlock.addEventListener('click', function() {
-                    navigateToSpcPage(item.targetId, item.productGroup, item.process, item.target);
+                    openSpcAnalysisTab(item.targetId, item.productGroup, item.process, item.target, currentPeriodDays);
                 });
                 targetContainer.appendChild(targetBlock);
                 
@@ -506,9 +505,8 @@ function renderCpkHeatmap() {
                 targetBlock.className = 'small-target-block';
                 targetBlock.style.backgroundColor = bgColor;
                 targetBlock.style.cursor = 'pointer';
-                targetBlock.dataset.targetId = item.targetId;
-                targetBlock.addEventListener('click', function () {
-                    navigateToSpcPage(item.targetId, item.productGroup, item.process, item.target);
+                targetBlock.addEventListener('click', function() {
+                    openSpcAnalysisTab(item.targetId, item.productGroup, item.process, item.target, currentPeriodDays);
                 });
                 targetContainer.appendChild(targetBlock);
 
@@ -966,26 +964,8 @@ async function createMonitoringChart(index) {
     }
 }
 
-// 유틸리티 객체 - 날짜 포맷, 상태 표시 등에 사용
-const DASHBOARD_UTILS = {
-    // 날짜 포맷 함수
-    formatDate: function(dateStr) {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString();
-    },
-    
-    // 숫자 포맷 함수
-    formatNumber: function(value) {
-        return value.toFixed(3);
-    },
-    
-    // 오류 메시지 표시
-    showError: function(message) {
-        return `<div class="alert alert-danger"><i class="fas fa-exclamation-circle mr-1"></i> ${message}</div>`;
-    }
-};
-
-function navigateToSpcPage(targetId, productGroup, process, targetName) {
+// SPC 분석 탭 열기 함수
+function openSpcAnalysisTab(targetId, productGroup, process, targetName, periodDays) {
     // TabManager를 사용하여 SPC 분석 탭 열기
     if (window.TabManager) {
         // 설정 정보를 TabManager에 전달
@@ -993,21 +973,36 @@ function navigateToSpcPage(targetId, productGroup, process, targetName) {
             targetId: targetId,
             productGroup: productGroup,
             process: process,
-            targetName: targetName
+            targetName: targetName,
+            periodDays: periodDays
         };
 
         // SPC 탭 열기
         window.TabManager.openTab('spc', settings);
     } else {
-        // TabManager가 없는 경우 (독립 실행) 기존 방식 사용
-        const params = new URLSearchParams();
-        params.set('targetId', targetId);
-        params.set('productGroup', encodeURIComponent(productGroup));
-        params.set('process', encodeURIComponent(process));
-        params.set('targetName', encodeURIComponent(targetName));
-        window.location.href = `pages/analysis/spc.html?${params.toString()}`;
+        console.warn('TabManager가 없습니다. 탭 시스템이 활성화되지 않았습니다.');
     }
 }
+
+// 유틸리티 객체 - 날짜 포맷, 상태 표시 등에 사용
+const DASHBOARD_UTILS = {
+    // 날짜 포맷 함수
+    formatDate: function(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString();
+    },
+
+    // 숫자 포맷 함수
+    formatNumber: function(value) {
+        return value.toFixed(3);
+    },
+
+    // 오류 메시지 표시
+    showError: function(message) {
+        return `<div class="alert alert-danger"><i class="fas fa-exclamation-circle mr-1"></i> ${message}</div>`;
+    }
+};
+
 
 // 페이지 로드 시 대시보드 초기화
 document.addEventListener('DOMContentLoaded', initDashboard);
