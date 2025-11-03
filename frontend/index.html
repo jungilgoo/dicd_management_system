@@ -124,100 +124,123 @@
 
         <!-- 콘텐츠 래퍼 -->
         <div class="content-wrapper">
-            <!-- 콘텐츠 헤더 -->
-            <div class="content-header">
-                <div class="container-fluid">
-                    <div class="row mb-2">
-                        <div class="col-sm-6">
-                            <h1 class="m-0">대시보드</h1>
-                        </div>
-                        <div class="col-sm-6">
-                            <ol class="breadcrumb float-sm-right">
-                                <li class="breadcrumb-item"><a href="#">Home</a></li>
-                                <li class="breadcrumb-item active">대시보드</li>
-                            </ol>
-                        </div>
-                    </div>
+            <!-- 탭 네비게이션 -->
+            <div class="tab-navigation-container">
+                <ul class="nav nav-tabs" id="main-tabs" role="tablist">
+                    <!-- 대시보드 탭 (고정, 닫기 불가) -->
+                    <li class="nav-item">
+                        <a class="nav-link active" id="dashboard-tab" data-toggle="tab" href="#dashboard-content" role="tab" data-tab-id="dashboard" data-tab-type="dashboard">
+                            <i class="fas fa-tachometer-alt"></i> 대시보드
+                        </a>
+                    </li>
+                    <!-- 동적 탭이 여기에 추가됩니다 -->
+                </ul>
+                <div class="tab-count-badge">
+                    <span id="tab-count">1</span> / 10
                 </div>
             </div>
 
-            <!-- 메인 콘텐츠 -->
-            <section class="content">
-                <div class="container-fluid">
-                    <!-- 메인 카드 -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <!-- 공정능력지수 히트맵 카드 -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-th mr-1"></i> 공정능력지수 히트맵 <small id="cpk-heatmap-period" class="text-muted">(최근 14일)</small></h3>
-                                    <div class="card-tools">
-                                        <div class="btn-group mr-2">
-                                            <button type="button" class="btn btn-sm btn-outline-primary active" id="period-14d">14일</button>
-                                            <button type="button" class="btn btn-sm btn-outline-primary" id="period-1m">1개월</button>
-                                            <button type="button" class="btn btn-sm btn-outline-primary" id="period-3m">3개월</button>
-                                        </div>
-                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                    </div>
+            <!-- 탭 콘텐츠 -->
+            <div class="tab-content" id="main-tab-content">
+                <!-- 대시보드 콘텐츠 -->
+                <div class="tab-pane fade show active" id="dashboard-content" role="tabpanel">
+                    <!-- 콘텐츠 헤더 -->
+                    <div class="content-header">
+                        <div class="container-fluid">
+                            <div class="row mb-2">
+                                <div class="col-sm-6">
+                                    <h1 class="m-0">대시보드</h1>
                                 </div>
-                                <div class="card-body">
-                                    <div id="cpk-heatmap-container">
-                                        <!-- 히트맵이 여기에 동적으로 추가됩니다 -->
-                                        <div class="text-center py-3">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="sr-only">로딩 중...</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-footer">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="cpk-legend">
-                                            <span class="badge bg-danger">Cpk &lt; 0.67</span>
-                                            <span class="badge bg-warning">0.67 ≤ Cpk &lt; 1.00</span>
-                                            <span class="badge bg-info">1.00 ≤ Cpk &lt; 1.33</span>
-                                            <span class="badge bg-success">Cpk ≥ 1.33</span>
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-default" id="refresh-heatmap-btn">
-                                            <i class="fas fa-sync-alt mr-1"></i> 새로고침
-                                        </button>
-                                    </div>
+                                <div class="col-sm-6">
+                                    <ol class="breadcrumb float-sm-right">
+                                        <li class="breadcrumb-item"><a href="#">Home</a></li>
+                                        <li class="breadcrumb-item active">대시보드</li>
+                                    </ol>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <!-- 주요 타겟 모니터링 카드 -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> 주요 타겟 모니터링</h3>
-                                    <div class="card-tools">
-                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                        <div class="btn-group">
-                                            <button type="button" class="btn btn-tool dropdown-toggle" data-toggle="dropdown">
-                                                <i class="fas fa-cog"></i> 설정
-                                            </button>
-                                            <div class="dropdown-menu dropdown-menu-right" role="menu">
-                                                <a href="#" class="dropdown-item" id="configure-targets-btn">타겟 설정</a>
+                    <!-- 메인 콘텐츠 -->
+                    <section class="content">
+                        <div class="container-fluid">
+                            <!-- 메인 카드 -->
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <!-- 공정능력지수 히트맵 카드 -->
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title"><i class="fas fa-th mr-1"></i> 공정능력지수 히트맵 <small id="cpk-heatmap-period" class="text-muted">(최근 14일)</small></h3>
+                                            <div class="card-tools">
+                                                <div class="btn-group mr-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary active" id="period-14d">14일</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" id="period-1m">1개월</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" id="period-3m">3개월</button>
+                                                </div>
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="cpk-heatmap-container">
+                                                <!-- 히트맵이 여기에 동적으로 추가됩니다 -->
+                                                <div class="text-center py-3">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="sr-only">로딩 중...</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="cpk-legend">
+                                                    <span class="badge bg-danger">Cpk &lt; 0.67</span>
+                                                    <span class="badge bg-warning">0.67 ≤ Cpk &lt; 1.00</span>
+                                                    <span class="badge bg-info">1.00 ≤ Cpk &lt; 1.33</span>
+                                                    <span class="badge bg-success">Cpk ≥ 1.33</span>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-default" id="refresh-heatmap-btn">
+                                                    <i class="fas fa-sync-alt mr-1"></i> 새로고침
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row" id="monitoring-charts-container">
-                                        <!-- 모니터링 차트가 여기에 동적으로 추가됩니다 -->
-                                        <div class="col-md-12 text-center py-3">
-                                            <p class="text-muted">모니터링할 타겟이 설정되지 않았습니다. 우측 상단의 '설정' 버튼을 클릭하여 타겟을 설정하세요.</p>
+
+                                    <!-- 주요 타겟 모니터링 카드 -->
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> 주요 타겟 모니터링</h3>
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                <div class="btn-group">
+                                                    <button type="button" class="btn btn-tool dropdown-toggle" data-toggle="dropdown">
+                                                        <i class="fas fa-cog"></i> 설정
+                                                    </button>
+                                                    <div class="dropdown-menu dropdown-menu-right" role="menu">
+                                                        <a href="#" class="dropdown-item" id="configure-targets-btn">타겟 설정</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row" id="monitoring-charts-container">
+                                                <!-- 모니터링 차트가 여기에 동적으로 추가됩니다 -->
+                                                <div class="col-md-12 text-center py-3">
+                                                    <p class="text-muted">모니터링할 타겟이 설정되지 않았습니다. 우측 상단의 '설정' 버튼을 클릭하여 타겟을 설정하세요.</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </section>
                 </div>
-            </section>
+                <!-- 동적 탭 콘텐츠가 여기에 추가됩니다 -->
+            </div>
         </div>
 
         <!-- 푸터 -->
@@ -486,6 +509,7 @@
     <script src="lib/js/chart.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/tabManager.js"></script>
     <script src="js/dashboard.js"></script>
 </body>
 </html>

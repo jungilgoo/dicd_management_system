@@ -504,3 +504,225 @@ input[type=number]::-webkit-outer-spin-button {
     border: 2px solid #dc3545 !important;
     background-color: #fff8f8 !important;
 }
+
+/* ===== 탭 시스템 스타일 ===== */
+
+/* 탭 네비게이션 컨테이너 */
+.tab-navigation-container {
+    position: relative;
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.5rem 1rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+/* 탭 네비게이션 */
+#main-tabs {
+    flex: 1;
+    border-bottom: none;
+    margin-bottom: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: thin;
+}
+
+#main-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+#main-tabs::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 2px;
+}
+
+/* 탭 아이템 */
+#main-tabs .nav-item {
+    display: inline-block;
+    margin-bottom: -1px;
+}
+
+/* 탭 링크 */
+#main-tabs .nav-link {
+    position: relative;
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+    color: #495057;
+    background-color: transparent;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#main-tabs .nav-link:hover {
+    background-color: #f8f9fa;
+    border-color: #dee2e6 #dee2e6 transparent;
+}
+
+#main-tabs .nav-link.active {
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    color: #007bff;
+    font-weight: 500;
+}
+
+/* 탭 아이콘 */
+#main-tabs .nav-link i {
+    flex-shrink: 0;
+}
+
+/* 탭 닫기 버튼 */
+.tab-close-btn {
+    background: none;
+    border: none;
+    padding: 0 0.25rem;
+    margin-left: 0.5rem;
+    color: #6c757d;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.tab-close-btn:hover {
+    color: #dc3545;
+}
+
+.tab-close-btn:focus {
+    outline: none;
+}
+
+/* 대시보드 탭 (고정, 닫기 불가) */
+#dashboard-tab {
+    font-weight: 500;
+}
+
+/* 탭 카운트 배지 */
+.tab-count-badge {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.tab-count-badge span {
+    font-weight: bold;
+    color: #007bff;
+}
+
+/* 탭 콘텐츠 */
+#main-tab-content {
+    height: calc(100vh - 120px);
+    overflow: hidden;
+}
+
+#main-tab-content .tab-pane {
+    height: 100%;
+    overflow: hidden;
+}
+
+/* iframe 컨테이너 */
+.tab-iframe-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* iframe 스타일 */
+.tab-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+/* 대시보드 콘텐츠 */
+#dashboard-content {
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* 반응형 조정 */
+@media (max-width: 768px) {
+    .tab-navigation-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tab-count-badge {
+        text-align: right;
+        padding: 0.25rem 0;
+    }
+
+    #main-tabs .nav-link {
+        max-width: 150px;
+        font-size: 0.875rem;
+        padding: 0.4rem 0.75rem;
+    }
+
+    .tab-close-btn {
+        margin-left: 0.25rem;
+    }
+}
+
+/* 탭 추가 애니메이션 */
+@keyframes slideInTab {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#main-tabs .nav-item {
+    animation: slideInTab 0.3s ease;
+}
+
+/* 탭 활성화 강조 효과 */
+#main-tabs .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #007bff;
+}
+
+/* 스크롤 시 탭 네비게이션 고정 */
+.content-wrapper {
+    position: relative;
+}
+
+/* 탭이 많을 때 스크롤 힌트 */
+#main-tabs.has-overflow::after {
+    content: '→';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    font-size: 1.2rem;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent, white 20%);
+    padding-left: 2rem;
+}
+
+/* 최대 탭 도달 시 경고 스타일 */
+.tab-count-badge.max-reached span {
+    color: #dc3545;
+    font-weight: bold;
+}
