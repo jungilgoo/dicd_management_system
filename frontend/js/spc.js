@@ -550,13 +550,18 @@
             if (sigma !== null) {
                 // 툴팁 콜백 추가
                 chartOptions.plugins.tooltip.callbacks = {
+                    // USL, LSL, Target 기준선 제외
+                    filter: function(tooltipItem) {
+                        const label = tooltipItem.dataset.label;
+                        return label !== 'USL' && label !== 'LSL' && label !== 'Target';
+                    },
                     label: function(context) {
                         let label = context.dataset.label || '';
-                        
+
                         if (label === 'DICD 값') {
                             const value = context.parsed.y;
                             let zoneInfo = '';
-                            
+
                             // 시그마 구간 표시
                             if (value > zone_a_upper || value < zone_a_lower) {
                                 zoneInfo = ' (Zone A)';
@@ -565,11 +570,32 @@
                             } else {
                                 zoneInfo = ' (Zone C)';
                             }
-                            
+
                             return `${label}: ${value.toFixed(3)}${zoneInfo}`;
                         }
-                        
+
                         return `${label}: ${context.parsed.y.toFixed(3)}`;
+                    },
+                    // 하단에 DEVICE, LOT NO, Exposure Time 정보 한 번만 표시
+                    footer: function(tooltipItems) {
+                        if (!tooltipItems || tooltipItems.length === 0) return '';
+                        if (!currentMeasurements || currentMeasurements.length === 0) return '';
+
+                        const dataIndex = tooltipItems[0].dataIndex;
+                        const measurement = currentMeasurements[dataIndex];
+
+                        if (!measurement) return '';
+
+                        const device = measurement.device || '-';
+                        const lotNo = measurement.lot_no || '-';
+                        const exposureTime = measurement.exposure_time || '-';
+
+                        return [
+                            '─────────────',
+                            `DEVICE: ${device}`,
+                            `LOT NO: ${lotNo}`,
+                            `Exposure Time: ${exposureTime}`
+                        ];
                     }
                 };
                 
@@ -1174,7 +1200,41 @@
                     },
                     tooltip: {
                         mode: 'index',
-                        intersect: false
+                        intersect: false,
+                        callbacks: {
+                            // USL, LSL, Target 기준선 제외
+                            filter: function(tooltipItem) {
+                                const label = tooltipItem.dataset.label;
+                                return label !== 'USL' && label !== 'LSL' && label !== 'Target';
+                            },
+                            // 각 데이터셋의 값만 표시
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                return `${label}: ${value.toFixed(3)}`;
+                            },
+                            // 하단에 DEVICE, LOT NO, Exposure Time 정보 한 번만 표시
+                            footer: function(tooltipItems) {
+                                if (!tooltipItems || tooltipItems.length === 0) return '';
+                                if (!currentMeasurements || currentMeasurements.length === 0) return '';
+
+                                const dataIndex = tooltipItems[0].dataIndex;
+                                const measurement = currentMeasurements[dataIndex];
+
+                                if (!measurement) return '';
+
+                                const device = measurement.device || '-';
+                                const lotNo = measurement.lot_no || '-';
+                                const exposureTime = measurement.exposure_time || '-';
+
+                                return [
+                                    '─────────────',
+                                    `DEVICE: ${device}`,
+                                    `LOT NO: ${lotNo}`,
+                                    `Exposure Time: ${exposureTime}`
+                                ];
+                            }
+                        }
                     },
                     legend: {
                         position: 'top'

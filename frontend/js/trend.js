@@ -308,6 +308,9 @@
     
     // 추이 차트 업데이트
     function updateTrendChart(measurements, stats, changePoints = []) {
+        // 현재 측정 데이터 저장 (tooltip에서 사용)
+        currentMeasurements = measurements;
+
         // 데이터 체크
         if (!measurements || measurements.length === 0) {
             document.getElementById('trend-chart-container').innerHTML = `
@@ -526,7 +529,41 @@
                 },
                 tooltip: {
                     mode: 'index',
-                    intersect: false
+                    intersect: false,
+                    callbacks: {
+                        // USL, LSL, Target 기준선 제외
+                        filter: function(tooltipItem) {
+                            const label = tooltipItem.dataset.label;
+                            return label !== 'USL' && label !== 'LSL' && label !== 'Target';
+                        },
+                        // 각 데이터셋의 값만 표시
+                        label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.parsed.y;
+                            return `${label}: ${value.toFixed(3)}`;
+                        },
+                        // 하단에 DEVICE, LOT NO, Exposure Time 정보 한 번만 표시
+                        footer: function(tooltipItems) {
+                            if (!tooltipItems || tooltipItems.length === 0) return '';
+                            if (!currentMeasurements || currentMeasurements.length === 0) return '';
+
+                            const dataIndex = tooltipItems[0].dataIndex;
+                            const measurement = currentMeasurements[dataIndex];
+
+                            if (!measurement) return '';
+
+                            const device = measurement.device || '-';
+                            const lotNo = measurement.lot_no || '-';
+                            const exposureTime = measurement.exposure_time || '-';
+
+                            return [
+                                '─────────────',
+                                `DEVICE: ${device}`,
+                                `LOT NO: ${lotNo}`,
+                                `Exposure Time: ${exposureTime}`
+                            ];
+                        }
+                    }
                 },
                 legend: {
                     position: 'top'
