@@ -76,7 +76,6 @@ class TargetManager {
 class ChartManager {
     constructor() {
         this.charts = {};
-        this.currentDataLength = 0;
         this.chartColors = [
             '#3490dc', '#38c172', '#e3342f', '#f6993f', '#9561e2',
             '#f66d9b', '#6cb2eb', '#4dc0b5', '#f7fafc', '#718096'
@@ -226,9 +225,6 @@ class ChartManager {
             };
         });
 
-        // 데이터 길이 저장 (X축 스케일 설정에 사용)
-        this.currentDataLength = values.length;
-
         const chartData = {
             datasets: [
                 {
@@ -267,19 +263,13 @@ class ChartManager {
             ]
         };
         
-        // SPEC 라인 추가 코드는 그대로 유지
+        // SPEC 라인 추가
         if (specData) {
-            const xMin = 0;
-            const xMax = values.length - 1;
-            
             // USL 라인
             if (specData.usl !== undefined) {
                 chartData.datasets.push({
                     label: 'USL',
-                    data: [
-                        { x: xMin, y: specData.usl },
-                        { x: xMax, y: specData.usl }
-                    ],
+                    data: values.map((v, i) => ({ x: i, y: specData.usl })),
                     borderColor: 'rgba(231, 76, 60, 0.8)',
                     borderWidth: 2,
                     borderDash: [5, 5],
@@ -292,10 +282,7 @@ class ChartManager {
             if (specData.lsl !== undefined) {
                 chartData.datasets.push({
                     label: 'LSL',
-                    data: [
-                        { x: xMin, y: specData.lsl },
-                        { x: xMax, y: specData.lsl }
-                    ],
+                    data: values.map((v, i) => ({ x: i, y: specData.lsl })),
                     borderColor: 'rgba(231, 76, 60, 0.8)',
                     borderWidth: 2,
                     borderDash: [5, 5],
@@ -309,10 +296,7 @@ class ChartManager {
                 const target = (specData.lsl + specData.usl) / 2;
                 chartData.datasets.push({
                     label: 'TARGET',
-                    data: [
-                        { x: xMin, y: target },
-                        { x: xMax, y: target }
-                    ],
+                    data: values.map((v, i) => ({ x: i, y: target })),
                     borderColor: 'rgba(52, 152, 219, 0.8)',
                     borderWidth: 2,
                     borderDash: [2, 2],
@@ -395,8 +379,6 @@ class ChartManager {
             scales: {
                 x: {
                     type: 'linear',
-                    min: 0,
-                    max: Math.max(0, this.currentDataLength - 1),
                     grid: {
                         display: false
                     },
