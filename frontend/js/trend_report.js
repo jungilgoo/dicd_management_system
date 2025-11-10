@@ -76,8 +76,9 @@ class TargetManager {
 class ChartManager {
     constructor() {
         this.charts = {};
+        this.currentDataLength = 0;
         this.chartColors = [
-            '#3490dc', '#38c172', '#e3342f', '#f6993f', '#9561e2', 
+            '#3490dc', '#38c172', '#e3342f', '#f6993f', '#9561e2',
             '#f66d9b', '#6cb2eb', '#4dc0b5', '#f7fafc', '#718096'
         ];
     }
@@ -207,7 +208,7 @@ class ChartManager {
         const values = sortedData.map((item, index) => {
             const itemDate = new Date(item.created_at);
             const isRecent = itemDate >= oneWeekAgo; // 최근 1주일 데이터인지 확인
-            
+
             return {
                 x: index,  // 인덱스를 X값으로 사용
                 y: item.avg_value,
@@ -224,7 +225,10 @@ class ChartManager {
                 borderColor: isRecent ? 'rgba(52, 144, 220, 1)' : 'rgba(52, 144, 220, 0.5)'
             };
         });
-        
+
+        // 데이터 길이 저장 (X축 스케일 설정에 사용)
+        this.currentDataLength = values.length;
+
         const chartData = {
             datasets: [
                 {
@@ -391,6 +395,8 @@ class ChartManager {
             scales: {
                 x: {
                     type: 'linear',
+                    min: 0,
+                    max: Math.max(0, this.currentDataLength - 1),
                     grid: {
                         display: false
                     },
