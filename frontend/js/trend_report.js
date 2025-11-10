@@ -76,7 +76,6 @@ class TargetManager {
 class ChartManager {
     constructor() {
         this.charts = {};
-        this.currentDataLength = 0;
         this.chartColors = [
             '#3490dc', '#38c172', '#e3342f', '#f6993f', '#9561e2',
             '#f66d9b', '#6cb2eb', '#4dc0b5', '#f7fafc', '#718096'
@@ -203,14 +202,16 @@ class ChartManager {
         // 1주일 전 날짜 계산
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(now.getDate() - 7);
-        
-        // 시퀀스 기반으로 데이터 포인트 생성
+
+        // 라벨 배열 생성 (X축용)
+        const labels = sortedData.map((item, index) => index);
+
+        // 데이터 포인트 생성 (y값만 포함)
         const values = sortedData.map((item, index) => {
             const itemDate = new Date(item.created_at);
             const isRecent = itemDate >= oneWeekAgo; // 최근 1주일 데이터인지 확인
 
             return {
-                x: index,  // 인덱스를 X값으로 사용
                 y: item.avg_value,
                 created_at: item.created_at,
                 lot_no: item.lot_no || '',
@@ -226,10 +227,8 @@ class ChartManager {
             };
         });
 
-        // 데이터 길이 저장 (X축 범위 설정에 사용)
-        this.currentDataLength = values.length;
-
         const chartData = {
+            labels: labels,
             datasets: [
                 {
                     label: '측정값',
@@ -273,7 +272,7 @@ class ChartManager {
             if (specData.usl !== undefined) {
                 chartData.datasets.push({
                     label: 'USL',
-                    data: values.map((v, i) => ({ x: i, y: specData.usl })),
+                    data: Array(values.length).fill(specData.usl),
                     borderColor: 'rgba(231, 76, 60, 0.8)',
                     borderWidth: 2,
                     borderDash: [5, 5],
@@ -281,12 +280,12 @@ class ChartManager {
                     fill: false
                 });
             }
-            
+
             // LSL 라인
             if (specData.lsl !== undefined) {
                 chartData.datasets.push({
                     label: 'LSL',
-                    data: values.map((v, i) => ({ x: i, y: specData.lsl })),
+                    data: Array(values.length).fill(specData.lsl),
                     borderColor: 'rgba(231, 76, 60, 0.8)',
                     borderWidth: 2,
                     borderDash: [5, 5],
@@ -294,13 +293,13 @@ class ChartManager {
                     fill: false
                 });
             }
-            
+
             // TARGET 라인
             if (specData.lsl !== undefined && specData.usl !== undefined) {
                 const target = (specData.lsl + specData.usl) / 2;
                 chartData.datasets.push({
                     label: 'TARGET',
-                    data: values.map((v, i) => ({ x: i, y: target })),
+                    data: Array(values.length).fill(target),
                     borderColor: 'rgba(52, 152, 219, 0.8)',
                     borderWidth: 2,
                     borderDash: [2, 2],
@@ -382,9 +381,6 @@ class ChartManager {
             },
             scales: {
                 x: {
-                    type: 'linear',
-                    min: 0,
-                    max: this.currentDataLength > 0 ? this.currentDataLength - 1 : 0,
                     grid: {
                         display: false
                     },
