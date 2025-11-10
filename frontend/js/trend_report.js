@@ -163,19 +163,20 @@ class ChartManager {
         
         // 차트 생성
         const ctx = canvas.getContext('2d');
-        const chartData = this.prepareChartData(data, specData);
-        
+        const { chartData, metadata } = this.prepareChartData(data, specData);
+
         const chart = new Chart(ctx, {
             type: 'line',
             data: chartData,
             options: this.getChartOptions(specData)
         });
-        
+
         // 차트 저장
         this.charts[chartId] = {
             chart: chart,
             targetId: targetInfo.targetId,
-            element: chartCard
+            element: chartCard,
+            metadata: metadata
         };
         
         // 차트 삭제 이벤트 리스너 추가
@@ -206,26 +207,28 @@ class ChartManager {
         // 라벨 배열 생성 (X축용)
         const labels = sortedData.map((item, index) => index);
 
-        // 데이터 포인트 생성 (y값만 포함)
-        const values = sortedData.map((item, index) => {
+        // 단순 숫자 배열로 변경
+        const values = sortedData.map(item => item.avg_value);
+
+        // 메타데이터를 별도 배열로 저장
+        const metadata = sortedData.map((item, index) => {
             const itemDate = new Date(item.created_at);
-            const isRecent = itemDate >= oneWeekAgo; // 최근 1주일 데이터인지 확인
+            const isRecent = itemDate >= oneWeekAgo;
 
             return {
-                y: item.avg_value,
                 created_at: item.created_at,
                 lot_no: item.lot_no || '',
                 wafer_no: item.wafer_no || '',
-                // 최근 1주일 데이터는 스타일 속성 추가
-                pointRadius: isRecent ? 3 : 2,       // 최근 데이터는 큰 점, 이전 데이터는 작은 점
-                pointBackgroundColor: isRecent ? 'rgba(52, 144, 220, 1)' : 'rgba(52, 144, 220, 0.5)',
-                pointBorderColor: isRecent ? 'rgba(52, 144, 220, 1)' : 'rgba(52, 144, 220, 0.5)',
-                pointHoverRadius: isRecent ? 6 : 4,
-                // 선 스타일도 조정
-                borderWidth: isRecent ? 3 : 1.5,
-                borderColor: isRecent ? 'rgba(52, 144, 220, 1)' : 'rgba(52, 144, 220, 0.5)'
+                isRecent: isRecent
             };
         });
+
+        // 동적 스타일 배열 생성
+        const pointRadiusArray = metadata.map(m => m.isRecent ? 3 : 2);
+        const pointColorArray = metadata.map(m =>
+            m.isRecent ? 'rgba(52, 144, 220, 1)' : 'rgba(52, 144, 220, 0.5)'
+        );
+        const pointHoverRadiusArray = metadata.map(m => m.isRecent ? 6 : 4);
 
         const chartData = {
             labels: labels,
@@ -233,33 +236,13 @@ class ChartManager {
                 {
                     label: '측정값',
                     data: values,
-                    borderColor: 'rgba(52, 144, 220, 0.5)', // 기본 선 색상
+                    borderColor: 'rgba(52, 144, 220, 0.5)',
                     backgroundColor: 'rgba(52, 144, 220, 0.1)',
-                    borderWidth: 1.5, // 기본 선 두께
-                    // 각 데이터 포인트마다 다른 스타일 적용을 위한 설정
-                    pointRadius: values.map(v => v.pointRadius),
-                    pointBackgroundColor: values.map(v => v.pointBackgroundColor),
-                    pointBorderColor: values.map(v => v.pointBorderColor),
-                    pointHoverRadius: values.map(v => v.pointHoverRadius),
-                    // 선 스타일에 segment 옵션 사용
-                    segment: {
-                        borderColor: ctx => {
-                            // 이 부분은 Chart.js의 segment 옵션을 사용하여 
-                            // 현재 데이터 포인트의 borderColor 속성에 접근합니다
-                            if (ctx.p1.raw && ctx.p1.raw.borderColor) {
-                                return ctx.p1.raw.borderColor;
-                            }
-                            return 'rgba(52, 144, 220, 0.5)'; // 기본값
-                        },
-                        borderWidth: ctx => {
-                            // 이 부분은 Chart.js의 segment 옵션을 사용하여 
-                            // 현재 데이터 포인트의 borderWidth 속성에 접근합니다
-                            if (ctx.p1.raw && ctx.p1.raw.borderWidth) {
-                                return ctx.p1.raw.borderWidth;
-                            }
-                            return 1.5; // 기본값
-                        }
-                    },
+                    borderWidth: 1.5,
+                    pointRadius: pointRadiusArray,
+                    pointBackgroundColor: pointColorArray,
+                    pointBorderColor: pointColorArray,
+                    pointHoverRadius: pointHoverRadiusArray,
                     fill: false,
                     tension: 0.1
                 }
@@ -308,8 +291,8 @@ class ChartManager {
                 });
             }
         }
-        
-        return chartData;
+
+        return { chartData, metadata };
     }
 
     getChartOptions(specData) {
@@ -348,8 +331,16 @@ class ChartManager {
                     },
                     callbacks: {
                         title: function(tooltipItems) {
-                            if (tooltipItems.length > 0 && tooltipItems[0].raw.created_at) {
-                                return new Date(tooltipItems[0].raw.created_at).toLocaleString();
+                            if (tooltipItems.length > 0) {
+                                // chartManager를 통해 metadata 찾기
+                                const chartId = Object.keys(chartManager.charts).find(id =>
+                                    chartManager.charts[id].chart === this.chart
+                                );
+                                if (chartId && chartManager.charts[chartId].metadata) {
+                                    const index = tooltipItems[0].dataIndex;
+                                    const metadata = chartManager.charts[chartId].metadata;
+                                    return new Date(metadata[index].created_at).toLocaleString();
+                                }
                             }
                             return '';
                         },
@@ -364,17 +355,25 @@ class ChartManager {
                             return label;
                         },
                         afterLabel: function(context) {
-                            const dataPoint = context.raw;
-                            let labels = [];
-                            
-                            if (dataPoint.lot_no) {
-                                labels.push(`Lot No: ${dataPoint.lot_no}`);
+                            // chartManager를 통해 metadata 찾기
+                            const chartId = Object.keys(chartManager.charts).find(id =>
+                                chartManager.charts[id].chart === this.chart
+                            );
+                            if (chartId && chartManager.charts[chartId].metadata) {
+                                const index = context.dataIndex;
+                                const meta = chartManager.charts[chartId].metadata[index];
+
+                                let labels = [];
+                                if (meta.lot_no) {
+                                    labels.push(`Lot No: ${meta.lot_no}`);
+                                }
+                                if (meta.wafer_no) {
+                                    labels.push(`Wafer No: ${meta.wafer_no}`);
+                                }
+
+                                return labels;
                             }
-                            if (dataPoint.wafer_no) {
-                                labels.push(`Wafer No: ${dataPoint.wafer_no}`);
-                            }
-                            
-                            return labels;
+                            return [];
                         }
                     }
                 }
@@ -389,14 +388,20 @@ class ChartManager {
                         callback: function(value, index, values) {
                             // 첫 번째와 마지막 틱만 표시
                             if (index === 0 || index === values.length - 1) {
-                                const dataset = this.chart.data.datasets[0];
-                                if (dataset && dataset.data) {
-                                    // 첫 번째 틱은 시작 날짜, 마지막 틱은 끝 날짜
-                                    if (index === 0 && dataset.data.length > 0) {
-                                        return new Date(dataset.data[0].created_at).toLocaleDateString();
-                                    } else if (index === values.length - 1 && dataset.data.length > 0) {
-                                        const lastIdx = dataset.data.length - 1;
-                                        return new Date(dataset.data[lastIdx].created_at).toLocaleDateString();
+                                // chartManager를 통해 metadata 찾기
+                                const chartId = Object.keys(chartManager.charts).find(id =>
+                                    chartManager.charts[id].chart === this.chart
+                                );
+                                if (chartId && chartManager.charts[chartId].metadata) {
+                                    const metadata = chartManager.charts[chartId].metadata;
+                                    if (metadata.length > 0) {
+                                        // 첫 번째 틱은 시작 날짜, 마지막 틱은 끝 날짜
+                                        if (index === 0) {
+                                            return new Date(metadata[0].created_at).toLocaleDateString();
+                                        } else if (index === values.length - 1) {
+                                            const lastIdx = metadata.length - 1;
+                                            return new Date(metadata[lastIdx].created_at).toLocaleDateString();
+                                        }
                                     }
                                 }
                             }
@@ -423,10 +428,11 @@ class ChartManager {
     // 차트 업데이트
     updateChart(targetId, data, specData) {
         const chartId = `chart-${targetId}`;
-        
+
         if (this.charts[chartId]) {
-            const chartData = this.prepareChartData(data, specData);
+            const { chartData, metadata } = this.prepareChartData(data, specData);
             this.charts[chartId].chart.data = chartData;
+            this.charts[chartId].metadata = metadata;
             this.charts[chartId].chart.update();
             
             // Cp 뱃지 업데이트
