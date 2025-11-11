@@ -359,6 +359,8 @@ def create_spec(db: Session, spec_data: spec.SpecCreate):
         target_id=spec_data.target_id,
         lsl=spec_data.lsl,
         usl=spec_data.usl,
+        lcl=spec_data.lcl,
+        ucl=spec_data.ucl,
         reason=spec_data.reason,
         is_active=True
     )
@@ -398,8 +400,10 @@ def update_spec(db: Session, spec_id: int, spec_data: spec.SpecCreate):
         db_spec.target_id = spec_data.target_id
         db_spec.lsl = spec_data.lsl
         db_spec.usl = spec_data.usl
+        db_spec.lcl = spec_data.lcl
+        db_spec.ucl = spec_data.ucl
         db_spec.reason = spec_data.reason
-        
+
         db.commit()
         db.refresh(db_spec)
     
