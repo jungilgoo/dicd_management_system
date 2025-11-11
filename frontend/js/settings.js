@@ -265,14 +265,16 @@
         
         // 폼 초기화
         document.getElementById('spec-form').reset();
-        
+
         // 수정 모드인 경우 기존 값 설정
         if (spec) {
             document.getElementById('spec-lsl').value = spec.lsl;
             document.getElementById('spec-usl').value = spec.usl;
+            document.getElementById('spec-lcl').value = spec.lcl;
+            document.getElementById('spec-ucl').value = spec.ucl;
             document.getElementById('spec-reason').value = spec.reason || '';
         }
-        
+
         // 모달 표시
         $('#spec-modal').modal('show');
     }
@@ -282,28 +284,37 @@
         // 폼 유효성 검사
         const lsl = parseFloat(document.getElementById('spec-lsl').value);
         const usl = parseFloat(document.getElementById('spec-usl').value);
+        const lcl = parseFloat(document.getElementById('spec-lcl').value);
+        const ucl = parseFloat(document.getElementById('spec-ucl').value);
         const reason = document.getElementById('spec-reason').value;
-        
-        if (isNaN(lsl) || isNaN(usl)) {
-            alert('LSL과 USL을 올바르게 입력하세요.');
+
+        if (isNaN(lsl) || isNaN(usl) || isNaN(lcl) || isNaN(ucl)) {
+            alert('모든 값을 올바르게 입력하세요.');
             return;
         }
-        
+
         if (lsl >= usl) {
             alert('LSL은 USL보다 작아야 합니다.');
             return;
         }
-        
+
+        if (lcl >= ucl) {
+            alert('LCL은 UCL보다 작아야 합니다.');
+            return;
+        }
+
         try {
             // 저장 버튼 비활성화
             document.getElementById('save-spec-btn').disabled = true;
             document.getElementById('save-spec-btn').innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> 저장 중...';
-            
+
             // API 요청 데이터
             const specData = {
                 target_id: selectedTargetId,
                 lsl: lsl,
                 usl: usl,
+                lcl: lcl,
+                ucl: ucl,
                 reason: reason
             };
             

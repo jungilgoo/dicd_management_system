@@ -56,11 +56,13 @@ class Spec(Base):
     target_id = Column(Integer, ForeignKey("targets.id"), nullable=False)
     lsl = Column(Float, nullable=False)  # 하한 규격 한계
     usl = Column(Float, nullable=False)  # 상한 규격 한계
+    lcl = Column(Float, nullable=False)  # 하한 관리 한계 (Lower Control Limit)
+    ucl = Column(Float, nullable=False)  # 상한 관리 한계 (Upper Control Limit)
     is_active = Column(Boolean, default=True)  # 현재 활성화된 SPEC인지 여부
     reason = Column(String(255), nullable=True)  # 변경 사유
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # 관계 설정
     target = relationship("Target", back_populates="specs")
 

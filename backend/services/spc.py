@@ -184,15 +184,31 @@ def analyze_spc(db: Session, target_id: int, days: int = 30, start_date: Optiona
     values = [m.avg_value for m in measurements]
     dates = [m.created_at for m in measurements]
     lot_nos = [m.lot_no for m in measurements]  # LOT NO 추출
-    
-    # 관리 한계선 계산
-    control_limits = calculate_control_limits(values)
-    
+
+    # SPEC에서 UCL/LCL 가져오기 (고정값)
+    active_spec = db.query(models.Spec).filter(
+        models.Spec.target_id == target_id,
+        models.Spec.is_active == True
+    ).first()
+
+    # 관리 한계선 설정
+    if active_spec and active_spec.ucl and active_spec.lcl:
+        # Spec에 고정값이 있으면 사용
+        cl = np.mean(values)  # 중심선은 데이터 평균값
+        control_limits = {
+            "cl": round(cl, 3),
+            "ucl": active_spec.ucl,
+            "lcl": active_spec.lcl
+        }
+    else:
+        # 고정값이 없으면 자동 계산 (하위 호환성)
+        control_limits = calculate_control_limits(values)
+
     # 패턴 감지와 LOT NO 연결
     patterns = []
     if control_limits["cl"] is not None:
         patterns = detect_nelson_rules(values, control_limits["cl"], control_limits["ucl"], control_limits["lcl"], lot_nos)
-        
+
         # 패턴에 LOT NO 정보 추가
         for pattern in patterns:
             pos = pattern.get("position", 0)
@@ -224,14 +240,7 @@ def analyze_spc(db: Session, target_id: int, days: int = 30, start_date: Optiona
                 lot_nos
             )
             position_patterns[position] = pos_patterns
-            
-    
-    # SPEC 가져오기
-    active_spec = db.query(models.Spec).filter(
-        models.Spec.target_id == target_id,
-        models.Spec.is_active == True
-    ).first()
-    
+
     # 결과 딕셔너리 초기화
     result = {
         "target_id": target_id,
