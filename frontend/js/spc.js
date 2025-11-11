@@ -1611,6 +1611,12 @@
         if (dataSection) {
             dataSection.style.display = 'none';
         }
+
+        // 차트 데이터 보기 버튼 다시 표시
+        const showBtn = document.getElementById('show-data-btn');
+        if (showBtn) {
+            showBtn.style.display = 'inline-block';
+        }
     }
 
     // 관리도 차트를 다운로드하는 함수
