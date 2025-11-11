@@ -38,6 +38,21 @@ class API {
         };
     }
 
+    // 캐시 무효화 (특정 엔드포인트의 모든 캐시 삭제)
+    clearCache(endpoint = null) {
+        if (endpoint) {
+            // 특정 엔드포인트 캐시만 삭제
+            Object.keys(this.cache.data).forEach(key => {
+                if (key.startsWith(endpoint + ':')) {
+                    delete this.cache.data[key];
+                }
+            });
+        } else {
+            // 모든 캐시 삭제
+            this.cache.data = {};
+        }
+    }
+
     // GET 요청 (수정된 버전)
     async get(endpoint, params = {}) {
         // 캐시에서 먼저 확인
@@ -127,6 +142,10 @@ class API {
             
             const result = await response.json();
             console.log('응답 데이터:', result);
+
+            // POST 성공 시 해당 엔드포인트 캐시 무효화
+            this.clearCache(endpoint);
+
             return result;
         } catch (error) {
             console.error('API POST 요청 오류:', error);
@@ -146,12 +165,18 @@ class API {
                 },
                 body: JSON.stringify(data)
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-            
-            return await response.json();
+
+            const result = await response.json();
+
+            // PUT 성공 시 기본 엔드포인트 캐시 무효화 (/api/specs/123 → /api/specs)
+            const baseEndpoint = endpoint.split('/').slice(0, 3).join('/'); // /api/specs
+            this.clearCache(baseEndpoint);
+
+            return result;
         } catch (error) {
             console.error('API PUT 요청 오류:', error);
             throw error;
@@ -164,12 +189,18 @@ class API {
             const response = await fetch(`${this.baseUrl}${endpoint}`, {
                 method: 'DELETE'
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-            
-            return await response.json();
+
+            const result = await response.json();
+
+            // DELETE 성공 시 기본 엔드포인트 캐시 무효화 (/api/specs/123 → /api/specs)
+            const baseEndpoint = endpoint.split('/').slice(0, 3).join('/'); // /api/specs
+            this.clearCache(baseEndpoint);
+
+            return result;
         } catch (error) {
             console.error('API DELETE 요청 오류:', error);
             throw error;
