@@ -1,5 +1,19 @@
 // 추이 분석 페이지 모듈
 (function() {
+    'use strict';
+
+    // Chart.js annotation 플러그인 우선 등록
+    try {
+        if (typeof Chart !== 'undefined' && typeof window.chartjsPluginAnnotation !== 'undefined') {
+            Chart.register(window.chartjsPluginAnnotation);
+            console.log('[Trend] Annotation 플러그인 등록 완료');
+        } else {
+            console.warn('[Trend] Annotation 플러그인을 찾을 수 없습니다. Chart:', typeof Chart, 'Plugin:', typeof window.chartjsPluginAnnotation);
+        }
+    } catch (error) {
+        console.error('[Trend] Annotation 플러그인 등록 실패:', error);
+    }
+
     // 전역 변수
     let trendChart = null;
     let selectedProductGroupId = null;
@@ -1177,9 +1191,18 @@
         `;
     }
 
-    // Chart.js annotation 플러그인 등록 (v3.x용)
-    if (window['chartjs-plugin-annotation']) {
-        Chart.register(window['chartjs-plugin-annotation']);
+    // Chart.js annotation 플러그인 등록 (v3.x용) - 백업
+    // 이미 IIFE 시작 부분에서 등록했으므로 여기서는 재확인만 수행
+    try {
+        if (typeof Chart !== 'undefined' && typeof window.chartjsPluginAnnotation !== 'undefined') {
+            Chart.register(window.chartjsPluginAnnotation);
+            console.log('[Trend] Annotation 플러그인 재등록 확인');
+        } else {
+            console.warn('[Trend] Annotation 플러그인 미등록 상태');
+        }
+    } catch (error) {
+        // 이미 등록된 경우 에러 발생 가능 (무시)
+        console.log('[Trend] Annotation 플러그인 이미 등록됨');
     }
 
     // 이벤트 리스너 등록

@@ -56,7 +56,31 @@ function setupEventHandlers() {
 
     // 목록 새로고침 버튼
     $('#refresh-list-btn').click(function() {
-        loadChangePoints();
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+
+        console.log('[ChangePoints] 새로고침 버튼 클릭됨');
+        console.log('[ChangePoints] 현재 변경점 개수:', changePoints.length);
+
+        // 버튼 비활성화 및 로딩 표시
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> 새로고침 중...');
+
+        loadChangePoints()
+            .then(() => {
+                // 성공 시 일시적으로 성공 표시
+                $btn.html('<i class="fas fa-check mr-1"></i> 완료');
+                setTimeout(() => {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }, 1000);
+            })
+            .catch((error) => {
+                // 에러 시 에러 표시
+                console.error('[ChangePoints] 새로고침 실패:', error);
+                $btn.html('<i class="fas fa-exclamation-triangle mr-1"></i> 실패');
+                setTimeout(() => {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }, 2000);
+            });
     });
 
     // 수정 모달의 제품군 선택 변경
@@ -189,12 +213,20 @@ async function loadChangePoints() {
     try {
         showLoadingInTable();
         const response = await api.get(`${api.endpoints.CHANGE_POINTS}/with-details`);
+
+        if (!response) {
+            throw new Error('응답 데이터가 없습니다');
+        }
+
         changePoints = response;
+        console.log(`[ChangePoints] 변경점 ${changePoints.length}개 로드 완료`);
         renderChangePointsTable();
+
     } catch (error) {
-        console.error('변경점 목록 로드 실패:', error);
-        showError('변경점 목록을 불러오는데 실패했습니다.');
+        console.error('[ChangePoints] 변경점 목록 로드 실패:', error);
+        showError(`변경점 목록을 불러오는데 실패했습니다: ${error.message}`);
         showEmptyTable();
+        throw error; // Promise rejection을 위해 에러 전파
     }
 }
 
