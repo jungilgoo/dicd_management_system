@@ -330,14 +330,14 @@
                 await api.createSpec(specData);
             }
 
-            // SPEC 정보 다시 로드 (모달 닫기 전에 실행)
-            await loadSpecInfo(selectedTargetId);
-
-            // 모달 닫기
+            // 모달 닫기 (먼저 실행)
             $('#spec-modal').modal('hide');
 
             // 성공 메시지
             alert(isEditMode ? 'SPEC이 성공적으로 수정되었습니다.' : 'SPEC이 성공적으로 추가되었습니다.');
+
+            // SPEC 정보 다시 로드 (모달 닫은 후)
+            await loadSpecInfo(selectedTargetId);
             
         } catch (error) {
             console.error('SPEC 저장 실패:', error);
