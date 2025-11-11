@@ -157,6 +157,8 @@
                         <tr>
                             <th>LSL</th>
                             <th>USL</th>
+                            <th>LCL</th>
+                            <th>UCL</th>
                             <th>활성화 상태</th>
                             <th>변경 사유</th>
                             <th>등록일</th>
@@ -165,14 +167,16 @@
                     </thead>
                     <tbody>
             `;
-            
+
             specs.forEach(spec => {
                 const isActive = spec.is_active;
-                
+
                 specListHtml += `
                 <tr>
                     <td>${spec.lsl.toFixed(3)}</td>
                     <td>${spec.usl.toFixed(3)}</td>
+                    <td>${spec.lcl.toFixed(3)}</td>
+                    <td>${spec.ucl.toFixed(3)}</td>
                     <td>${isActive ? '<span class="badge badge-success">활성</span>' : '<span class="badge badge-secondary">비활성</span>'}</td>
                     <td>${spec.reason || '-'}</td>
                     <td>${new Date(spec.created_at).toLocaleDateString()}</td>
@@ -325,13 +329,13 @@
                 // 새 SPEC 추가
                 await api.createSpec(specData);
             }
-            
+
+            // SPEC 정보 다시 로드 (모달 닫기 전에 실행)
+            await loadSpecInfo(selectedTargetId);
+
             // 모달 닫기
             $('#spec-modal').modal('hide');
-            
-            // SPEC 정보 다시 로드
-            await loadSpecInfo(selectedTargetId);
-            
+
             // 성공 메시지
             alert(isEditMode ? 'SPEC이 성공적으로 수정되었습니다.' : 'SPEC이 성공적으로 추가되었습니다.');
             
