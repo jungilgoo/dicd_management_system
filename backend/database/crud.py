@@ -93,7 +93,7 @@ def get_targets(db: Session, process_id: int = None):
     query = db.query(models.Target)
     if process_id:
         query = query.filter(models.Target.process_id == process_id)
-    return query.all()
+    return query.order_by(models.Target.id).all()
 
 def get_target(db: Session, target_id: int):
     return db.query(models.Target).filter(models.Target.id == target_id).first()
