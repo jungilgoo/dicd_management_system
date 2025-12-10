@@ -82,17 +82,20 @@ def create_target(db: Session, target: target.TargetCreate):
     db_target = models.Target(
         process_id=target.process_id,
         name=target.name,
-        description=target.description
+        description=target.description,
+        process_type=target.process_type
     )
     db.add(db_target)
     db.commit()
     db.refresh(db_target)
     return db_target
 
-def get_targets(db: Session, process_id: int = None):
+def get_targets(db: Session, process_id: int = None, process_type: str = 'PHOTO'):
     query = db.query(models.Target)
     if process_id:
         query = query.filter(models.Target.process_id == process_id)
+    if process_type:
+        query = query.filter(models.Target.process_type == process_type)
     return query.order_by(models.Target.id).all()
 
 def get_target(db: Session, target_id: int):
@@ -104,6 +107,7 @@ def update_target(db: Session, target_id: int, target: target.TargetCreate):
         db_target.process_id = target.process_id
         db_target.name = target.name
         db_target.description = target.description
+        db_target.process_type = target.process_type
         db.commit()
         db.refresh(db_target)
     return db_target
@@ -190,22 +194,26 @@ def create_measurement(db: Session, measurement_data: measurement.MeasurementCre
 # backend/database/crud.py 파일의 get_measurements 함수 업데이트
 
 def get_measurements(db: Session, target_id: int = None, process_id: int = None,
-                     product_group_id: int = None, device: str = None, 
-                     lot_no: str = None, start_date: datetime = None, 
+                     product_group_id: int = None, device: str = None,
+                     lot_no: str = None, start_date: datetime = None,
                      end_date: datetime = None, equipment_id: int = None,
-                     keyword: str = None):
-    
-    # 조인 쿼리를 위한 설정
+                     keyword: str = None, process_type: str = 'PHOTO'):
+
+    # 조인 쿼리를 위한 설정 (process_type 필터링을 위해 항상 Target과 조인)
     query = db.query(models.Measurement)
-    
-    # 제품군 또는 공정으로 필터링이 필요한 경우 조인 수행
+    query = query.join(models.Target, models.Measurement.target_id == models.Target.id)
+
+    # process_type 필터 적용
+    if process_type:
+        query = query.filter(models.Target.process_type == process_type)
+
+    # 제품군 또는 공정으로 필터링이 필요한 경우 추가 조인 수행
     if product_group_id or process_id:
-        query = query.join(models.Target, models.Measurement.target_id == models.Target.id)
         query = query.join(models.Process, models.Target.process_id == models.Process.id)
-        
+
         if product_group_id:
             query = query.filter(models.Process.product_group_id == product_group_id)
-        
+
         if process_id:
             query = query.filter(models.Target.process_id == process_id)
     
@@ -461,11 +469,13 @@ def _normalize_equipment_type(raw_type: str) -> str:
     return normalized
 
 # 장비 CRUD 함수 (crud.py 파일에 추가)
-def get_equipments(db: Session, type: str = None):
+def get_equipments(db: Session, type: str = None, process_type: str = 'PHOTO'):
     """장비 목록 조회 (타입별 필터링 가능)"""
     query = db.query(models.Equipment)
     if type:
         query = query.filter(models.Equipment.type == _normalize_equipment_type(type))
+    if process_type:
+        query = query.filter(models.Equipment.process_type == process_type)
     return query.all()
 
 def get_equipment(db: Session, equipment_id: int):
@@ -479,11 +489,12 @@ def create_equipment(db: Session, equipment: equipment.EquipmentCreate):
     normalized_type = _normalize_equipment_type(equipment.type)
     if normalized_type not in valid_types:
         raise ValueError(f"Invalid equipment type. Must be one of: {', '.join(valid_types)}")
-    
+
     db_equipment = models.Equipment(
         name=equipment.name,
         type=normalized_type,
         description=equipment.description,
+        process_type=equipment.process_type,
         is_active=equipment.is_active
     )
     db.add(db_equipment)
@@ -494,19 +505,20 @@ def create_equipment(db: Session, equipment: equipment.EquipmentCreate):
 def update_equipment(db: Session, equipment_id: int, equipment: equipment.EquipmentCreate):
     """장비 수정"""
     db_equipment = get_equipment(db, equipment_id=equipment_id)
-    
+
     if db_equipment:
         # 타입 유효성 검사
         valid_types = ['코팅', '노광', '현상', 'PR_Thickness']
         normalized_type = _normalize_equipment_type(equipment.type)
         if normalized_type not in valid_types:
             raise ValueError(f"Invalid equipment type. Must be one of: {', '.join(valid_types)}")
-        
+
         db_equipment.name = equipment.name
         db_equipment.type = normalized_type
         db_equipment.description = equipment.description
+        db_equipment.process_type = equipment.process_type
         db_equipment.is_active = equipment.is_active
-        
+
         db.commit()
         db.refresh(db_equipment)
     return db_equipment
