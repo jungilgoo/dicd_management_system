@@ -40,9 +40,10 @@ class Target(Base):
     process_id = Column(Integer, ForeignKey("processes.id"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(String(255), nullable=True)
+    process_type = Column(String(20), nullable=False, server_default='PHOTO', index=True)  # 공정 타입 (PHOTO, ETCH)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # 관계 설정
     process = relationship("Process", back_populates="targets")
     specs = relationship("Spec", back_populates="target", cascade="all, delete-orphan")
@@ -74,10 +75,11 @@ class Equipment(Base):
     name = Column(String(100), nullable=False)
     type = Column(String(50), nullable=False)  # 코팅, 노광, 현상 등
     description = Column(String(255), nullable=True)
+    process_type = Column(String(20), nullable=False, server_default='PHOTO', index=True)  # 공정 타입 (PHOTO, ETCH)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # 관계 설정
     coating_measurements = relationship("Measurement", foreign_keys="Measurement.coating_equipment_id", back_populates="coating_equipment")
     exposure_measurements = relationship("Measurement", foreign_keys="Measurement.exposure_equipment_id", back_populates="exposure_equipment")

@@ -248,27 +248,28 @@
 
 ---
 
-### **Phase 2: 백엔드 모델 및 스키마 수정** (구조 변경)
+### **Phase 2: 백엔드 모델 및 스키마 수정** (구조 변경) - ✅ 완료
 **목표**: 코드 레벨 process_type 지원 및 하위 호환성 검증
 
-1. **모델 수정**
+1. **모델 수정** ✅ 완료
    - `backend/database/models.py`
-   - Target 클래스에 process_type 필드 추가
-   - Equipment 클래스에 process_type 필드 추가
+   - Target 클래스에 process_type 필드 추가 (String(20), server_default='PHOTO', index=True)
+   - Equipment 클래스에 process_type 필드 추가 (String(20), server_default='PHOTO', index=True)
 
-2. **스키마 수정**
+2. **스키마 수정** ✅ 완료
    - `backend/schemas/target.py` - process_type 필드 추가 (기본값: 'PHOTO')
    - `backend/schemas/equipment.py` - process_type 필드 추가 (기본값: 'PHOTO')
 
-3. **테스트 항목**
-   - ✅ 서버 재시작 성공
-   - ✅ API 문서 (/docs) 정상 로드
-   - ✅ PHOTO 시스템 모든 기능 정상 동작
-   - ✅ 기존 API 호출 (process_type 없이) 정상 작동
+3. **테스트 항목** - 서버 배포 후 테스트 예정
+   - ⏳ 서버 재시작 성공
+   - ⏳ API 문서 (/docs) 정상 로드
+   - ⏳ PHOTO 시스템 모든 기능 정상 동작
+   - ⏳ 기존 API 호출 (process_type 없이) 정상 작동
 
 4. **완료 조건**
-   - 서버에서 PHOTO 시스템 완전히 정상 동작
-   - 스키마 변경 적용 확인
+   - 코드 수정 완료
+   - GitHub push 완료
+   - 서버 배포 및 테스트 대기
 
 ---
 
