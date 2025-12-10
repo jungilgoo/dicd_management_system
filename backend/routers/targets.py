@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from ..database import crud, models, database
 from ..schemas import target
 
@@ -18,9 +18,11 @@ def create_target(
 
 @router.get("/", response_model=List[target.Target])
 def read_targets(
-    process_id: int = None, db: Session = Depends(database.get_db)
+    process_id: Optional[int] = None,
+    process_type: str = Query('PHOTO', description="공정 타입 (PHOTO, ETCH)"),
+    db: Session = Depends(database.get_db)
 ):
-    targets = crud.get_targets(db, process_id=process_id)
+    targets = crud.get_targets(db, process_id=process_id, process_type=process_type)
     return targets
 
 @router.get("/{target_id}", response_model=target.Target)

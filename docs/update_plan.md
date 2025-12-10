@@ -311,24 +311,27 @@
 
 ---
 
-### **Phase 4: Target API 수정** (API 레이어 - 1단계)
+### **Phase 4: Target API 수정** (API 레이어 - 1단계) - ✅ 완료
 **목표**: Target 관련 API에 process_type 지원 추가
 
-1. **API 라우터 수정**
-   - `backend/routers/targets.py`
-   - GET /api/targets - process_type 쿼리 파라미터 (기본값: 'PHOTO')
-   - POST /api/targets - process_type 필드 지원
-   - PUT /api/targets/{id} - process_type 필드 지원
+1. **API 라우터 수정** ✅ 완료
+   - `backend/routers/targets.py` 수정 완료
+   - Query, Optional import 추가
+   - GET /api/targets - process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+   - POST /api/targets - 스키마 기본값으로 process_type 자동 지원
+   - PUT /api/targets/{id} - 스키마 기본값으로 process_type 자동 지원
 
-2. **테스트 항목**
-   - ✅ GET /api/targets (파라미터 없음) → PHOTO 타겟만 조회
-   - ✅ GET /api/targets?process_type=PHOTO → PHOTO 타겟 조회
-   - ✅ POST /api/targets (process_type 없음) → PHOTO로 생성
-   - ✅ PHOTO 시스템 타겟 관련 기능 모두 정상
+2. **테스트 항목** (대기중 - 서버 배포 후 테스트 예정)
+   - ⏳ GET /api/targets (파라미터 없음) → PHOTO 타겟만 조회
+   - ⏳ GET /api/targets?process_type=PHOTO → PHOTO 타겟 조회
+   - ⏳ POST /api/targets (process_type 없음) → PHOTO로 생성
+   - ⏳ PHOTO 시스템 타겟 관련 기능 모두 정상
 
 3. **완료 조건**
-   - 서버에서 PHOTO 타겟 관리 완전히 정상
-   - process_type 파라미터 동작 검증
+   - 코드 수정 완료 ✅
+   - GitHub push 필요 ⏳
+   - 서버 배포 및 테스트 필요 ⏳
+   - **코드 수정 완료! (2024-12-10)** - 서버 테스트 대기
 
 ---
 
