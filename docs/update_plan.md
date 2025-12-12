@@ -337,24 +337,28 @@
 
 ---
 
-### **Phase 5: Equipment API 수정** (API 레이어 - 2단계)
+### **Phase 5: Equipment API 수정** (API 레이어 - 2단계) - ✅ 완료
 **목표**: Equipment 관련 API에 process_type 지원 추가
 
-1. **API 라우터 수정**
-   - `backend/routers/equipments.py`
-   - GET /api/equipments - process_type 쿼리 파라미터 (기본값: 'PHOTO')
-   - POST /api/equipments - process_type 필드 지원
-   - PUT /api/equipments/{id} - process_type 필드 지원
+1. **API 라우터 수정** ✅ 완료
+   - `backend/routers/equipments.py` 수정 완료
+   - GET /api/equipments - process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+   - GET /api/equipments/by-type/{equipment_type} - process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+   - POST /api/equipments - 스키마 기본값으로 process_type 자동 지원
+   - PUT /api/equipments/{id} - 스키마 기본값으로 process_type 자동 지원
 
-2. **테스트 항목**
-   - ✅ GET /api/equipments (파라미터 없음) → PHOTO 장비만 조회
-   - ✅ GET /api/equipments?type=코팅 → PHOTO 코팅 장비 조회
-   - ✅ POST /api/equipments (process_type 없음) → PHOTO로 생성
-   - ✅ PHOTO 시스템 장비 관련 기능 모두 정상
+2. **테스트 항목** (서버 테스트 필요)
+   - ⏳ GET /api/equipments (파라미터 없음) → PHOTO 장비만 조회
+   - ⏳ GET /api/equipments?type=코팅 → PHOTO 코팅 장비 조회
+   - ⏳ GET /api/equipments?process_type=ETCH → 빈 배열 [] (ETCH 장비 없음)
+   - ⏳ POST /api/equipments (process_type 없음) → PHOTO로 생성
+   - ⏳ PHOTO 시스템 장비 관련 기능 모두 정상
+   - ⏳ 에러 없음
 
 3. **완료 조건**
-   - 서버에서 PHOTO 장비 관리 완전히 정상
-   - process_type 파라미터 동작 검증
+   - 코드 수정 완료 ✅
+   - GitHub push 필요 ⏳
+   - 서버 배포 및 테스트 필요 ⏳
 
 ---
 

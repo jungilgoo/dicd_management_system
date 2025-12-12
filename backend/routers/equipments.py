@@ -22,18 +22,20 @@ def create_equipment(
 @router.get("/", response_model=List[equipment.Equipment])
 def read_equipments(
     type: Optional[str] = Query(None, description="장비 타입으로 필터링 (코팅, 노광, 현상)"),
+    process_type: str = Query("PHOTO", description="공정 타입으로 필터링 (PHOTO, ETCH)"),
     db: Session = Depends(database.get_db)
 ):
-    equipments = crud.get_equipments(db, type=type)
+    equipments = crud.get_equipments(db, type=type, process_type=process_type)
     return equipments
 
 @router.get("/by-type/{equipment_type}", response_model=List[equipment.Equipment])
 def get_equipments_by_type(
-    equipment_type: str, 
+    equipment_type: str,
+    process_type: str = Query("PHOTO", description="공정 타입으로 필터링 (PHOTO, ETCH)"),
     db: Session = Depends(database.get_db)
 ):
     """특정 타입의 장비 목록 조회"""
-    equipments = crud.get_equipments(db, type=equipment_type)
+    equipments = crud.get_equipments(db, type=equipment_type, process_type=process_type)
     return equipments
 
 @router.get("/{equipment_id:int}", response_model=equipment.Equipment)
