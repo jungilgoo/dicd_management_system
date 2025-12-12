@@ -409,26 +409,31 @@
 
 ---
 
-### **Phase 7: ETCH 첫 타겟/장비 생성 테스트** (데이터 검증)
+### **Phase 7: ETCH 첫 타겟/장비 생성 테스트** (데이터 검증) - ✅ 완료
 **목표**: ETCH 데이터 생성 가능 여부 및 PHOTO와의 분리 검증
 
-1. **Postman/curl 테스트**
-   - POST /api/targets - process_type='ETCH'로 타겟 생성
-   - POST /api/equipments - process_type='ETCH'로 장비 생성
-   - GET /api/targets?process_type=ETCH - ETCH 타겟만 조회 확인
+1. **Swagger UI 테스트** ✅ 완료
+   - POST /api/targets - process_type='ETCH'로 타겟 생성 ✅
+     - 생성된 타겟: id=61, name="ETCH-테스트타겟-1", process_type='ETCH'
+   - POST /api/equipments - process_type='ETCH'로 장비 생성 ✅
+     - 생성된 장비: id=25, name="ETCH-장비-1", process_type='ETCH'
+     - 참고: type="코팅" 사용 (ETCH 전용 타입은 나중에 추가 예정)
+   - GET /api/targets?process_type=ETCH - ETCH 타겟만 조회 확인 ✅
 
-2. **테스트 항목**
-   - ✅ ETCH 타겟 생성 성공
-   - ✅ ETCH 장비 생성 성공
+2. **테스트 항목** ✅ 모두 통과
+   - ✅ ETCH 타겟 생성 성공 (id: 61)
+   - ✅ ETCH 장비 생성 성공 (id: 25)
    - ✅ GET /api/targets (파라미터 없음) → PHOTO만 조회 (ETCH 안보임)
    - ✅ GET /api/targets?process_type=PHOTO → PHOTO만 조회
-   - ✅ GET /api/targets?process_type=ETCH → ETCH만 조회
-   - ✅ PHOTO/ETCH 데이터 완전 분리 확인
+   - ✅ GET /api/targets?process_type=ETCH → ETCH만 조회 (id:61만 보임)
+   - ✅ GET /api/equipments?process_type=ETCH → ETCH 장비만 조회 (id:25만 보임)
+   - ✅ PHOTO/ETCH 데이터 100% 완전 분리 확인
 
-3. **완료 조건**
-   - PHOTO/ETCH 데이터 분리 검증 완료
-   - 간섭 없음 확인
-   - **프론트엔드 작업 시작 가능**
+3. **완료 조건** ✅ 충족
+   - PHOTO/ETCH 데이터 분리 검증 완료 ✅
+   - 간섭 없음 확인 ✅
+   - **백엔드 작업 완전 완료! 프론트엔드 작업 시작 가능** ✅
+   - **Phase 7 완료! (2025-12-12)**
 
 ---
 
