@@ -466,21 +466,35 @@
 
 ---
 
-### **Phase 9: ETCH 설정 페이지** (프론트엔드 - 2단계)
+### **Phase 9: ETCH 설정 페이지** (프론트엔드 - 2단계) - ✅ 완료
 **목표**: ETCH 타겟/장비 설정 기능 구현
 
-1. **파일 생성**
-   - `frontend/pages/etch/settings.html`
-   - API 호출에 process_type='ETCH' 추가
+1. **파일 생성** ✅ 완료
+   - `frontend/pages/etch/settings.html` 생성 완료 ✅
+     - 타이틀 변경: "설정 - ETCH 공정 관리 시스템"
+     - CSS/JS 경로 수정: ../ → ../../
+     - 브랜드 링크: ../../etch_index.html
+     - 사이드바 링크: 모두 etch/ 경로로 수정
+     - PR Thickness 메뉴 제거
+     - "PHOTO 공정으로 전환" 버튼 추가
+     - 푸터 텍스트: "ETCH 공정 관리 시스템"
+   - `frontend/js/etch_settings.js` 생성 완료 ✅
+     - api.getTargets(processId, 'ETCH') 수정
+     - loadEquipments(): process_type=ETCH 필터 추가
+     - saveEquipment(): process_type: 'ETCH' 추가
+     - saveTarget(): process_type: 'ETCH' 추가
 
-2. **테스트 항목**
-   - ✅ ETCH 타겟 생성/수정/삭제
-   - ✅ ETCH 장비 생성/수정/삭제
-   - ✅ PHOTO 데이터와 섞이지 않음 확인
+2. **테스트 항목** (서버 테스트 필요)
+   - ⏳ ETCH 설정 페이지 접근 (http://192.168.32.43:8080/pages/etch/settings.html)
+   - ⏳ ETCH 타겟 생성/수정/삭제
+   - ⏳ ETCH 장비 생성/수정/삭제
+   - ⏳ PHOTO 데이터와 섞이지 않음 확인
+   - ⏳ SPEC 설정 정상 동작
 
 3. **완료 조건**
-   - ETCH 기본 설정 가능
-   - PHOTO 시스템 정상 동작 확인
+   - 코드 수정 완료 ✅
+   - GitHub push 필요 ⏳
+   - 서버 배포 및 테스트 필요 ⏳
 
 ---
 
