@@ -25,20 +25,22 @@ def create_change_point(
 def read_change_points(
     skip: int = Query(0, ge=0, description="Skip records"),
     limit: int = Query(100, ge=1, le=1000, description="Limit records"),
+    process_type: str = Query("PHOTO", description="공정 타입으로 필터링 (PHOTO, ETCH)"),
     db: Session = Depends(database.get_db)
 ):
     """변경점 목록을 조회합니다."""
-    return crud.get_change_points(db, skip=skip, limit=limit)
+    return crud.get_change_points(db, skip=skip, limit=limit, process_type=process_type)
 
 
 @router.get("/with-details")
 def read_change_points_with_details(
     skip: int = Query(0, ge=0, description="Skip records"),
     limit: int = Query(100, ge=1, le=1000, description="Limit records"),
+    process_type: str = Query("PHOTO", description="공정 타입으로 필터링 (PHOTO, ETCH)"),
     db: Session = Depends(database.get_db)
 ):
     """제품군, 공정, 타겟 정보를 포함한 변경점 목록을 조회합니다."""
-    change_points = crud.get_change_points_with_details(db, skip=skip, limit=limit)
+    change_points = crud.get_change_points_with_details(db, skip=skip, limit=limit, process_type=process_type)
     
     result = []
     for cp in change_points:

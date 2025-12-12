@@ -90,7 +90,7 @@
             document.getElementById('spec-target').innerHTML = '<option value="">로딩 중...</option>';
             document.getElementById('spec-target').disabled = true;
             
-            const targets = await api.getTargets(processId);
+            const targets = await api.getTargets(processId, 'PHOTO');
             
             if (!targets || targets.length === 0) {
                 document.getElementById('spec-target').innerHTML = '<option value="">타겟 없음</option>';

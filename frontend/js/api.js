@@ -219,8 +219,10 @@ class API {
     }
     
     // 타겟 관련 메서드
-    async getTargets(processId = null) {
-        const params = processId ? { process_id: processId } : {};
+    async getTargets(processId = null, processType = 'PHOTO') {
+        const params = {};
+        if (processId) params.process_id = processId;
+        if (processType) params.process_type = processType;
         return this.get(this.endpoints.TARGETS, params);
     }
     

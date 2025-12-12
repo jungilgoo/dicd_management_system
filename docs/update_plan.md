@@ -363,27 +363,48 @@
 
 ---
 
-### **Phase 6: 연관 API 수정** (API 레이어 - 3단계)
-**목표**: 분석/보고서 등 연관 API에 process_type 지원 추가
+### **Phase 6: 최소 수정 (옵션 A)** (API 레이어 - 3단계) - ✅ 완료
+**목표**: PHOTO/ETCH 데이터 100% 안전 분리 (최소 변경)
 
-1. **API 라우터 수정**
-   - `backend/routers/statistics.py` - process_type 파라미터 추가
-   - `backend/routers/spc.py` - process_type 파라미터 추가
-   - `backend/routers/reports.py` - process_type 파라미터 추가
-   - `backend/routers/distribution.py` - process_type 파라미터 추가
-   - `backend/routers/bulk_upload.py` - process_type 파라미터 추가
-   - `backend/routers/change_points.py` - process_type 파라미터 추가
+**전략 결정**: sc:analyze 분석 결과, 대부분 API는 target_id로 자동 구분되므로 최소 수정만 필요
 
-2. **테스트 항목**
-   - ✅ PHOTO 추이 분석 정상
-   - ✅ PHOTO SPC 분석 정상
-   - ✅ PHOTO 보고서 생성 정상
-   - ✅ PHOTO 데이터 업로드 정상
-   - ✅ 모든 분석 기능이 PHOTO 데이터만 처리
+1. **백엔드 수정** ✅ 완료
+   - `backend/database/crud.py` ✅
+     - get_change_points() - process_type 파라미터 추가 (기본값: 'PHOTO')
+     - get_change_points_with_details() - process_type 파라미터 추가 (기본값: 'PHOTO')
+   - `backend/routers/change_points.py` ✅
+     - GET / - process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+     - GET /with-details - process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
 
-3. **완료 조건**
-   - 서버에서 PHOTO 시스템 모든 분석 기능 정상
-   - **백엔드 작업 완료**
+2. **프론트엔드 수정** ✅ 완료
+   - `frontend/js/api.js` - getTargets(processId, processType='PHOTO') 함수 수정 ✅
+   - **모든 getTargets() 호출부 수정 (11개 파일, 14개 호출)** ✅
+     - boxplot.js (1개)
+     - change_points.js (2개)
+     - bulk_upload.js (1개)
+     - distribution.js (1개)
+     - dashboard.js (2개)
+     - settings.js (1개)
+     - view.js (1개)
+     - input.js (1개)
+     - trend_report.js (2개)
+     - spc.js (1개)
+     - trend.js (1개)
+
+3. **수정하지 않은 API (자동 구분됨)** ℹ️
+   - statistics.py, spc.py, reports.py, distribution.py, bulk_upload.py
+   - **이유**: target_id로 Measurement 조회 시 Target의 process_type이 암묵적으로 구분됨
+
+4. **테스트 항목** (서버 테스트 필요)
+   - ⏳ 변경점 관리 페이지: PHOTO 변경점만 표시
+   - ⏳ 모든 타겟 선택 드롭다운: PHOTO 타겟만 표시
+   - ⏳ PHOTO 시스템 모든 기능 정상 (데이터 입력, 분석, 보고서 등)
+   - ⏳ 에러 없음
+
+5. **완료 조건**
+   - 코드 수정 완료 ✅
+   - GitHub push 필요 ⏳
+   - 서버 배포 및 테스트 필요 ⏳
 
 ---
 

@@ -161,7 +161,7 @@ async function loadProcesses(productGroupId) {
 // 타겟 목록 로드
 async function loadTargets(processId) {
     try {
-        const response = await api.getTargets(processId);
+        const response = await api.getTargets(processId, 'PHOTO');
         targets = response;
         
         const targetSelect = $('#target');
@@ -195,7 +195,7 @@ async function loadProcessesForEdit(productGroupId) {
 // 수정 모달용 타겟 로드
 async function loadTargetsForEdit(processId) {
     try {
-        const response = await api.getTargets(processId);
+        const response = await api.getTargets(processId, 'PHOTO');
         const editTargetSelect = $('#edit-target');
         editTargetSelect.empty().append('<option value="">타겟을 선택하세요</option>');
         

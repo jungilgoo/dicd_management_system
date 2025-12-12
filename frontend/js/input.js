@@ -141,7 +141,7 @@
             </div>
             `;
             
-            const targets = await api.getTargets(processId);
+            const targets = await api.getTargets(processId, 'PHOTO');
             
             if (!targets || targets.length === 0) {
                 document.getElementById('target-buttons').innerHTML = '<p class="text-danger">해당 공정에 타겟 정보가 없습니다.</p>';

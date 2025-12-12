@@ -902,20 +902,23 @@ def create_change_point(db: Session, change_point_data: change_point.ChangePoint
     return db_change_point
 
 
-def get_change_points(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.ChangePoint).order_by(models.ChangePoint.change_date.desc()).offset(skip).limit(limit).all()
+def get_change_points(db: Session, skip: int = 0, limit: int = 100, process_type: str = "PHOTO"):
+    query = db.query(models.ChangePoint).join(models.Target, models.ChangePoint.target_id == models.Target.id)
+    if process_type:
+        query = query.filter(models.Target.process_type == process_type)
+    return query.order_by(models.ChangePoint.change_date.desc()).offset(skip).limit(limit).all()
 
 
-def get_change_points_with_details(db: Session, skip: int = 0, limit: int = 100):
+def get_change_points_with_details(db: Session, skip: int = 0, limit: int = 100, process_type: str = "PHOTO"):
     from sqlalchemy.orm import joinedload
-    return (db.query(models.ChangePoint)
+    query = (db.query(models.ChangePoint)
+            .join(models.Target, models.ChangePoint.target_id == models.Target.id)
             .options(joinedload(models.ChangePoint.product_group))
             .options(joinedload(models.ChangePoint.process))
-            .options(joinedload(models.ChangePoint.target))
-            .order_by(models.ChangePoint.change_date.desc())
-            .offset(skip)
-            .limit(limit)
-            .all())
+            .options(joinedload(models.ChangePoint.target)))
+    if process_type:
+        query = query.filter(models.Target.process_type == process_type)
+    return query.order_by(models.ChangePoint.change_date.desc()).offset(skip).limit(limit).all()
 
 
 def get_change_point(db: Session, change_point_id: int):

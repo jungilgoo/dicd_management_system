@@ -168,7 +168,7 @@ function generateDistributionChartTitle() {
 // 타겟 목록 가져오기
 async function fetchTargets(processId) {
     try {
-        const targets = await api.getTargets(processId);
+        const targets = await api.getTargets(processId, 'PHOTO');
         const select = $('#target');
         
         select.find('option:not(:first)').remove();
