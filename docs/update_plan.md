@@ -347,18 +347,19 @@
    - POST /api/equipments - 스키마 기본값으로 process_type 자동 지원
    - PUT /api/equipments/{id} - 스키마 기본값으로 process_type 자동 지원
 
-2. **테스트 항목** (서버 테스트 필요)
-   - ⏳ GET /api/equipments (파라미터 없음) → PHOTO 장비만 조회
-   - ⏳ GET /api/equipments?type=코팅 → PHOTO 코팅 장비 조회
-   - ⏳ GET /api/equipments?process_type=ETCH → 빈 배열 [] (ETCH 장비 없음)
-   - ⏳ POST /api/equipments (process_type 없음) → PHOTO로 생성
-   - ⏳ PHOTO 시스템 장비 관련 기능 모두 정상
-   - ⏳ 에러 없음
+2. **테스트 항목** ✅ 모두 통과
+   - ✅ GET /api/equipments (파라미터 없음) → PHOTO 장비만 조회
+   - ✅ GET /api/equipments?type=코팅 → PHOTO 코팅 장비 조회
+   - ✅ GET /api/equipments?process_type=ETCH → 빈 배열 [] (ETCH 장비 없음)
+   - ✅ POST /api/equipments (process_type 없음) → PHOTO로 생성
+   - ✅ PHOTO 시스템 장비 관련 기능 모두 정상
+   - ✅ 에러 없음
 
-3. **완료 조건**
+3. **완료 조건** ✅ 충족
    - 코드 수정 완료 ✅
-   - GitHub push 필요 ⏳
-   - 서버 배포 및 테스트 필요 ⏳
+   - GitHub push 완료 ✅ (커밋: 5ae52f1)
+   - 서버 배포 및 테스트 완료 ✅
+   - **Phase 5 완료! (2025-12-12)**
 
 ---
 
