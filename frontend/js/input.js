@@ -140,8 +140,10 @@
                 </div>
             </div>
             `;
-            
-            const targets = await api.getTargets(processId, 'PHOTO');
+
+            // ETCH 페이지에서는 window.PROCESS_TYPE이 'ETCH'로 설정됨
+            const processType = window.PROCESS_TYPE || 'PHOTO';
+            const targets = await api.getTargets(processId, processType);
             
             if (!targets || targets.length === 0) {
                 document.getElementById('target-buttons').innerHTML = '<p class="text-danger">해당 공정에 타겟 정보가 없습니다.</p>';
@@ -254,9 +256,12 @@
             const coatingContainer = document.getElementById('coating-equipment-buttons');
             const exposureContainer = document.getElementById('exposure-equipment-buttons');
             const developmentContainer = document.getElementById('development-equipment-buttons');
-            
+
+            // ETCH 페이지에서는 window.PROCESS_TYPE이 'ETCH'로 설정됨
+            const processType = window.PROCESS_TYPE || 'PHOTO';
+
             // API 호출
-            const response = await fetch(`${API_CONFIG.BASE_URL}/equipments`);
+            const response = await fetch(`${API_CONFIG.BASE_URL}/equipments?process_type=${processType}`);
             
             let equipments = [];
             if (response.ok) {
