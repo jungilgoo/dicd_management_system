@@ -41,8 +41,27 @@ def detect_nelson_rules(values: List[float], cl: float, ucl: float, lcl: float, 
     """
     if not values:  # 데이터가 비어있는 경우만 체크
         return []
-    
+
+    # 입력값 유효성 검사
+    if cl is None or ucl is None or lcl is None:
+        return []
+
     # 표준편차 계산 (UCL-CL)/3 (3-시그마 기준)
+    # Division by zero 방지: ucl == cl인 경우 (모든 값이 동일한 경우)
+    if ucl == cl:
+        # 표준편차가 0이면 Rule 1만 검사 (관리 한계선 이탈)
+        patterns = []
+        for i, value in enumerate(values):
+            if value > ucl or value < lcl:
+                patterns.append({
+                    "rule": 1,
+                    "description": "한 점이 관리 한계선을 벗어남",
+                    "position": i,
+                    "lot_no": lot_nos[i] if i < len(lot_nos) else f"포인트 {i+1}",
+                    "value": value
+                })
+        return patterns
+
     std_dev = (ucl - cl) / 3
     
     # 1 시그마, 2 시그마 구간 계산
