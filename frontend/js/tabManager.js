@@ -18,78 +18,83 @@ window.TabManager = (function() {
     let tabs = [];
     let tabCounter = 0;
 
-    // 탭 타입별 메타데이터
+    // 공정 타입에 따른 페이지 경로 prefix 결정
+    function getPagePrefix() {
+        return window.PROCESS_TYPE === 'ETCH' ? 'pages/etch/' : 'pages/';
+    }
+
+    // 탭 타입별 메타데이터 (URL은 동적으로 생성)
     const tabTypes = {
         'dashboard': {
             title: '대시보드',
             icon: 'fas fa-tachometer-alt',
-            url: null,
+            getUrl: () => null,
             closable: false
         },
         'input': {
             title: '데이터 입력',
             icon: 'fas fa-edit',
-            url: 'pages/input.html',
+            getUrl: () => getPagePrefix() + 'input.html',
             closable: true
         },
         'view': {
             title: '데이터 조회',
             icon: 'fas fa-table',
-            url: 'pages/view.html',
+            getUrl: () => getPagePrefix() + 'view.html',
             closable: true
         },
         'trend': {
             title: '추이 분석',
             icon: 'fas fa-chart-line',
-            url: 'pages/analysis/trend.html',
+            getUrl: () => getPagePrefix() + 'analysis/trend.html',
             closable: true
         },
         'spc': {
             title: 'SPC 분석',
             icon: 'fas fa-chart-area',
-            url: 'pages/analysis/spc.html',
+            getUrl: () => getPagePrefix() + 'analysis/spc.html',
             closable: true
         },
         'distribution': {
             title: '분포 분석',
             icon: 'fas fa-chart-bar',
-            url: 'pages/analysis/distribution.html',
+            getUrl: () => getPagePrefix() + 'analysis/distribution.html',
             closable: true
         },
         'boxplot': {
             title: '박스플롯 분석',
             icon: 'fas fa-box',
-            url: 'pages/analysis/boxplot.html',
+            getUrl: () => getPagePrefix() + 'analysis/boxplot.html',
             closable: true
         },
         'reports': {
             title: '보고서 조회',
             icon: 'fas fa-file-alt',
-            url: 'pages/reports/trend_view.html',
+            getUrl: () => getPagePrefix() + 'reports/trend_view.html',
             closable: true
         },
         'settings': {
             title: '설정',
             icon: 'fas fa-cog',
-            url: 'pages/settings.html',
+            getUrl: () => getPagePrefix() + 'settings.html',
             closable: true
         },
         'bulk_upload': {
             title: '데이터 일괄 업로드',
             icon: 'fas fa-upload',
-            url: 'pages/bulk_upload.html',
+            getUrl: () => getPagePrefix() + 'bulk_upload.html',
             closable: true
         },
         'pr_thickness': {
             title: 'PR Thickness 관리',
             icon: 'fas fa-ruler',
-            url: 'pages/pr_thickness.html',
+            getUrl: () => 'pages/pr_thickness.html',  // PR Thickness는 PHOTO 전용
             closable: true
         },
         'change_points': {
             title: '변경점 관리',
             icon: 'fas fa-exchange-alt',
-            url: 'pages/change_points.html',
+            getUrl: () => getPagePrefix() + 'change_points.html',
             closable: true
         }
     };
@@ -281,12 +286,13 @@ window.TabManager = (function() {
      */
     function loadTabContent(tabInfo) {
         const tabMeta = tabTypes[tabInfo.type];
+        const tabUrl = tabMeta.getUrl();
 
         // 탭 콘텐츠 패널 생성
         const tabContentPane = `
             <div class="tab-pane fade" id="${tabInfo.id}-content" role="tabpanel">
                 <div class="tab-iframe-container">
-                    <iframe src="${tabMeta.url}"
+                    <iframe src="${tabUrl}"
                             id="${tabInfo.id}-iframe"
                             frameborder="0"
                             class="tab-iframe"
