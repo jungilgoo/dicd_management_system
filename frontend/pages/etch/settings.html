@@ -51,25 +51,25 @@
                             </a>
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
-                                    <a href="etch/analysis/trend.html" class="nav-link">
+                                    <a href="analysis/trend.html" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>추이 분석</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="etch/analysis/spc.html" class="nav-link">
+                                    <a href="analysis/spc.html" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>SPC 분석</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="etch/analysis/distribution.html" class="nav-link">
+                                    <a href="analysis/distribution.html" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>분포 분석</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="etch/analysis/boxplot.html" class="nav-link">
+                                    <a href="analysis/boxplot.html" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>박스플롯 분석</p>
                                     </a>
@@ -86,7 +86,7 @@
                             </a>
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
-                                    <a href="etch/reports/trend_view.html" class="nav-link">
+                                    <a href="reports/trend_view.html" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>보고서 조회</p>
                                     </a>
@@ -645,6 +645,12 @@
     <script src="../../lib/js/adminlte.min.js"></script>
     <script src="../../js/config.js"></script>
     <script src="../../js/api.js"></script>
+
+    <!-- ETCH 전용 process_type 설정 -->
+    <script>
+        // ETCH 공정 타입 전역 설정
+        window.PROCESS_TYPE = 'ETCH';
+    </script>
     <script src="../../js/etch_settings.js"></script>
     <script src="../../js/auth.js"></script>
 </body>
