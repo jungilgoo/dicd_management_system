@@ -126,74 +126,76 @@ window.TabManager = (function() {
      * 사이드바 클릭 이벤트 바인딩
      */
     function bindSidebarEvents() {
-        // 대시보드 클릭
-        $('a[href="index.html"]').on('click', function(e) {
+        const prefix = getPagePrefix();
+
+        // 대시보드 클릭 (ETCH/PHOTO 각각의 인덱스 페이지)
+        $('a[href="index.html"], a[href="etch_index.html"]').on('click', function(e) {
             e.preventDefault();
             activateTab(FIXED_TAB_ID);
         });
 
         // 데이터 입력
-        $('a[href="pages/input.html"]').on('click', function(e) {
+        $(`a[href="${prefix}input.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('input');
         });
 
         // 데이터 조회
-        $('a[href="pages/view.html"]').on('click', function(e) {
+        $(`a[href="${prefix}view.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('view');
         });
 
         // 추이 분석
-        $('a[href="pages/analysis/trend.html"]').on('click', function(e) {
+        $(`a[href="${prefix}analysis/trend.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('trend');
         });
 
         // SPC 분석
-        $('a[href="pages/analysis/spc.html"]').on('click', function(e) {
+        $(`a[href="${prefix}analysis/spc.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('spc');
         });
 
         // 분포 분석
-        $('a[href="pages/analysis/distribution.html"]').on('click', function(e) {
+        $(`a[href="${prefix}analysis/distribution.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('distribution');
         });
 
         // 박스플롯 분석
-        $('a[href="pages/analysis/boxplot.html"]').on('click', function(e) {
+        $(`a[href="${prefix}analysis/boxplot.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('boxplot');
         });
 
         // 보고서 조회
-        $('a[href="pages/reports/trend_view.html"]').on('click', function(e) {
+        $(`a[href="${prefix}reports/trend_view.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('reports');
         });
 
         // 설정
-        $('a[href="pages/settings.html"]').on('click', function(e) {
+        $(`a[href="${prefix}settings.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('settings');
         });
 
         // 데이터 일괄 업로드
-        $('a[href="pages/bulk_upload.html"]').on('click', function(e) {
+        $(`a[href="${prefix}bulk_upload.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('bulk_upload');
         });
 
-        // PR Thickness 관리
+        // PR Thickness 관리 (PHOTO 전용)
         $('a[href="pages/pr_thickness.html"]').on('click', function(e) {
             e.preventDefault();
             openTab('pr_thickness');
         });
 
         // 변경점 관리
-        $('a[href="pages/change_points.html"]').on('click', function(e) {
+        $(`a[href="${prefix}change_points.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('change_points');
         });
