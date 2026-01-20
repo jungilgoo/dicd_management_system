@@ -251,54 +251,133 @@
     
     // 장비 목록 로드
     async function loadEquipments() {
+        // ETCH 페이지에서는 window.PROCESS_TYPE이 'ETCH'로 설정됨
+        const processType = window.PROCESS_TYPE || 'PHOTO';
+
         try {
-            // DOM에 장비 컨테이너가 존재하는지 확인
-            const coatingContainer = document.getElementById('coating-equipment-buttons');
-            const exposureContainer = document.getElementById('exposure-equipment-buttons');
-            const developmentContainer = document.getElementById('development-equipment-buttons');
-
-            // ETCH 페이지에서는 window.PROCESS_TYPE이 'ETCH'로 설정됨
-            const processType = window.PROCESS_TYPE || 'PHOTO';
-
             // API 호출
             const response = await fetch(`${API_CONFIG.BASE_URL}/equipments?process_type=${processType}`);
-            
+
             let equipments = [];
             if (response.ok) {
                 equipments = await response.json();
             } else {
                 throw new Error('장비 정보를 가져오는데 실패했습니다.');
             }
-            
+
             // 활성화된 장비만 필터링
             const activeEquipments = equipments.filter(eq => eq.is_active);
-            
-            // 코팅 장비 처리
-            if (coatingContainer) {
-                const coatingEquipments = activeEquipments.filter(eq => eq.type === "코팅");
-                renderEquipmentGrid(coatingContainer, coatingEquipments);
+
+            if (processType === 'ETCH') {
+                // ETCH: 타입별 분류 없이 전체 장비를 단일 컨테이너에 표시
+                const etchContainer = document.getElementById('etch-equipment-buttons');
+                if (etchContainer) {
+                    renderEtchEquipmentGrid(etchContainer, activeEquipments);
+                }
+            } else {
+                // PHOTO: 기존 타입별 분류 유지
+                const coatingContainer = document.getElementById('coating-equipment-buttons');
+                const exposureContainer = document.getElementById('exposure-equipment-buttons');
+                const developmentContainer = document.getElementById('development-equipment-buttons');
+
+                // 코팅 장비 처리
+                if (coatingContainer) {
+                    const coatingEquipments = activeEquipments.filter(eq => eq.type === "코팅");
+                    renderEquipmentGrid(coatingContainer, coatingEquipments);
+                }
+
+                // 노광 장비 처리
+                if (exposureContainer) {
+                    const exposureEquipments = activeEquipments.filter(eq => eq.type === "노광");
+                    renderEquipmentGrid(exposureContainer, exposureEquipments);
+                }
+
+                // 현상 장비 처리
+                if (developmentContainer) {
+                    const developmentEquipments = activeEquipments.filter(eq => eq.type === "현상");
+                    renderEquipmentGrid(developmentContainer, developmentEquipments);
+                }
             }
-            
-            // 노광 장비 처리
-            if (exposureContainer) {
-                const exposureEquipments = activeEquipments.filter(eq => eq.type === "노광");
-                renderEquipmentGrid(exposureContainer, exposureEquipments);
-            }
-            
-            // 현상 장비 처리
-            if (developmentContainer) {
-                const developmentEquipments = activeEquipments.filter(eq => eq.type === "현상");
-                renderEquipmentGrid(developmentContainer, developmentEquipments);
-            }
-            
+
         } catch (error) {
             console.error("장비 목록 로드 실패:", error);
-            
-            // 오류 발생 시 빈 컨테이너 처리
-            if (coatingContainer) renderEquipmentGrid(coatingContainer, []);
-            if (exposureContainer) renderEquipmentGrid(exposureContainer, []);
-            if (developmentContainer) renderEquipmentGrid(developmentContainer, []);
+
+            if (processType === 'ETCH') {
+                const etchContainer = document.getElementById('etch-equipment-buttons');
+                if (etchContainer) renderEtchEquipmentGrid(etchContainer, []);
+            } else {
+                const coatingContainer = document.getElementById('coating-equipment-buttons');
+                const exposureContainer = document.getElementById('exposure-equipment-buttons');
+                const developmentContainer = document.getElementById('development-equipment-buttons');
+                if (coatingContainer) renderEquipmentGrid(coatingContainer, []);
+                if (exposureContainer) renderEquipmentGrid(exposureContainer, []);
+                if (developmentContainer) renderEquipmentGrid(developmentContainer, []);
+            }
         }
+    }
+
+    // ETCH 장비 그리드 렌더링 함수 (단일 컨테이너용)
+    function renderEtchEquipmentGrid(container, equipments) {
+        if (!container) return;
+
+        // 컨테이너 초기화
+        container.innerHTML = '';
+
+        if (!equipments || equipments.length === 0) {
+            container.innerHTML = '<div class="empty-cell">장비 없음</div>';
+            return;
+        }
+
+        // 열 수 계산 (장비 수에 따라 조정)
+        const count = equipments.length;
+        let cols = 6; // ETCH는 더 넓은 영역이므로 6열 기본
+
+        if (count <= 4) cols = 4;
+        else if (count <= 8) cols = 4;
+        else if (count <= 12) cols = 6;
+
+        // 행 수 계산
+        const rows = Math.ceil(count / cols);
+
+        // 그리드 스타일 설정
+        container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        container.style.gridAutoRows = "minmax(30px, auto)";
+
+        // 장비 버튼 생성
+        equipments.forEach(equipment => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-outline-primary equipment-btn';
+            button.dataset.type = 'etch';
+            button.dataset.id = equipment.id;
+            button.textContent = equipment.name;
+
+            container.appendChild(button);
+        });
+
+        // 남은 셀 채우기
+        const totalCells = rows * cols;
+        for (let i = count; i < totalCells; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'empty-cell';
+            container.appendChild(emptyCell);
+        }
+
+        // 장비 버튼 클릭 이벤트 설정
+        container.querySelectorAll('.equipment-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // 같은 컨테이너의 다른 버튼들 비활성화
+                container.querySelectorAll('.equipment-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // 현재 버튼 활성화
+                this.classList.add('active');
+
+                // ETCH 장비 hidden input에 ID 설정
+                document.getElementById('etch-equipment').value = this.dataset.id;
+            });
+        });
     }
 
 // 장비 그리드 렌더링 함수 (개선된 버전)
@@ -430,22 +509,44 @@
             }
             
             // 폼 데이터 수집
-            const formData = {
-                target_id: selectedTargetId,
-                coating_equipment_id: document.getElementById('coating-equipment').value || null,
-                exposure_equipment_id: document.getElementById('exposure-equipment').value || null,
-                development_equipment_id: document.getElementById('development-equipment').value || null,
-                device: document.getElementById('device').value,
-                lot_no: document.getElementById('lot-no').value,
-                wafer_no: document.getElementById('wafer-no').value,
-                exposure_time: document.getElementById('exposure-time').value || null,
-                value_top: parseFloat(document.getElementById('value-top').value),
-                value_center: parseFloat(document.getElementById('value-center').value),
-                value_bottom: parseFloat(document.getElementById('value-bottom').value),
-                value_left: parseFloat(document.getElementById('value-left').value),
-                value_right: parseFloat(document.getElementById('value-right').value),
-                author: document.getElementById('author').value
-            };
+            const processType = window.PROCESS_TYPE || 'PHOTO';
+            let formData;
+
+            if (processType === 'ETCH') {
+                // ETCH: 단일 장비 ID 사용
+                formData = {
+                    target_id: selectedTargetId,
+                    etch_equipment_id: document.getElementById('etch-equipment').value || null,
+                    device: document.getElementById('device').value,
+                    lot_no: document.getElementById('lot-no').value,
+                    wafer_no: document.getElementById('wafer-no').value,
+                    exposure_time: document.getElementById('exposure-time').value || null,
+                    value_top: parseFloat(document.getElementById('value-top').value),
+                    value_center: parseFloat(document.getElementById('value-center').value),
+                    value_bottom: parseFloat(document.getElementById('value-bottom').value),
+                    value_left: parseFloat(document.getElementById('value-left').value),
+                    value_right: parseFloat(document.getElementById('value-right').value),
+                    author: document.getElementById('author').value
+                };
+            } else {
+                // PHOTO: 타입별 장비 ID 사용
+                formData = {
+                    target_id: selectedTargetId,
+                    coating_equipment_id: document.getElementById('coating-equipment').value || null,
+                    exposure_equipment_id: document.getElementById('exposure-equipment').value || null,
+                    development_equipment_id: document.getElementById('development-equipment').value || null,
+                    device: document.getElementById('device').value,
+                    lot_no: document.getElementById('lot-no').value,
+                    wafer_no: document.getElementById('wafer-no').value,
+                    exposure_time: document.getElementById('exposure-time').value || null,
+                    value_top: parseFloat(document.getElementById('value-top').value),
+                    value_center: parseFloat(document.getElementById('value-center').value),
+                    value_bottom: parseFloat(document.getElementById('value-bottom').value),
+                    value_left: parseFloat(document.getElementById('value-left').value),
+                    value_right: parseFloat(document.getElementById('value-right').value),
+                    author: document.getElementById('author').value
+                };
+            }
             
             try {
                 // 중복 체크

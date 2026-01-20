@@ -169,7 +169,7 @@
                     </div>
 
                     <div class="row">
-                        <!-- 진행장비 선택 영역 -->
+                        <!-- 진행장비 선택 영역 (ETCH: 단일 영역) -->
                         <div class="col-md-12">
                             <div class="card">
                                 <div class="card-header">
@@ -177,36 +177,14 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
-                                        <!-- 코팅 장비 선택 (2x4 그리드) -->
-                                        <div class="col-md-4">
+                                        <!-- ETCH 장비 선택 (단일 영역) -->
+                                        <div class="col-12">
                                             <div class="form-group">
-                                                <label class="d-block text-center mb-2">코팅 장비</label>
-                                                <div id="coating-equipment-buttons" class="equipment-grid coating-grid">
-                                                    <!-- 코팅 장비 버튼이 여기에 동적으로 추가됩니다 -->
+                                                <label class="d-block text-center mb-2">진행 장비</label>
+                                                <div id="etch-equipment-buttons" class="equipment-grid">
+                                                    <!-- ETCH 장비 버튼이 여기에 동적으로 추가됩니다 -->
                                                 </div>
-                                                <input type="hidden" id="coating-equipment" name="coating_equipment_id">
-                                            </div>
-                                        </div>
-
-                                        <!-- 노광 장비 선택 (2x3 그리드) -->
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label class="d-block text-center mb-2">노광 장비</label>
-                                                <div id="exposure-equipment-buttons" class="equipment-grid exposure-grid">
-                                                    <!-- 노광 장비 버튼이 여기에 동적으로 추가됩니다 -->
-                                                </div>
-                                                <input type="hidden" id="exposure-equipment" name="exposure_equipment_id">
-                                            </div>
-                                        </div>
-
-                                        <!-- 현상 장비 선택 (2x2 그리드) -->
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label class="d-block text-center mb-2">현상 장비</label>
-                                                <div id="development-equipment-buttons" class="equipment-grid development-grid">
-                                                    <!-- 현상 장비 버튼이 여기에 동적으로 추가됩니다 -->
-                                                </div>
-                                                <input type="hidden" id="development-equipment" name="development_equipment_id">
+                                                <input type="hidden" id="etch-equipment" name="etch_equipment_id">
                                             </div>
                                         </div>
                                     </div>
