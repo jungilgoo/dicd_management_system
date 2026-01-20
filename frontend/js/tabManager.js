@@ -129,7 +129,8 @@ window.TabManager = (function() {
         const prefix = getPagePrefix();
 
         // 대시보드 클릭 (ETCH/PHOTO 각각의 인덱스 페이지)
-        $('a[href="index.html"], a[href="etch_index.html"]').on('click', function(e) {
+        // process-switch 클래스가 있는 공정 전환 버튼은 제외
+        $('a[href="index.html"], a[href="etch_index.html"]').not('.process-switch').on('click', function(e) {
             e.preventDefault();
             activateTab(FIXED_TAB_ID);
         });
