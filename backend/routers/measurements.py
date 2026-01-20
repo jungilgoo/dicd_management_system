@@ -31,6 +31,7 @@ def read_measurements(
     end_date: Optional[str] = None,    # 문자열로 날짜 받기 추가
     equipment_id: Optional[int] = None,
     keyword: Optional[str] = None,
+    process_type: str = Query("PHOTO", description="공정 타입 (PHOTO, ETCH)"),
     db: Session = Depends(database.get_db)
 ):
     # 날짜 처리 로직 수정
@@ -51,16 +52,17 @@ def read_measurements(
         end_datetime = None
     
     measurements = crud.get_measurements(
-        db, 
+        db,
         target_id=target_id,
         process_id=process_id,
         product_group_id=product_group_id,
-        device=device, 
-        lot_no=lot_no, 
+        device=device,
+        lot_no=lot_no,
         start_date=start_datetime,  # 변환된 datetime 사용
         end_date=end_datetime if 'end_datetime' in locals() else None,  # 변환된 datetime 사용
         equipment_id=equipment_id,
         keyword=keyword,
+        process_type=process_type,
     )
     return measurements
 

@@ -673,7 +673,8 @@ class DataLoader {
             
             // 데이터 가져오기
             const params = {
-                target_id: targetId
+                target_id: targetId,
+                process_type: window.PROCESS_TYPE || 'PHOTO'
             };
             
             // 날짜 범위 처리

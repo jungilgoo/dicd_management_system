@@ -137,25 +137,28 @@
         const targetId = document.getElementById('target').value;
         const equipmentId = document.getElementById('equipment-filter').value;
         const keyword = document.getElementById('keyword').value;
-        
+
         // 날짜 범위
         const dateRange = $('#date-range').data('daterangepicker');
         const startDate = dateRange.startDate.format('YYYY-MM-DD');
         const endDate = dateRange.endDate.format('YYYY-MM-DD');
-        
+
         const params = {};
-        
+
+        // process_type 추가 (ETCH/PHOTO 구분)
+        params.process_type = window.PROCESS_TYPE || 'PHOTO';
+
         if (productGroupId) params.product_group_id = productGroupId;
         if (processId) params.process_id = processId;
         if (targetId) params.target_id = targetId;
-        
+
         // 장비 선택 시, 세 가지 장비 타입 중 어느 것으로 필터링할지 선택 가능
         if (equipmentId) params.equipment_id = equipmentId;
-        
+
         if (keyword) params.keyword = keyword;
         if (startDate) params.start_date = startDate;
         if (endDate) params.end_date = endDate;
-        
+
         return params;
     }
     
