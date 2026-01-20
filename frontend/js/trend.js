@@ -100,7 +100,7 @@
             document.getElementById('target').innerHTML = '<option value="">로딩 중...</option>';
             document.getElementById('target').disabled = true;
             
-            const targets = await api.getTargets(processId);
+            const targets = await api.getTargets(processId, window.PROCESS_TYPE);
             
             if (targets && targets.length > 0) {
                 let options = '<option value="">타겟 선택</option>';
