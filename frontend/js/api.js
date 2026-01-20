@@ -219,16 +219,20 @@ class API {
     }
     
     // 타겟 관련 메서드
-    async getTargets(processId = null, processType = 'PHOTO') {
+    async getTargets(processId = null, processType = null) {
         const params = {};
         if (processId) params.process_id = processId;
-        if (processType) params.process_type = processType;
+        // window.PROCESS_TYPE이 설정되어 있으면 사용, 아니면 'PHOTO' 기본값
+        params.process_type = processType || window.PROCESS_TYPE || 'PHOTO';
         return this.get(this.endpoints.TARGETS, params);
     }
-    
+
     // 장비 관련 메서드
-    async getEquipments() {
-        return this.get(this.endpoints.EQUIPMENTS);
+    async getEquipments(processType = null) {
+        const params = {};
+        // window.PROCESS_TYPE이 설정되어 있으면 사용, 아니면 'PHOTO' 기본값
+        params.process_type = processType || window.PROCESS_TYPE || 'PHOTO';
+        return this.get(this.endpoints.EQUIPMENTS, params);
     }
     
     // 타입별 장비 조회 메서드
