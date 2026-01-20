@@ -4,10 +4,16 @@ class TargetManager {
         this.targets = [];
         this.loadFromLocalStorage();
     }
-    
+
+    // 공정 타입별 스토리지 키 생성
+    getStorageKey() {
+        const processType = window.PROCESS_TYPE || 'PHOTO';
+        return `trend_report_targets_${processType}`;
+    }
+
     // 로컬 스토리지에서 선택된 타겟 불러오기
     loadFromLocalStorage() {
-        const savedTargets = localStorage.getItem('trend_report_targets');
+        const savedTargets = localStorage.getItem(this.getStorageKey());
         if (savedTargets) {
             try {
                 this.targets = JSON.parse(savedTargets);
@@ -17,10 +23,10 @@ class TargetManager {
             }
         }
     }
-    
+
     // 로컬 스토리지에 선택된 타겟 저장
     saveToLocalStorage() {
-        localStorage.setItem('trend_report_targets', JSON.stringify(this.targets));
+        localStorage.setItem(this.getStorageKey(), JSON.stringify(this.targets));
     }
     
     // 타겟 추가
