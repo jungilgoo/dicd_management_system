@@ -184,7 +184,7 @@ async function handleProcessChange() {
     if (!processId) return;
     
     try {
-        const targets = await api.getTargets(processId, 'PHOTO');
+        const targets = await api.getTargets(processId);
         
         // 타겟 옵션 생성
         targets.forEach(target => {

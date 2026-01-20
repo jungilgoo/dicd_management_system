@@ -120,7 +120,7 @@ async function loadCpkHeatmap() {
         processResults.forEach(result => {
             result.processes.forEach(process => {
                 targetPromises.push(
-                    api.getTargets(process.id, 'PHOTO').then(targets => 
+                    api.getTargets(process.id).then(targets => 
                         ({ 
                             productGroup: result.productGroup, 
                             process, 
@@ -628,7 +628,7 @@ async function loadTargetOptions(targetNum, processId) {
             return;
         }
         
-        const targets = await api.getTargets(processId, 'PHOTO');
+        const targets = await api.getTargets(processId);
         
         if (targets && targets.length > 0) {
             let options = '<option value="">타겟 선택</option>';

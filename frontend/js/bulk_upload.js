@@ -95,7 +95,7 @@
                 return;
             }
             
-            const targets = await api.getTargets(processId, 'PHOTO');
+            const targets = await api.getTargets(processId);
             
             if (targets && targets.length > 0) {
                 let options = '<option value="">타겟 선택</option>';

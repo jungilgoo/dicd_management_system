@@ -994,7 +994,7 @@ async function loadProductGroups() {
     if (!processId) return;
 
     try {
-        const targets = await api.getTargets(processId, 'PHOTO');
+        const targets = await api.getTargets(processId);
         
         // 옵션 초기화
         targetSelect.innerHTML = '<option value="">타겟 선택</option>';
@@ -1206,7 +1206,7 @@ $('#add-targets-modal').on('show.bs.modal', async function() {
                 for (const process of processes) {
                     try {
                         // 각 공정의 타겟 로드
-                        const targets = await api.getTargets(process.id, 'PHOTO');
+                        const targets = await api.getTargets(process.id);
                         
                         // 각 타겟에 대해 행 추가
                         for (const target of targets) {
