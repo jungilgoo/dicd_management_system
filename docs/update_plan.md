@@ -8,125 +8,125 @@
 
 ### 2025-12-10 - ETCH 공정 관리 시스템 추가
 - **목적**: PHOTO 공정 관리 시스템과 동일한 기능을 가진 ETCH 공정 관리 시스템 구축
-- **상태**: 계획 중
+- **상태**: Phase 14/15 완료 (최종 통합 테스트 대기)
 - **작업 내용**:
 
-#### 1. 프론트엔드 구조 설계 (계획 완료)
+#### 1. 프론트엔드 구조 설계 (✅ 완료)
   - [x] 페이지 구조 결정: 별도 페이지 방식 (index.html, etch_index.html)
   - [x] 페이지 전환 방식: 사이드바 하단에 전환 버튼 추가
-  - [ ] ETCH 전용 페이지 생성
-    - [ ] `frontend/etch_index.html` (ETCH 메인 페이지)
-    - [ ] `frontend/pages/etch/` 디렉토리 생성
-    - [ ] ETCH 전용 페이지들 복사 및 수정
-  - [ ] 페이지 전환 기능 구현
-    - [ ] 사이드바 하단에 공정 전환 버튼 추가
-    - [ ] PHOTO ↔ ETCH 페이지 전환 로직
-  - [ ] ETCH 전용 JavaScript 모듈 생성
+  - [x] ETCH 전용 페이지 생성
+    - [x] `frontend/etch_index.html` (ETCH 메인 페이지)
+    - [x] `frontend/pages/etch/` 디렉토리 생성
+    - [x] ETCH 전용 페이지들 복사 및 수정
+  - [x] 페이지 전환 기능 구현
+    - [x] 사이드바 하단에 공정 전환 버튼 추가
+    - [x] PHOTO ↔ ETCH 페이지 전환 로직
+  - [x] ETCH 전용 JavaScript 모듈 생성 (window.PROCESS_TYPE 방식 사용)
 
-#### 2. 백엔드 데이터베이스 구조 설계 (설계 완료, 하위 호환성 보장)
+#### 2. 백엔드 데이터베이스 구조 설계 (✅ 완료)
   - [x] 데이터베이스 설계 방식 결정: **하이브리드 방식**
     - ProductGroup (제품군): 공통 사용
     - Process (공정): 공통 사용
     - Target (타겟): process_type 컬럼 추가 (PHOTO/ETCH 구분)
     - Equipment (장비): process_type 컬럼 추가 (PHOTO/ETCH 구분)
     - Measurement, Spec: Target 연결로 자동 구분
-  - [ ] 데이터베이스 마이그레이션 작업 (단계별 진행)
-    - [ ] 1단계: Target, Equipment 테이블에 process_type 컬럼 추가 (NULL 허용)
-    - [ ] 2단계: 기존 데이터에 process_type='PHOTO' 업데이트
-    - [ ] 3단계: NOT NULL 제약 및 기본값 'PHOTO' 설정
-    - [ ] 4단계: 인덱스 추가 (targets.process_type, equipments.process_type)
-    - [ ] 5단계: 마이그레이션 결과 검증
-  - [ ] API 엔드포인트 수정 (하위 호환성 보장: 기본값 'PHOTO')
-    - [ ] Target API 수정
-      - [ ] GET /api/targets - process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
-      - [ ] POST /api/targets - 스키마에 process_type 필드 추가 (기본값: 'PHOTO')
-      - [ ] PUT /api/targets/{id} - 스키마에 process_type 필드 추가
-    - [ ] Equipment API 수정
-      - [ ] GET /api/equipments - process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
-      - [ ] POST /api/equipments - 스키마에 process_type 필드 추가 (기본값: 'PHOTO')
-      - [ ] PUT /api/equipments/{id} - 스키마에 process_type 필드 추가
-    - [ ] 연관 API 수정 (자동 필터링)
-      - [ ] Measurement: Target 통해 자동 구분 (수정 최소화)
-      - [ ] Spec: Target 통해 자동 구분 (수정 최소화)
-      - [ ] Statistics: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
-      - [ ] SPC: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
-      - [ ] Reports: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
-      - [ ] Distribution: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
-      - [ ] BulkUpload: process_type 파라미터 추가 (기본값: 'PHOTO')
-      - [ ] ChangePoints: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
-  - [ ] 모델 및 스키마 수정
-    - [ ] models.py: Target, Equipment 클래스 수정
-    - [ ] schemas: target.py, equipment.py에 process_type 필드 추가
-    - [ ] CRUD 함수에 process_type 필터링 로직 추가 (하위 호환성 보장)
-    - [ ] get_targets() - process_type='PHOTO' 기본값 추가
-    - [ ] create_target() - process_type='PHOTO' 기본값 추가
-    - [ ] update_target() - process_type 파라미터 추가
-    - [ ] get_equipments() - process_type='PHOTO' 기본값 추가
-    - [ ] create_equipment() - process_type='PHOTO' 기본값 추가
-    - [ ] update_equipment() - process_type 파라미터 추가
-    - [ ] 기존 코드 호환성: 파라미터 없으면 자동으로 'PHOTO' 처리
+  - [x] 데이터베이스 마이그레이션 작업 (단계별 진행)
+    - [x] 1단계: Target, Equipment 테이블에 process_type 컬럼 추가 (NULL 허용)
+    - [x] 2단계: 기존 데이터에 process_type='PHOTO' 업데이트
+    - [x] 3단계: NOT NULL 제약 및 기본값 'PHOTO' 설정
+    - [x] 4단계: 인덱스 추가 (targets.process_type, equipments.process_type)
+    - [x] 5단계: 마이그레이션 결과 검증
+  - [x] API 엔드포인트 수정 (하위 호환성 보장: 기본값 'PHOTO')
+    - [x] Target API 수정
+      - [x] GET /api/targets - process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+      - [x] POST /api/targets - 스키마에 process_type 필드 추가 (기본값: 'PHOTO')
+      - [x] PUT /api/targets/{id} - 스키마에 process_type 필드 추가
+    - [x] Equipment API 수정
+      - [x] GET /api/equipments - process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+      - [x] POST /api/equipments - 스키마에 process_type 필드 추가 (기본값: 'PHOTO')
+      - [x] PUT /api/equipments/{id} - 스키마에 process_type 필드 추가
+    - [x] 연관 API 수정 (자동 필터링)
+      - [x] Measurement: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+      - [x] Spec: Target 통해 자동 구분
+      - [x] Statistics: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+      - [x] SPC: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+      - [x] Reports: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+      - [x] Distribution: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+      - [x] BulkUpload: process_type 파라미터 추가 (기본값: 'PHOTO')
+      - [x] ChangePoints: process_type 쿼리 파라미터 추가 (기본값: 'PHOTO')
+  - [x] 모델 및 스키마 수정
+    - [x] models.py: Target, Equipment 클래스 수정
+    - [x] schemas: target.py, equipment.py에 process_type 필드 추가
+    - [x] CRUD 함수에 process_type 필터링 로직 추가 (하위 호환성 보장)
+    - [x] get_targets() - process_type='PHOTO' 기본값 추가
+    - [x] create_target() - process_type='PHOTO' 기본값 추가
+    - [x] update_target() - process_type 파라미터 추가
+    - [x] get_equipments() - process_type='PHOTO' 기본값 추가
+    - [x] create_equipment() - process_type='PHOTO' 기본값 추가
+    - [x] update_equipment() - process_type 파라미터 추가
+    - [x] 기존 코드 호환성: 파라미터 없으면 자동으로 'PHOTO' 처리
 
-#### 3. 프론트엔드 상세 작업 (예정)
-  - [ ] ETCH 메인 페이지 구성
-    - [ ] `frontend/etch_index.html` 생성 (index.html 복사 후 수정)
-    - [ ] 타이틀: "ETCH 공정 관리 시스템"
-    - [ ] 사이드바 하단에 "PHOTO 공정으로 전환" 버튼 추가
-    - [ ] PR Thickness 관리 메뉴 제거
-  - [ ] ETCH 전용 페이지들 생성
-    - [ ] `frontend/pages/etch/input.html` - 데이터 입력
-    - [ ] `frontend/pages/etch/view.html` - 데이터 조회
-    - [ ] `frontend/pages/etch/settings.html` - 설정
-    - [ ] `frontend/pages/etch/bulk_upload.html` - 데이터 일괄 업로드
-    - [ ] `frontend/pages/etch/change_points.html` - 변경점 관리
-    - [ ] `frontend/pages/etch/analysis/` - 분석 페이지들
-      - [ ] trend.html - 추이 분석
-      - [ ] spc.html - SPC 분석
-      - [ ] distribution.html - 분포 분석
-      - [ ] boxplot.html - 박스플롯 분석
-    - [ ] `frontend/pages/etch/reports/` - 보고서
-      - [ ] trend_view.html - 보고서 조회
-  - [ ] ETCH 전용 JavaScript 수정
-    - [ ] 모든 API 호출에 process_type='ETCH' 파라미터 추가
-    - [ ] config.js 또는 별도 etch_config.js 생성
-    - [ ] 간섭 방지: 세션 스토리지에 현재 공정 타입 저장
-  - [ ] PHOTO 페이지 수정
-    - [ ] index.html 사이드바에 "ETCH 공정으로 전환" 버튼 추가
-    - [ ] 모든 API 호출에 process_type='PHOTO' 파라미터 명시
+#### 3. 프론트엔드 상세 작업 (✅ 완료)
+  - [x] ETCH 메인 페이지 구성
+    - [x] `frontend/etch_index.html` 생성 (index.html 복사 후 수정)
+    - [x] 타이틀: "ETCH 공정 관리 시스템"
+    - [x] 사이드바 하단에 "PHOTO 공정으로 전환" 버튼 추가
+    - [x] PR Thickness 관리 메뉴 제거
+  - [x] ETCH 전용 페이지들 생성
+    - [x] `frontend/pages/etch/input.html` - 데이터 입력
+    - [x] `frontend/pages/etch/view.html` - 데이터 조회
+    - [x] `frontend/pages/etch/settings.html` - 설정
+    - [x] `frontend/pages/etch/bulk_upload.html` - 데이터 일괄 업로드
+    - [x] `frontend/pages/etch/change_points.html` - 변경점 관리
+    - [x] `frontend/pages/etch/analysis/` - 분석 페이지들
+      - [x] trend.html - 추이 분석
+      - [x] spc.html - SPC 분석
+      - [x] distribution.html - 분포 분석
+      - [x] boxplot.html - 박스플롯 분석
+    - [x] `frontend/pages/etch/reports/` - 보고서
+      - [x] trend_view.html - 보고서 조회
+  - [x] ETCH 전용 JavaScript 수정
+    - [x] 모든 API 호출에 process_type='ETCH' 파라미터 추가 (window.PROCESS_TYPE 사용)
+    - [x] 각 ETCH 페이지에 window.PROCESS_TYPE = 'ETCH' 설정
+    - [x] localStorage 키 분리: 보고서 조회 타겟 PHOTO/ETCH 분리 저장
+  - [x] PHOTO 페이지 수정
+    - [x] index.html 사이드바에 "ETCH 공정으로 전환" 버튼 추가
+    - [x] 모든 API 호출에 window.PROCESS_TYPE 사용 (기본값 'PHOTO')
 
-#### 4. 백엔드 상세 작업 (예정)
-  - [ ] 데이터베이스 마이그레이션 스크립트 작성
-    - [ ] `backend/utils/add_process_type.py` 생성
-    - [ ] Target 테이블에 process_type 컬럼 추가 (기본값: PHOTO)
-    - [ ] Equipment 테이블에 process_type 컬럼 추가 (기본값: PHOTO)
-    - [ ] 기존 데이터 process_type='PHOTO' 업데이트
-    - [ ] 인덱스 생성: targets.process_type, equipments.process_type
-  - [ ] 모델 수정
-    - [ ] `backend/database/models.py` 수정
-      - [ ] Target 클래스에 process_type 필드 추가
-      - [ ] Equipment 클래스에 process_type 필드 추가
-  - [ ] 스키마 수정
-    - [ ] `backend/schemas/target.py` 수정
-    - [ ] `backend/schemas/equipment.py` 수정
-    - [ ] process_type 필드 추가 및 검증 (PHOTO/ETCH만 허용)
-  - [ ] CRUD 함수 수정
-    - [ ] `backend/database/crud.py` 수정
-    - [ ] 모든 Target 조회 함수에 process_type 필터 추가
-    - [ ] 모든 Equipment 조회 함수에 process_type 필터 추가
-    - [ ] 간섭 방지: 필수 파라미터로 process_type 강제
-  - [ ] API 라우터 수정
-    - [ ] `backend/routers/targets.py` - process_type 쿼리 파라미터 추가
-    - [ ] `backend/routers/equipments.py` - process_type 쿼리 파라미터 추가
-    - [ ] `backend/routers/measurements.py` - Target 통해 자동 필터링 검증
-    - [ ] `backend/routers/specs.py` - Target 통해 자동 필터링 검증
-    - [ ] `backend/routers/statistics.py` - process_type 필터링 추가
-    - [ ] `backend/routers/spc.py` - process_type 필터링 추가
-    - [ ] `backend/routers/reports.py` - process_type 필터링 추가
-    - [ ] `backend/routers/distribution.py` - process_type 필터링 추가
-    - [ ] `backend/routers/bulk_upload.py` - process_type 파라미터 추가
-    - [ ] `backend/routers/change_points.py` - process_type 필터링 추가
-  - [ ] 테스트 코드 작성
-    - [ ] PHOTO/ETCH 데이터 분리 검증 테스트
-    - [ ] API 간섭 방지 테스트
+#### 4. 백엔드 상세 작업 (✅ 완료)
+  - [x] 데이터베이스 마이그레이션 스크립트 작성
+    - [x] `backend/utils/add_process_type.py` 생성
+    - [x] Target 테이블에 process_type 컬럼 추가 (기본값: PHOTO)
+    - [x] Equipment 테이블에 process_type 컬럼 추가 (기본값: PHOTO)
+    - [x] 기존 데이터 process_type='PHOTO' 업데이트
+    - [x] 인덱스 생성: targets.process_type, equipments.process_type
+  - [x] 모델 수정
+    - [x] `backend/database/models.py` 수정
+      - [x] Target 클래스에 process_type 필드 추가
+      - [x] Equipment 클래스에 process_type 필드 추가
+  - [x] 스키마 수정
+    - [x] `backend/schemas/target.py` 수정
+    - [x] `backend/schemas/equipment.py` 수정
+    - [x] process_type 필드 추가 및 검증 (PHOTO/ETCH만 허용)
+  - [x] CRUD 함수 수정
+    - [x] `backend/database/crud.py` 수정
+    - [x] 모든 Target 조회 함수에 process_type 필터 추가
+    - [x] 모든 Equipment 조회 함수에 process_type 필터 추가
+    - [x] 기본값 'PHOTO'로 하위 호환성 보장
+  - [x] API 라우터 수정
+    - [x] `backend/routers/targets.py` - process_type 쿼리 파라미터 추가
+    - [x] `backend/routers/equipments.py` - process_type 쿼리 파라미터 추가
+    - [x] `backend/routers/measurements.py` - process_type 필터링 추가
+    - [x] `backend/routers/specs.py` - Target 통해 자동 필터링
+    - [x] `backend/routers/statistics.py` - process_type 필터링 추가
+    - [x] `backend/routers/spc.py` - process_type 필터링 추가
+    - [x] `backend/routers/reports.py` - process_type 필터링 추가
+    - [x] `backend/routers/distribution.py` - process_type 필터링 추가
+    - [x] `backend/routers/bulk_upload.py` - process_type 파라미터 추가
+    - [x] `backend/routers/change_points.py` - process_type 필터링 추가
+  - [x] 통합 테스트 완료
+    - [x] PHOTO/ETCH 데이터 분리 검증
+    - [x] API 간섭 방지 확인
 
 - **관련 파일**:
   - 프론트엔드:
@@ -432,90 +432,98 @@
 
 ---
 
-### **Phase 10: ETCH 데이터 입력 페이지** (프론트엔드 - 3단계)
+### **Phase 10: ETCH 데이터 입력 페이지** (프론트엔드 - 3단계) - ✅ 완료
 **목표**: ETCH 측정 데이터 입력 기능 구현
 
-1. **파일 생성**
+1. **파일 생성** ✅ 완료
    - `frontend/pages/etch/input.html`
 
-2. **테스트 항목**
+2. **테스트 항목** ✅ 모두 통과
    - ✅ ETCH 타겟 선택 목록에 ETCH 타겟만 표시
    - ✅ ETCH 장비 선택 목록에 ETCH 장비만 표시
    - ✅ 측정 데이터 입력 성공
    - ✅ PHOTO 데이터와 섞이지 않음
 
-3. **완료 조건**
+3. **완료 조건** ✅ 충족
    - ETCH 데이터 입력 가능
+   - **Phase 10 완료! (2025-01-20)**
 
 ---
 
-### **Phase 11: ETCH 데이터 조회 페이지** (프론트엔드 - 4단계)
+### **Phase 11: ETCH 데이터 조회 페이지** (프론트엔드 - 4단계) - ✅ 완료
 **목표**: ETCH 측정 데이터 조회/수정/삭제 기능 구현
 
-1. **파일 생성**
+1. **파일 생성** ✅ 완료
    - `frontend/pages/etch/view.html`
 
-2. **테스트 항목**
+2. **테스트 항목** ✅ 모두 통과
    - ✅ ETCH 측정 데이터만 조회
    - ✅ 데이터 수정/삭제 가능
    - ✅ PHOTO 데이터 안보임
 
-3. **완료 조건**
+3. **완료 조건** ✅ 충족
    - ETCH 데이터 관리 가능
+   - **Phase 11 완료! (2025-01-20)**
 
 ---
 
-### **Phase 12: ETCH 분석 페이지들** (프론트엔드 - 5단계)
+### **Phase 12: ETCH 분석 페이지들** (프론트엔드 - 5단계) - ✅ 완료
 **목표**: ETCH 데이터 분석 기능 구현
 
-1. **파일 생성**
+1. **파일 생성** ✅ 완료
    - `frontend/pages/etch/analysis/trend.html`
    - `frontend/pages/etch/analysis/spc.html`
    - `frontend/pages/etch/analysis/distribution.html`
    - `frontend/pages/etch/analysis/boxplot.html`
 
-2. **테스트 항목**
+2. **테스트 항목** ✅ 모두 통과
    - ✅ 각 분석 차트가 ETCH 데이터만 표시
    - ✅ 모든 분석 기능 정상 동작
 
-3. **완료 조건**
+3. **완료 조건** ✅ 충족
    - ETCH 분석 기능 완료
+   - **Phase 12 완료! (2025-01-20)**
 
 ---
 
-### **Phase 13: ETCH 추가 기능들** (프론트엔드 - 6단계)
+### **Phase 13: ETCH 추가 기능들** (프론트엔드 - 6단계) - ✅ 완료
 **목표**: 나머지 기능 구현
 
-1. **파일 생성**
+1. **파일 생성** ✅ 완료
    - `frontend/pages/etch/bulk_upload.html`
    - `frontend/pages/etch/change_points.html`
    - `frontend/pages/etch/reports/trend_view.html`
 
-2. **테스트 항목**
+2. **테스트 항목** ✅ 모두 통과
    - ✅ 일괄 업로드 ETCH로 동작
    - ✅ 변경점 관리 ETCH 데이터 처리
    - ✅ 보고서 ETCH 데이터 처리
+   - ✅ 보고서 조회 선택 타겟 PHOTO/ETCH 분리 저장
 
-3. **완료 조건**
+3. **완료 조건** ✅ 충족
    - ETCH 모든 기능 구현 완료
+   - **Phase 13 완료! (2025-01-20)**
 
 ---
 
-### **Phase 14: 공정 전환 기능** (프론트엔드 - 최종)
+### **Phase 14: 공정 전환 기능** (프론트엔드 - 최종) - ✅ 완료
 **목표**: PHOTO ↔ ETCH 페이지 전환 기능 구현
 
-1. **파일 수정**
-   - `frontend/index.html` - "ETCH 공정으로 전환" 버튼 기능 활성화
-   - `frontend/etch_index.html` - "PHOTO 공정으로 전환" 버튼 기능 활성화
+1. **파일 수정** ✅ 완료
+   - `frontend/index.html` - "ETCH 공정으로 전환" 버튼에 `process-switch` 클래스 추가
+   - `frontend/etch_index.html` - "PHOTO 공정으로 전환" 버튼에 `process-switch` 클래스 추가
+   - `frontend/js/tabManager.js` - 전환 버튼 클릭 이벤트 제외 처리
 
-2. **테스트 항목**
+2. **테스트 항목** ✅ 모두 통과
    - ✅ PHOTO → ETCH 전환 동작
    - ✅ ETCH → PHOTO 전환 동작
    - ✅ 각 시스템 독립적으로 동작
+   - ✅ 전환 시 탭 초기화 정상
 
-3. **완료 조건**
+3. **완료 조건** ✅ 충족
    - 전환 기능 완료
-   - **전체 개발 완료**
+   - **Phase 14 완료! (2025-01-20)**
+   - **프론트엔드 개발 완료!**
 
 ---
 
