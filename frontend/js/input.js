@@ -513,14 +513,13 @@
             let formData;
 
             if (processType === 'ETCH') {
-                // ETCH: 단일 장비 ID 사용
+                // ETCH: 단일 장비 ID 사용 (exposure_time 없음)
                 formData = {
                     target_id: selectedTargetId,
                     etch_equipment_id: document.getElementById('etch-equipment').value || null,
                     device: document.getElementById('device').value,
                     lot_no: document.getElementById('lot-no').value,
                     wafer_no: document.getElementById('wafer-no').value,
-                    exposure_time: document.getElementById('exposure-time').value || null,
                     value_top: parseFloat(document.getElementById('value-top').value),
                     value_center: parseFloat(document.getElementById('value-center').value),
                     value_bottom: parseFloat(document.getElementById('value-bottom').value),
