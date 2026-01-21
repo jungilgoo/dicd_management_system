@@ -185,9 +185,15 @@
         
         measurements.forEach(measurement => {
             targetIds.add(measurement.target_id);
-            if (measurement.coating_equipment_id) equipmentIds.add(measurement.coating_equipment_id);
-            if (measurement.exposure_equipment_id) equipmentIds.add(measurement.exposure_equipment_id);
-            if (measurement.development_equipment_id) equipmentIds.add(measurement.development_equipment_id);
+            if (window.PROCESS_TYPE === 'ETCH') {
+                // ETCH: 단일 장비
+                if (measurement.etch_equipment_id) equipmentIds.add(measurement.etch_equipment_id);
+            } else {
+                // PHOTO: 코팅/노광/현상 장비
+                if (measurement.coating_equipment_id) equipmentIds.add(measurement.coating_equipment_id);
+                if (measurement.exposure_equipment_id) equipmentIds.add(measurement.exposure_equipment_id);
+                if (measurement.development_equipment_id) equipmentIds.add(measurement.development_equipment_id);
+            }
         });
         
         // 캐시에 없는 타겟 정보 병렬로 로드
@@ -262,21 +268,29 @@
                 const productGroup = productGroupsCache[process.product_group_id];
                 if (!productGroup) continue;
                 
-                // 장비 정보 생성
+                // 장비 정보 생성 (ETCH/PHOTO 분기 처리)
                 let equipmentNames = [];
-                
-                if (measurement.coating_equipment_id && equipmentsCache[measurement.coating_equipment_id]) {
-                    equipmentNames.push(equipmentsCache[measurement.coating_equipment_id].name);
+
+                if (window.PROCESS_TYPE === 'ETCH') {
+                    // ETCH: 단일 장비
+                    if (measurement.etch_equipment_id && equipmentsCache[measurement.etch_equipment_id]) {
+                        equipmentNames.push(equipmentsCache[measurement.etch_equipment_id].name);
+                    }
+                } else {
+                    // PHOTO: 코팅/노광/현상 장비
+                    if (measurement.coating_equipment_id && equipmentsCache[measurement.coating_equipment_id]) {
+                        equipmentNames.push(equipmentsCache[measurement.coating_equipment_id].name);
+                    }
+
+                    if (measurement.exposure_equipment_id && equipmentsCache[measurement.exposure_equipment_id]) {
+                        equipmentNames.push(equipmentsCache[measurement.exposure_equipment_id].name);
+                    }
+
+                    if (measurement.development_equipment_id && equipmentsCache[measurement.development_equipment_id]) {
+                        equipmentNames.push(equipmentsCache[measurement.development_equipment_id].name);
+                    }
                 }
-                
-                if (measurement.exposure_equipment_id && equipmentsCache[measurement.exposure_equipment_id]) {
-                    equipmentNames.push(equipmentsCache[measurement.exposure_equipment_id].name);
-                }
-                
-                if (measurement.development_equipment_id && equipmentsCache[measurement.development_equipment_id]) {
-                    equipmentNames.push(equipmentsCache[measurement.development_equipment_id].name);
-                }
-                
+
                 const equipmentInfo = equipmentNames.length > 0 ? equipmentNames.join(', ') : '-';
                 
                 // SPEC 정보 가져오기
@@ -390,61 +404,82 @@
                 productGroupsCache[process.product_group_id] = productGroup;
             }
             
-            // 장비 정보 준비
+            // 장비 정보 준비 (ETCH/PHOTO 분기 처리)
             let equipmentInfo = '';
-            
-            // 코팅 장비 정보
-            if (cachedMeasurement.coating_equipment_id) {
-                let equipment;
-                if (equipmentsCache[cachedMeasurement.coating_equipment_id]) {
-                    equipment = equipmentsCache[cachedMeasurement.coating_equipment_id];
-                } else {
-                    try {
-                        equipment = await api.get(`${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${cachedMeasurement.coating_equipment_id}`);
-                        equipmentsCache[cachedMeasurement.coating_equipment_id] = equipment;
-                    } catch (error) {
-                        console.warn(`장비 ID ${cachedMeasurement.coating_equipment_id} 정보를 가져올 수 없습니다.`);
+
+            if (window.PROCESS_TYPE === 'ETCH') {
+                // ETCH: 단일 장비
+                if (cachedMeasurement.etch_equipment_id) {
+                    let equipment;
+                    if (equipmentsCache[cachedMeasurement.etch_equipment_id]) {
+                        equipment = equipmentsCache[cachedMeasurement.etch_equipment_id];
+                    } else {
+                        try {
+                            equipment = await api.get(`${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${cachedMeasurement.etch_equipment_id}`);
+                            equipmentsCache[cachedMeasurement.etch_equipment_id] = equipment;
+                        } catch (error) {
+                            console.warn(`장비 ID ${cachedMeasurement.etch_equipment_id} 정보를 가져올 수 없습니다.`);
+                        }
                     }
-                }
-                equipmentInfo += `<tr><th>코팅 장비</th><td>${equipment ? equipment.name : '-'}</td></tr>`;
-            } else {
-                equipmentInfo += `<tr><th>코팅 장비</th><td>-</td></tr>`;
-            }
-            
-            // 노광 장비 정보
-            if (cachedMeasurement.exposure_equipment_id) {
-                let equipment;
-                if (equipmentsCache[cachedMeasurement.exposure_equipment_id]) {
-                    equipment = equipmentsCache[cachedMeasurement.exposure_equipment_id];
+                    equipmentInfo += `<tr><th>ETCH 장비</th><td>${equipment ? equipment.name : '-'}</td></tr>`;
                 } else {
-                    try {
-                        equipment = await api.get(`${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${cachedMeasurement.exposure_equipment_id}`);
-                        equipmentsCache[cachedMeasurement.exposure_equipment_id] = equipment;
-                    } catch (error) {
-                        console.warn(`장비 ID ${cachedMeasurement.exposure_equipment_id} 정보를 가져올 수 없습니다.`);
-                    }
+                    equipmentInfo += `<tr><th>ETCH 장비</th><td>-</td></tr>`;
                 }
-                equipmentInfo += `<tr><th>노광 장비</th><td>${equipment ? equipment.name : '-'}</td></tr>`;
             } else {
-                equipmentInfo += `<tr><th>노광 장비</th><td>-</td></tr>`;
-            }
-            
-            // 현상 장비 정보
-            if (cachedMeasurement.development_equipment_id) {
-                let equipment;
-                if (equipmentsCache[cachedMeasurement.development_equipment_id]) {
-                    equipment = equipmentsCache[cachedMeasurement.development_equipment_id];
+                // PHOTO: 코팅/노광/현상 장비
+                // 코팅 장비 정보
+                if (cachedMeasurement.coating_equipment_id) {
+                    let equipment;
+                    if (equipmentsCache[cachedMeasurement.coating_equipment_id]) {
+                        equipment = equipmentsCache[cachedMeasurement.coating_equipment_id];
+                    } else {
+                        try {
+                            equipment = await api.get(`${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${cachedMeasurement.coating_equipment_id}`);
+                            equipmentsCache[cachedMeasurement.coating_equipment_id] = equipment;
+                        } catch (error) {
+                            console.warn(`장비 ID ${cachedMeasurement.coating_equipment_id} 정보를 가져올 수 없습니다.`);
+                        }
+                    }
+                    equipmentInfo += `<tr><th>코팅 장비</th><td>${equipment ? equipment.name : '-'}</td></tr>`;
                 } else {
-                    try {
-                        equipment = await api.get(`${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${cachedMeasurement.development_equipment_id}`);
-                        equipmentsCache[cachedMeasurement.development_equipment_id] = equipment;
-                    } catch (error) {
-                        console.warn(`장비 ID ${cachedMeasurement.development_equipment_id} 정보를 가져올 수 없습니다.`);
-                    }
+                    equipmentInfo += `<tr><th>코팅 장비</th><td>-</td></tr>`;
                 }
-                equipmentInfo += `<tr><th>현상 장비</th><td>${equipment ? equipment.name : '-'}</td></tr>`;
-            } else {
-                equipmentInfo += `<tr><th>현상 장비</th><td>-</td></tr>`;
+
+                // 노광 장비 정보
+                if (cachedMeasurement.exposure_equipment_id) {
+                    let equipment;
+                    if (equipmentsCache[cachedMeasurement.exposure_equipment_id]) {
+                        equipment = equipmentsCache[cachedMeasurement.exposure_equipment_id];
+                    } else {
+                        try {
+                            equipment = await api.get(`${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${cachedMeasurement.exposure_equipment_id}`);
+                            equipmentsCache[cachedMeasurement.exposure_equipment_id] = equipment;
+                        } catch (error) {
+                            console.warn(`장비 ID ${cachedMeasurement.exposure_equipment_id} 정보를 가져올 수 없습니다.`);
+                        }
+                    }
+                    equipmentInfo += `<tr><th>노광 장비</th><td>${equipment ? equipment.name : '-'}</td></tr>`;
+                } else {
+                    equipmentInfo += `<tr><th>노광 장비</th><td>-</td></tr>`;
+                }
+
+                // 현상 장비 정보
+                if (cachedMeasurement.development_equipment_id) {
+                    let equipment;
+                    if (equipmentsCache[cachedMeasurement.development_equipment_id]) {
+                        equipment = equipmentsCache[cachedMeasurement.development_equipment_id];
+                    } else {
+                        try {
+                            equipment = await api.get(`${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${cachedMeasurement.development_equipment_id}`);
+                            equipmentsCache[cachedMeasurement.development_equipment_id] = equipment;
+                        } catch (error) {
+                            console.warn(`장비 ID ${cachedMeasurement.development_equipment_id} 정보를 가져올 수 없습니다.`);
+                        }
+                    }
+                    equipmentInfo += `<tr><th>현상 장비</th><td>${equipment ? equipment.name : '-'}</td></tr>`;
+                } else {
+                    equipmentInfo += `<tr><th>현상 장비</th><td>-</td></tr>`;
+                }
             }
             
             // SPEC 정보 가져오기
@@ -504,10 +539,10 @@
                             <th>WAFER NO</th>
                             <td>${cachedMeasurement.wafer_no}</td>
                         </tr>
-                        <tr>
+                        ${window.PROCESS_TYPE !== 'ETCH' ? `<tr>
                             <th>Exposure Time</th>
                             <td>${cachedMeasurement.exposure_time || '-'}</td>
-                        </tr>
+                        </tr>` : ''}
                         <tr>
                             <th>작성자</th>
                             <td>${cachedMeasurement.author}</td>
@@ -889,37 +924,50 @@
         }
     }
 
-    // 장비 이름 가져오기
+    // 장비 이름 가져오기 (ETCH/PHOTO 분기 처리)
     async function getEquipmentNames(measurement) {
         let equipmentNames = [];
-        
-        if (measurement.coating_equipment_id) {
-            try {
-                const equipment = await getOrFetchData(equipmentsCache, measurement.coating_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.coating_equipment_id}`);
-                equipmentNames.push(`코팅: ${equipment.name}`);
-            } catch (error) {
-                console.warn(`코팅 장비 ID ${measurement.coating_equipment_id} 정보를 가져올 수 없습니다.`);
+
+        if (window.PROCESS_TYPE === 'ETCH') {
+            // ETCH: 단일 장비
+            if (measurement.etch_equipment_id) {
+                try {
+                    const equipment = await getOrFetchData(equipmentsCache, measurement.etch_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.etch_equipment_id}`);
+                    equipmentNames.push(`ETCH: ${equipment.name}`);
+                } catch (error) {
+                    console.warn(`ETCH 장비 ID ${measurement.etch_equipment_id} 정보를 가져올 수 없습니다.`);
+                }
+            }
+        } else {
+            // PHOTO: 코팅/노광/현상 장비
+            if (measurement.coating_equipment_id) {
+                try {
+                    const equipment = await getOrFetchData(equipmentsCache, measurement.coating_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.coating_equipment_id}`);
+                    equipmentNames.push(`코팅: ${equipment.name}`);
+                } catch (error) {
+                    console.warn(`코팅 장비 ID ${measurement.coating_equipment_id} 정보를 가져올 수 없습니다.`);
+                }
+            }
+
+            if (measurement.exposure_equipment_id) {
+                try {
+                    const equipment = await getOrFetchData(equipmentsCache, measurement.exposure_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.exposure_equipment_id}`);
+                    equipmentNames.push(`노광: ${equipment.name}`);
+                } catch (error) {
+                    console.warn(`노광 장비 ID ${measurement.exposure_equipment_id} 정보를 가져올 수 없습니다.`);
+                }
+            }
+
+            if (measurement.development_equipment_id) {
+                try {
+                    const equipment = await getOrFetchData(equipmentsCache, measurement.development_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.development_equipment_id}`);
+                    equipmentNames.push(`현상: ${equipment.name}`);
+                } catch (error) {
+                    console.warn(`현상 장비 ID ${measurement.development_equipment_id} 정보를 가져올 수 없습니다.`);
+                }
             }
         }
-        
-        if (measurement.exposure_equipment_id) {
-            try {
-                const equipment = await getOrFetchData(equipmentsCache, measurement.exposure_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.exposure_equipment_id}`);
-                equipmentNames.push(`노광: ${equipment.name}`);
-            } catch (error) {
-                console.warn(`노광 장비 ID ${measurement.exposure_equipment_id} 정보를 가져올 수 없습니다.`);
-            }
-        }
-        
-        if (measurement.development_equipment_id) {
-            try {
-                const equipment = await getOrFetchData(equipmentsCache, measurement.development_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.development_equipment_id}`);
-                equipmentNames.push(`현상: ${equipment.name}`);
-            } catch (error) {
-                console.warn(`현상 장비 ID ${measurement.development_equipment_id} 정보를 가져올 수 없습니다.`);
-            }
-        }
-        
+
         return equipmentNames.join(', ') || '-';
     }
 
@@ -1043,28 +1091,35 @@ async function populateEditForm(measurementId) {
         document.getElementById('edit-device').value = cachedMeasurement.device;
         document.getElementById('edit-lot-no').value = cachedMeasurement.lot_no;
         document.getElementById('edit-wafer-no').value = cachedMeasurement.wafer_no;
-        document.getElementById('edit-exposure-time').value = cachedMeasurement.exposure_time || '';
         document.getElementById('edit-value-top').value = cachedMeasurement.value_top;
         document.getElementById('edit-value-center').value = cachedMeasurement.value_center;
         document.getElementById('edit-value-bottom').value = cachedMeasurement.value_bottom;
         document.getElementById('edit-value-left').value = cachedMeasurement.value_left;
         document.getElementById('edit-value-right').value = cachedMeasurement.value_right;
         document.getElementById('edit-author').value = cachedMeasurement.author;
-        
+
         // 장비 옵션 로드
         await loadEquipmentOptions();
-        
-        // 장비 선택
-        if (cachedMeasurement.coating_equipment_id) {
-            document.getElementById('edit-coating-equipment').value = cachedMeasurement.coating_equipment_id;
-        }
-        
-        if (cachedMeasurement.exposure_equipment_id) {
-            document.getElementById('edit-exposure-equipment').value = cachedMeasurement.exposure_equipment_id;
-        }
-        
-        if (cachedMeasurement.development_equipment_id) {
-            document.getElementById('edit-development-equipment').value = cachedMeasurement.development_equipment_id;
+
+        // 장비 선택 (ETCH/PHOTO 분기 처리)
+        if (window.PROCESS_TYPE === 'ETCH') {
+            // ETCH: 단일 장비
+            if (cachedMeasurement.etch_equipment_id) {
+                document.getElementById('edit-etch-equipment').value = cachedMeasurement.etch_equipment_id;
+            }
+        } else {
+            // PHOTO: 코팅/노광/현상 장비
+            if (cachedMeasurement.coating_equipment_id) {
+                document.getElementById('edit-coating-equipment').value = cachedMeasurement.coating_equipment_id;
+            }
+
+            if (cachedMeasurement.exposure_equipment_id) {
+                document.getElementById('edit-exposure-equipment').value = cachedMeasurement.exposure_equipment_id;
+            }
+
+            if (cachedMeasurement.development_equipment_id) {
+                document.getElementById('edit-development-equipment').value = cachedMeasurement.development_equipment_id;
+            }
         }
         
         // 수정 모달 표시
@@ -1076,34 +1131,47 @@ async function populateEditForm(measurementId) {
     }
 }
 
-// 장비 옵션 로드
+// 장비 옵션 로드 (ETCH/PHOTO 분기 처리)
 async function loadEquipmentOptions() {
     try {
         const equipments = await api.getEquipments();
-        
+
         if (equipments && equipments.length > 0) {
-            // 코팅 장비 (type: 코팅)
-            let coatingOptions = '<option value="">선택 안함</option>';
-            // 노광 장비 (type: 노광)
-            let exposureOptions = '<option value="">선택 안함</option>';
-            // 현상 장비 (type: 현상)
-            let developmentOptions = '<option value="">선택 안함</option>';
-            
-            equipments.forEach(equipment => {
-                const option = `<option value="${equipment.id}">${equipment.name}</option>`;
-                
-                if (equipment.type === '코팅') {
-                    coatingOptions += option;
-                } else if (equipment.type === '노광') {
-                    exposureOptions += option;
-                } else if (equipment.type === '현상') {
-                    developmentOptions += option;
-                }
-            });
-            
-            document.getElementById('edit-coating-equipment').innerHTML = coatingOptions;
-            document.getElementById('edit-exposure-equipment').innerHTML = exposureOptions;
-            document.getElementById('edit-development-equipment').innerHTML = developmentOptions;
+            if (window.PROCESS_TYPE === 'ETCH') {
+                // ETCH: ETCH 장비만 로드
+                let etchOptions = '<option value="">선택 안함</option>';
+
+                equipments.forEach(equipment => {
+                    const option = `<option value="${equipment.id}">${equipment.name}</option>`;
+
+                    if (equipment.type === 'ETCH') {
+                        etchOptions += option;
+                    }
+                });
+
+                document.getElementById('edit-etch-equipment').innerHTML = etchOptions;
+            } else {
+                // PHOTO: 코팅/노광/현상 장비
+                let coatingOptions = '<option value="">선택 안함</option>';
+                let exposureOptions = '<option value="">선택 안함</option>';
+                let developmentOptions = '<option value="">선택 안함</option>';
+
+                equipments.forEach(equipment => {
+                    const option = `<option value="${equipment.id}">${equipment.name}</option>`;
+
+                    if (equipment.type === '코팅') {
+                        coatingOptions += option;
+                    } else if (equipment.type === '노광') {
+                        exposureOptions += option;
+                    } else if (equipment.type === '현상') {
+                        developmentOptions += option;
+                    }
+                });
+
+                document.getElementById('edit-coating-equipment').innerHTML = coatingOptions;
+                document.getElementById('edit-exposure-equipment').innerHTML = exposureOptions;
+                document.getElementById('edit-development-equipment').innerHTML = developmentOptions;
+            }
         }
     } catch (error) {
         console.error('장비 옵션 로드 실패:', error);
@@ -1131,7 +1199,6 @@ async function saveEditedMeasurement() {
             device: document.getElementById('edit-device').value,
             lot_no: document.getElementById('edit-lot-no').value,
             wafer_no: document.getElementById('edit-wafer-no').value,
-            exposure_time: document.getElementById('edit-exposure-time').value ? parseInt(document.getElementById('edit-exposure-time').value) : null,
             value_top: parseFloat(document.getElementById('edit-value-top').value),
             value_center: parseFloat(document.getElementById('edit-value-center').value),
             value_bottom: parseFloat(document.getElementById('edit-value-bottom').value),
@@ -1139,22 +1206,32 @@ async function saveEditedMeasurement() {
             value_right: parseFloat(document.getElementById('edit-value-right').value),
             author: document.getElementById('edit-author').value
         };
-        
-        // 장비 ID 설정
-        const coatingEquipmentId = document.getElementById('edit-coating-equipment').value;
-        const exposureEquipmentId = document.getElementById('edit-exposure-equipment').value;
-        const developmentEquipmentId = document.getElementById('edit-development-equipment').value;
-        
-        if (coatingEquipmentId) {
-            measurementData.coating_equipment_id = parseInt(coatingEquipmentId);
-        }
-        
-        if (exposureEquipmentId) {
-            measurementData.exposure_equipment_id = parseInt(exposureEquipmentId);
-        }
-        
-        if (developmentEquipmentId) {
-            measurementData.development_equipment_id = parseInt(developmentEquipmentId);
+
+        // 장비 ID 설정 (ETCH/PHOTO 분기 처리)
+        if (window.PROCESS_TYPE === 'ETCH') {
+            // ETCH: 단일 장비
+            const etchEquipmentId = document.getElementById('edit-etch-equipment').value;
+
+            if (etchEquipmentId) {
+                measurementData.etch_equipment_id = parseInt(etchEquipmentId);
+            }
+        } else {
+            // PHOTO: 코팅/노광/현상 장비
+            const coatingEquipmentId = document.getElementById('edit-coating-equipment').value;
+            const exposureEquipmentId = document.getElementById('edit-exposure-equipment').value;
+            const developmentEquipmentId = document.getElementById('edit-development-equipment').value;
+
+            if (coatingEquipmentId) {
+                measurementData.coating_equipment_id = parseInt(coatingEquipmentId);
+            }
+
+            if (exposureEquipmentId) {
+                measurementData.exposure_equipment_id = parseInt(exposureEquipmentId);
+            }
+
+            if (developmentEquipmentId) {
+                measurementData.development_equipment_id = parseInt(developmentEquipmentId);
+            }
         }
         
         // API 호출하여 데이터 업데이트
