@@ -116,32 +116,45 @@
     // 장비 목록 로드
     async function loadEquipments() {
         try {
-            const equipments = await api.getEquipments();
-            
-            if (equipments && equipments.length > 0) {
-                // 코팅 장비 옵션
-                const coatingEquipments = equipments.filter(eq => eq.type === '코팅');
-                let coatingOptions = '<option value="">선택 안함</option>';
-                coatingEquipments.forEach(equipment => {
-                    coatingOptions += `<option value="${equipment.id}">${equipment.name}</option>`;
-                });
-                document.getElementById('coating-equipment').innerHTML = coatingOptions;
-                
-                // 노광 장비 옵션
-                const exposureEquipments = equipments.filter(eq => eq.type === '노광');
-                let exposureOptions = '<option value="">선택 안함</option>';
-                exposureEquipments.forEach(equipment => {
-                    exposureOptions += `<option value="${equipment.id}">${equipment.name}</option>`;
-                });
-                document.getElementById('exposure-equipment').innerHTML = exposureOptions;
-                
-                // 현상 장비 옵션
-                const developmentEquipments = equipments.filter(eq => eq.type === '현상');
-                let developmentOptions = '<option value="">선택 안함</option>';
-                developmentEquipments.forEach(equipment => {
-                    developmentOptions += `<option value="${equipment.id}">${equipment.name}</option>`;
-                });
-                document.getElementById('development-equipment').innerHTML = developmentOptions;
+            const processType = window.PROCESS_TYPE || 'PHOTO';
+            const equipments = await api.getEquipments(processType);
+
+            if (processType === 'ETCH') {
+                // ETCH 공정: ETCH 장비만 로드
+                if (equipments && equipments.length > 0) {
+                    let etchOptions = '<option value="">선택 안함</option>';
+                    equipments.forEach(equipment => {
+                        etchOptions += `<option value="${equipment.id}">${equipment.name}</option>`;
+                    });
+                    document.getElementById('etch-equipment').innerHTML = etchOptions;
+                }
+            } else {
+                // PHOTO 공정: 코팅/노광/현상 장비 로드
+                if (equipments && equipments.length > 0) {
+                    // 코팅 장비 옵션
+                    const coatingEquipments = equipments.filter(eq => eq.type === '코팅');
+                    let coatingOptions = '<option value="">선택 안함</option>';
+                    coatingEquipments.forEach(equipment => {
+                        coatingOptions += `<option value="${equipment.id}">${equipment.name}</option>`;
+                    });
+                    document.getElementById('coating-equipment').innerHTML = coatingOptions;
+
+                    // 노광 장비 옵션
+                    const exposureEquipments = equipments.filter(eq => eq.type === '노광');
+                    let exposureOptions = '<option value="">선택 안함</option>';
+                    exposureEquipments.forEach(equipment => {
+                        exposureOptions += `<option value="${equipment.id}">${equipment.name}</option>`;
+                    });
+                    document.getElementById('exposure-equipment').innerHTML = exposureOptions;
+
+                    // 현상 장비 옵션
+                    const developmentEquipments = equipments.filter(eq => eq.type === '현상');
+                    let developmentOptions = '<option value="">선택 안함</option>';
+                    developmentEquipments.forEach(equipment => {
+                        developmentOptions += `<option value="${equipment.id}">${equipment.name}</option>`;
+                    });
+                    document.getElementById('development-equipment').innerHTML = developmentOptions;
+                }
             }
         } catch (error) {
             console.error('장비 목록 로드 실패:', error);
@@ -283,20 +296,31 @@
         formData.append('author', authorSelect.value);
         
         // 장비 ID 추가 (선택된 경우에만)
-        const coatingEquipmentId = document.getElementById('coating-equipment').value;
-        const exposureEquipmentId = document.getElementById('exposure-equipment').value;
-        const developmentEquipmentId = document.getElementById('development-equipment').value;
-        
-        if (coatingEquipmentId) {
-            formData.append('coating_equipment_id', coatingEquipmentId);
-        }
-        
-        if (exposureEquipmentId) {
-            formData.append('exposure_equipment_id', exposureEquipmentId);
-        }
-        
-        if (developmentEquipmentId) {
-            formData.append('development_equipment_id', developmentEquipmentId);
+        const processType = window.PROCESS_TYPE || 'PHOTO';
+
+        if (processType === 'ETCH') {
+            // ETCH 공정: ETCH 장비를 coating_equipment_id로 전송 (기존 컬럼 재사용)
+            const etchEquipmentId = document.getElementById('etch-equipment').value;
+            if (etchEquipmentId) {
+                formData.append('coating_equipment_id', etchEquipmentId);
+            }
+        } else {
+            // PHOTO 공정: 코팅/노광/현상 장비 ID 전송
+            const coatingEquipmentId = document.getElementById('coating-equipment').value;
+            const exposureEquipmentId = document.getElementById('exposure-equipment').value;
+            const developmentEquipmentId = document.getElementById('development-equipment').value;
+
+            if (coatingEquipmentId) {
+                formData.append('coating_equipment_id', coatingEquipmentId);
+            }
+
+            if (exposureEquipmentId) {
+                formData.append('exposure_equipment_id', exposureEquipmentId);
+            }
+
+            if (developmentEquipmentId) {
+                formData.append('development_equipment_id', developmentEquipmentId);
+            }
         }
         
         try {

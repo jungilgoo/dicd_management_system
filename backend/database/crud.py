@@ -485,7 +485,7 @@ def get_equipment(db: Session, equipment_id: int):
 def create_equipment(db: Session, equipment: equipment.EquipmentCreate):
     """장비 생성"""
     # 타입 유효성 검사
-    valid_types = ['코팅', '노광', '현상', 'PR_Thickness']
+    valid_types = ['코팅', '노광', '현상', 'PR_Thickness', 'ETCH']
     normalized_type = _normalize_equipment_type(equipment.type)
     if normalized_type not in valid_types:
         raise ValueError(f"Invalid equipment type. Must be one of: {', '.join(valid_types)}")
@@ -508,7 +508,7 @@ def update_equipment(db: Session, equipment_id: int, equipment: equipment.Equipm
 
     if db_equipment:
         # 타입 유효성 검사
-        valid_types = ['코팅', '노광', '현상', 'PR_Thickness']
+        valid_types = ['코팅', '노광', '현상', 'PR_Thickness', 'ETCH']
         normalized_type = _normalize_equipment_type(equipment.type)
         if normalized_type not in valid_types:
             raise ValueError(f"Invalid equipment type. Must be one of: {', '.join(valid_types)}")
