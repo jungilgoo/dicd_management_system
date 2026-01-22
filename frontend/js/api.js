@@ -227,6 +227,10 @@ class API {
         return this.get(this.endpoints.TARGETS, params);
     }
 
+    async getTarget(targetId) {
+        return this.get(`${this.endpoints.TARGETS}/${targetId}`);
+    }
+
     // 장비 관련 메서드
     async getEquipments(processType = null) {
         const params = {};

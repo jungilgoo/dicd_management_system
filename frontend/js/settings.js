@@ -385,49 +385,106 @@
         }
     }
     
-    // 새 타겟 저장
+    // 전역 변수 - 타겟 편집용
+    let editingTargetId = null;
+
+    // 타겟 모달 열기 (추가/수정 겸용)
+    async function openTargetModal(target = null) {
+        // 모달 제목 설정
+        if (target) {
+            document.getElementById('target-modal-title').textContent = '타겟 수정';
+            editingTargetId = target.id;
+        } else {
+            document.getElementById('target-modal-title').textContent = '새 타겟 추가';
+            editingTargetId = null;
+        }
+
+        // 폼 초기화
+        document.getElementById('target-form').reset();
+        document.getElementById('target-id').value = '';
+
+        // 수정 모드인 경우 기존 값 설정
+        if (target) {
+            document.getElementById('target-id').value = target.id;
+            document.getElementById('new-target-product-group').value = selectedProductGroupId;
+
+            // 공정 드롭다운 로드 후 값 설정
+            await loadProcesses(selectedProductGroupId);
+            document.getElementById('new-target-process').value = target.process_id;
+            document.getElementById('new-target-process').disabled = true; // 수정 시 공정 변경 불가
+
+            document.getElementById('new-target-name').value = target.name;
+            document.getElementById('new-target-description').value = target.description || '';
+        } else {
+            // 새 타겟 추가 시
+            document.getElementById('new-target-product-group').value = selectedProductGroupId;
+            await loadProcesses(selectedProductGroupId);
+            document.getElementById('new-target-process').value = selectedProcessId;
+            document.getElementById('new-target-process').disabled = false;
+        }
+
+        // 모달 표시
+        $('#target-modal').modal('show');
+    }
+
+    // 타겟 저장 (추가/수정 겸용)
     async function saveTarget() {
         // 폼 유효성 검사
+        const targetId = document.getElementById('target-id').value;
         const processId = document.getElementById('new-target-process').value;
         const name = document.getElementById('new-target-name').value.trim();
         const description = document.getElementById('new-target-description').value.trim();
-        
+
         if (!processId || !name) {
             alert('공정과 타겟 이름을 입력해 주세요.');
             return;
         }
-        
+
         try {
             // 저장 버튼 비활성화
             document.getElementById('save-target-btn').disabled = true;
             document.getElementById('save-target-btn').innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> 저장 중...';
-            
+
             // API 요청 데이터
             const targetData = {
                 process_id: parseInt(processId),
                 name: name,
                 description: description || null
             };
-            
-            // 새 타겟 추가
-            const newTarget = await api.createTarget(targetData);
-            
+
+            let resultTarget;
+            if (targetId) {
+                // 기존 타겟 수정
+                resultTarget = await api.updateTarget(targetId, targetData);
+            } else {
+                // 새 타겟 추가
+                resultTarget = await api.createTarget(targetData);
+            }
+
             // 모달 닫기
             $('#target-modal').modal('hide');
-            
+
             // 타겟 목록 다시 로드
             await loadTargets(processId);
-            
-            // 새로 생성된 타겟 선택
-            document.getElementById('spec-target').value = newTarget.id;
-            selectedTargetId = newTarget.id;
-            
-            // SPEC 정보 로드 (비어있을 것으로 예상)
-            await loadSpecInfo(newTarget.id);
-            
+
+            // 타겟 선택
+            document.getElementById('spec-target').value = resultTarget.id;
+            selectedTargetId = resultTarget.id;
+
+            // 수정/삭제 버튼 활성화
+            document.getElementById('edit-target-btn').disabled = false;
+            document.getElementById('delete-target-btn').disabled = false;
+
+            // SPEC 정보 로드
+            await loadSpecInfo(resultTarget.id);
+
             // 성공 메시지
-            alert('타겟이 성공적으로 추가되었습니다. 이제 이 타겟에 대한 SPEC을 설정할 수 있습니다.');
-            
+            if (targetId) {
+                alert('타겟이 성공적으로 수정되었습니다.');
+            } else {
+                alert('타겟이 성공적으로 추가되었습니다. 이제 이 타겟에 대한 SPEC을 설정할 수 있습니다.');
+            }
+
         } catch (error) {
             console.error('타겟 저장 실패:', error);
             alert('타겟 저장 중 오류가 발생했습니다.');
@@ -527,12 +584,15 @@
         // 타겟 선택 변경 이벤트
         document.getElementById('spec-target').addEventListener('change', function() {
             selectedTargetId = this.value;
-            
-            // 타겟 삭제 버튼 상태 업데이트
+
+            // 타겟 수정/삭제 버튼 상태 업데이트
+            const editTargetBtn = document.getElementById('edit-target-btn');
             const deleteTargetBtn = document.getElementById('delete-target-btn');
             if (selectedTargetId) {
+                editTargetBtn.disabled = false;
                 deleteTargetBtn.disabled = false;
             } else {
+                editTargetBtn.disabled = true;
                 deleteTargetBtn.disabled = true;
             }
             
@@ -577,26 +637,34 @@
                 alert('먼저 제품군을 선택해 주세요.');
                 return;
             }
-            
+
             // 공정 선택 확인
             if (!selectedProcessId) {
                 alert('먼저 공정을 선택해 주세요.');
                 return;
             }
-            
-            // 새 타겟 모달의 제품군과 공정 선택 드롭다운 설정
-            document.getElementById('new-target-product-group').value = selectedProductGroupId;
-            
-            // 공정 드롭다운 업데이트
-            loadProcesses(selectedProductGroupId).then(() => {
-                document.getElementById('new-target-process').value = selectedProcessId;
-                
-                // 모달 폼 초기화
-                document.getElementById('target-form').reset();
-                
-                // 모달 표시
-                $('#target-modal').modal('show');
-            });
+
+            // 새 타겟 추가 모달 열기
+            openTargetModal();
+        });
+
+        // 타겟 수정 버튼 클릭 이벤트
+        document.getElementById('edit-target-btn').addEventListener('click', async function() {
+            if (!selectedTargetId) {
+                alert('수정할 타겟을 선택해 주세요.');
+                return;
+            }
+
+            try {
+                // 선택된 타겟 정보 조회
+                const target = await api.getTarget(selectedTargetId);
+                if (target) {
+                    openTargetModal(target);
+                }
+            } catch (error) {
+                console.error('타겟 정보 조회 실패:', error);
+                alert('타겟 정보를 불러오는 중 오류가 발생했습니다.');
+            }
         });
         
         // 새 타겟 모달 제품군 선택 변경 이벤트
@@ -628,8 +696,16 @@
                 alert('삭제할 타겟을 선택해 주세요.');
                 return;
             }
-            
+
             deleteTarget(selectedTargetId);
+        });
+
+        // 타겟 모달 닫힐 때 초기화
+        $('#target-modal').on('hidden.bs.modal', function() {
+            document.getElementById('target-id').value = '';
+            document.getElementById('target-modal-title').textContent = '새 타겟 추가';
+            document.getElementById('new-target-process').disabled = false;
+            editingTargetId = null;
         });
     }
 

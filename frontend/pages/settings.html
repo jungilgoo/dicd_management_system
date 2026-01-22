@@ -258,6 +258,9 @@
                                                         <button type="button" class="btn btn-primary" id="add-target-btn">
                                                             <i class="fas fa-plus mr-1"></i> 새 타겟 추가
                                                         </button>
+                                                        <button type="button" class="btn btn-info ml-2" id="edit-target-btn" disabled>
+                                                            <i class="fas fa-edit mr-1"></i> 선택한 타겟 수정
+                                                        </button>
                                                         <button type="button" class="btn btn-danger ml-2" id="delete-target-btn" disabled>
                                                             <i class="fas fa-trash mr-1"></i> 선택한 타겟 삭제
                                                         </button>
@@ -400,6 +403,7 @@
                 </div>
                 <div class="modal-body">
                     <form id="target-form">
+                        <input type="hidden" id="target-id">
                         <div class="form-group">
                             <label for="new-target-product-group">제품군</label>
                             <select class="form-control" id="new-target-product-group" required>
