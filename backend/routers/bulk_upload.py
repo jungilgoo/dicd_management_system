@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from ..database import database
@@ -37,22 +37,30 @@ async def upload_measurement_data(
     return result
 
 @router.get("/template/excel")
-async def download_excel_template():
+async def download_excel_template(
+    process_type: str = Query("PHOTO", description="공정 타입 (PHOTO 또는 ETCH)")
+):
     """
     Excel 업로드 템플릿 다운로드
+
+    - PHOTO: exposure_time 필드 포함
+    - ETCH: exposure_time 필드 제외
     """
     try:
-        excel_data = bulk_import.generate_template_excel()
-        
+        excel_data = bulk_import.generate_template_excel(process_type)
+
         # 파일이 생성되었는지 확인
         if not excel_data or len(excel_data) == 0:
             raise HTTPException(status_code=500, detail="Excel 템플릿 파일 생성에 실패했습니다.")
-        
+
+        # 공정 타입에 따른 파일명
+        filename = f"measurement_upload_template_{process_type.lower()}.xlsx"
+
         return Response(
             content=excel_data,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={
-                "Content-Disposition": "attachment; filename=measurement_upload_template.xlsx"
+                "Content-Disposition": f"attachment; filename={filename}"
             }
         )
     except Exception as e:
@@ -62,16 +70,24 @@ async def download_excel_template():
 
 
 @router.get("/template/csv")
-async def download_csv_template():
+async def download_csv_template(
+    process_type: str = Query("PHOTO", description="공정 타입 (PHOTO 또는 ETCH)")
+):
     """
     CSV 업로드 템플릿 다운로드
+
+    - PHOTO: exposure_time 필드 포함
+    - ETCH: exposure_time 필드 제외
     """
-    csv_data = bulk_import.generate_template_csv()
-    
+    csv_data = bulk_import.generate_template_csv(process_type)
+
+    # 공정 타입에 따른 파일명
+    filename = f"measurement_upload_template_{process_type.lower()}.csv"
+
     return Response(
         content=csv_data,
         media_type="text/csv",
         headers={
-            "Content-Disposition": "attachment; filename=measurement_upload_template.csv"
+            "Content-Disposition": f"attachment; filename={filename}"
         }
     )

@@ -546,6 +546,31 @@
 
 ## 예정된 업데이트
 
+### 2025-01-22 - ETCH 일괄 업로드 템플릿 수정
+- **목적**: ETCH 일괄 업로드 템플릿에서 exposure_time 필드 제거
+- **우선순위**: 중간
+- **상태**: ✅ 완료 (2025-01-23)
+- **문제점**:
+  1. 현재 템플릿에 `exposure_time` 필드 포함 (ETCH에서는 불필요)
+  2. 템플릿 API가 공정 타입을 구분하지 않음
+- **수정 범위**:
+  | 파일 | 수정 내용 | 상태 |
+  |------|----------|------|
+  | `backend/services/bulk_import.py` | 템플릿 함수에 process_type 파라미터 추가 | ✅ 완료 |
+  | `backend/routers/bulk_upload.py` | 템플릿 API에 process_type 쿼리 파라미터 추가 | ✅ 완료 |
+  | `frontend/js/bulk_upload.js` | 템플릿 다운로드 시 process_type 전달 | ✅ 완료 |
+- **구현 내용**:
+  1. `create_template_dataframe(process_type='PHOTO')` - ETCH일 때 exposure_time 제외
+  2. `generate_template_excel(process_type='PHOTO')` - process_type 파라미터 전달
+  3. `generate_template_csv(process_type='PHOTO')` - process_type 파라미터 전달
+  4. API 엔드포인트에 `?process_type=ETCH` 쿼리 파라미터 지원 추가
+  5. 프론트엔드에서 `window.PROCESS_TYPE` 값을 템플릿 다운로드 URL에 포함
+  6. 파일명에 공정 타입 추가 (예: `measurement_upload_template_etch.xlsx`)
+- **검증 방법**:
+  1. ETCH 일괄 업로드 페이지에서 Excel 템플릿 다운로드
+  2. 템플릿에 exposure_time 필드가 없는지 확인
+  3. 템플릿에 데이터 입력 후 업로드 테스트
+
 ### [날짜] - [업데이트 제목]
 - **목적**:
 - **우선순위**: 높음 / 중간 / 낮음

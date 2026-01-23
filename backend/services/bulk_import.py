@@ -259,48 +259,69 @@ def check_duplicates(db: Session, validated_data: List[Dict[str, Any]]) -> Dict[
     
     return duplicates
 
-def create_template_dataframe() -> pd.DataFrame:
+def create_template_dataframe(process_type: str = 'PHOTO') -> pd.DataFrame:
     """
     업로드 템플릿용 데이터프레임 생성
+
+    Args:
+        process_type: 공정 타입 ('PHOTO' 또는 'ETCH')
     """
-    # 필수 열
-    columns = [
-        'device', 'lot_no', 'wafer_no', 'exposure_time',
-        'value_top', 'value_center', 'value_bottom', 'value_left', 'value_right'
-    ]
-    
-    # 예시 데이터 (1행)
-    data = [{
-        'device': 'DEVICE-001',
-        'lot_no': 'LOT12345',
-        'wafer_no': '01',
-        'exposure_time': 2000,
-        'value_top': 1.234,
-        'value_center': 1.234,
-        'value_bottom': 1.234,
-        'value_left': 1.234,
-        'value_right': 1.234
-    }]
-    
+    # ETCH 공정은 exposure_time 제외
+    if process_type == 'ETCH':
+        columns = [
+            'device', 'lot_no', 'wafer_no',
+            'value_top', 'value_center', 'value_bottom', 'value_left', 'value_right'
+        ]
+        data = [{
+            'device': 'DEVICE-001',
+            'lot_no': 'LOT12345',
+            'wafer_no': '01',
+            'value_top': 1.234,
+            'value_center': 1.234,
+            'value_bottom': 1.234,
+            'value_left': 1.234,
+            'value_right': 1.234
+        }]
+    else:
+        # PHOTO 공정은 exposure_time 포함
+        columns = [
+            'device', 'lot_no', 'wafer_no', 'exposure_time',
+            'value_top', 'value_center', 'value_bottom', 'value_left', 'value_right'
+        ]
+        data = [{
+            'device': 'DEVICE-001',
+            'lot_no': 'LOT12345',
+            'wafer_no': '01',
+            'exposure_time': 2000,
+            'value_top': 1.234,
+            'value_center': 1.234,
+            'value_bottom': 1.234,
+            'value_left': 1.234,
+            'value_right': 1.234
+        }]
+
     return pd.DataFrame(data, columns=columns)
 
-def generate_template_excel() -> bytes:
+def generate_template_excel(process_type: str = 'PHOTO') -> bytes:
     """
     Excel 템플릿 파일 생성
+
+    Args:
+        process_type: 공정 타입 ('PHOTO' 또는 'ETCH')
     """
-    df = create_template_dataframe()
+    df = create_template_dataframe(process_type)
     excel_buffer = io.BytesIO()
-    
+
     # 간단한 방식으로 Excel 파일 생성 (xlsxwriter 대신 openpyxl 사용)
     try:
         # xlsxwriter 방식
         with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
             df.to_excel(writer, sheet_name='Template', index=False)
-            
+
             # 워크시트 및 워크북 참조 가져오기
             workbook = writer.book
             worksheet = writer.sheets['Template']
-            
+
             # 헤더 형식 설정
             header_format = workbook.add_format({
                 'bold': True,
@@ -309,11 +330,11 @@ def generate_template_excel() -> bytes:
                 'fg_color': '#D7E4BC',
                 'border': 1
             })
-            
+
             # 헤더 높이 및 형식 설정
             for col_num, value in enumerate(df.columns.values):
                 worksheet.write(0, col_num, value, header_format)
-            
+
             # 열 너비 설정
             column_widths = {
                 'device': 15,
@@ -326,7 +347,7 @@ def generate_template_excel() -> bytes:
                 'value_left': 12,
                 'value_right': 12
             }
-            
+
             for i, col in enumerate(df.columns):
                 if col in column_widths:
                     worksheet.set_column(i, i, column_widths[col])
@@ -334,15 +355,18 @@ def generate_template_excel() -> bytes:
         # 오류 발생 시 기본 방식으로 생성
         print(f"xlsxwriter 오류, 기본 방식으로 대체: {e}")
         df.to_excel(excel_buffer, index=False)
-    
+
     excel_buffer.seek(0)
     return excel_buffer.getvalue()
 
-def generate_template_csv() -> bytes:
+def generate_template_csv(process_type: str = 'PHOTO') -> bytes:
     """
     CSV 템플릿 파일 생성
+
+    Args:
+        process_type: 공정 타입 ('PHOTO' 또는 'ETCH')
     """
-    df = create_template_dataframe()
+    df = create_template_dataframe(process_type)
     csv_buffer = io.BytesIO()
     df.to_csv(csv_buffer, index=False, encoding='utf-8-sig')
     csv_buffer.seek(0)

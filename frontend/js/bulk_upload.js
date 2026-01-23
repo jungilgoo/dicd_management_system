@@ -230,8 +230,11 @@
     // 템플릿 다운로드
     function downloadTemplate(type) {
         try {
-            const url = `${API_CONFIG.BASE_URL}/bulk-upload/template/${type}`;
-            
+            // 공정 타입에 따른 쿼리 파라미터 추가
+            const processType = window.PROCESS_TYPE || 'PHOTO';
+            const url = `${API_CONFIG.BASE_URL}/bulk-upload/template/${type}?process_type=${processType}`;
+            const filename = `measurement_upload_template_${processType.toLowerCase()}.${type === 'excel' ? 'xlsx' : 'csv'}`;
+
             // 새 창에서 다운로드 URL 열기 대신 fetch 사용
             if (type === 'excel') {
                 // Excel 템플릿은 fetch를 사용하여 다운로드
@@ -248,7 +251,7 @@
                         const a = document.createElement('a');
                         a.style.display = 'none';
                         a.href = downloadUrl;
-                        a.download = 'measurement_upload_template.xlsx';
+                        a.download = filename;
                         document.body.appendChild(a);
                         a.click();
                         window.URL.revokeObjectURL(downloadUrl);
