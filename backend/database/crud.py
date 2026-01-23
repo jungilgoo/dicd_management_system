@@ -144,6 +144,7 @@ def create_measurement(db: Session, measurement_data: measurement.MeasurementCre
         coating_equipment_id=measurement_data.coating_equipment_id,
         exposure_equipment_id=measurement_data.exposure_equipment_id,
         development_equipment_id=measurement_data.development_equipment_id,
+        etch_equipment_id=measurement_data.etch_equipment_id,
         device=measurement_data.device,
         lot_no=measurement_data.lot_no,
         wafer_no=measurement_data.wafer_no,
@@ -228,12 +229,13 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
         query = query.filter(models.Measurement.created_at >= start_date)
     if end_date:
         query = query.filter(models.Measurement.created_at <= end_date)
-    # equipment_id 필터 - 세 장비 중 하나라도 일치하는 경우 필터링
+    # equipment_id 필터 - 네 장비 중 하나라도 일치하는 경우 필터링
     if equipment_id:
         query = query.filter(
             (models.Measurement.coating_equipment_id == equipment_id) |
             (models.Measurement.exposure_equipment_id == equipment_id) |
-            (models.Measurement.development_equipment_id == equipment_id)
+            (models.Measurement.development_equipment_id == equipment_id) |
+            (models.Measurement.etch_equipment_id == equipment_id)
         )
     
     # 키워드 검색 처리
@@ -559,7 +561,8 @@ def delete_equipment(db: Session, equipment_id: int):
         measurements_count = db.query(models.Measurement).filter(
             (models.Measurement.coating_equipment_id == equipment_id) |
             (models.Measurement.exposure_equipment_id == equipment_id) |
-            (models.Measurement.development_equipment_id == equipment_id)
+            (models.Measurement.development_equipment_id == equipment_id) |
+            (models.Measurement.etch_equipment_id == equipment_id)
         ).count()
         
         if measurements_count > 0:

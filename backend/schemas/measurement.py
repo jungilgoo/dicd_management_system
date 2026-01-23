@@ -9,6 +9,7 @@ class MeasurementCreate(BaseModel):
     coating_equipment_id: Optional[int] = None
     exposure_equipment_id: Optional[int] = None
     development_equipment_id: Optional[int] = None
+    etch_equipment_id: Optional[int] = None
     device: str
     lot_no: str
     wafer_no: str
@@ -45,6 +46,7 @@ class Measurement(BaseModel):
     coating_equipment_id: Optional[int] = None
     exposure_equipment_id: Optional[int] = None
     development_equipment_id: Optional[int] = None
+    etch_equipment_id: Optional[int] = None
     device: str
     lot_no: str
     wafer_no: str

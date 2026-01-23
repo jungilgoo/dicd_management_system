@@ -84,6 +84,7 @@ class Equipment(Base):
     coating_measurements = relationship("Measurement", foreign_keys="Measurement.coating_equipment_id", back_populates="coating_equipment")
     exposure_measurements = relationship("Measurement", foreign_keys="Measurement.exposure_equipment_id", back_populates="exposure_equipment")
     development_measurements = relationship("Measurement", foreign_keys="Measurement.development_equipment_id", back_populates="development_equipment")
+    etch_measurements = relationship("Measurement", foreign_keys="Measurement.etch_equipment_id", back_populates="etch_equipment")
 
 
 # Measurement 클래스 수정 부분
@@ -98,6 +99,7 @@ class Measurement(Base):
     coating_equipment_id = Column(Integer, ForeignKey("equipments.id"), nullable=True)
     exposure_equipment_id = Column(Integer, ForeignKey("equipments.id"), nullable=True)
     development_equipment_id = Column(Integer, ForeignKey("equipments.id"), nullable=True)
+    etch_equipment_id = Column(Integer, ForeignKey("equipments.id"), nullable=True)
     
     device = Column(String(100), nullable=False)
     lot_no = Column(String(100), nullable=False, index=True)
@@ -126,6 +128,7 @@ class Measurement(Base):
     coating_equipment = relationship("Equipment", foreign_keys=[coating_equipment_id], back_populates="coating_measurements")
     exposure_equipment = relationship("Equipment", foreign_keys=[exposure_equipment_id], back_populates="exposure_measurements")
     development_equipment = relationship("Equipment", foreign_keys=[development_equipment_id], back_populates="development_measurements")
+    etch_equipment = relationship("Equipment", foreign_keys=[etch_equipment_id], back_populates="etch_measurements")
     
 
 # SPC 규칙 테이블
