@@ -230,6 +230,15 @@
                         <div class="card-header">
                             <h3 class="card-title"><i class="fas fa-table mr-1"></i> 측정 데이터</h3>
                             <div class="card-tools">
+                                <button type="button" class="btn btn-danger btn-sm mr-2" id="bulk-delete-btn">
+                                    <i class="fas fa-trash-alt mr-1"></i> 일괄삭제
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm mr-2" id="delete-selected-btn" style="display: none;">
+                                    <i class="fas fa-trash mr-1"></i> 선택 삭제 (<span id="selected-count">0</span>)
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm mr-2" id="cancel-bulk-delete-btn" style="display: none;">
+                                    <i class="fas fa-times mr-1"></i> 취소
+                                </button>
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                     <i class="fas fa-minus"></i>
                                 </button>
@@ -249,11 +258,14 @@
                                 <table class="table table-bordered table-striped" id="data-table">
                                     <thead>
                                         <tr>
+                                            <th style="width: 3%; display: none;" class="bulk-delete-checkbox-col">
+                                                <input type="checkbox" id="select-all-checkbox" title="전체 선택">
+                                            </th>
                                             <th style="width: 8%">날짜</th>
                                             <th style="width: 6%">제품군</th>
                                             <th style="width: 6%">공정</th>
                                             <th style="width: 6%">타겟</th>
-                                            <th style="width: 26%">장비</th> <!-- 장비 열 너비 확장 -->
+                                            <th style="width: 23%">장비</th>
                                             <th style="width: 8%">DEVICE</th>
                                             <th style="width: 8%">LOT NO</th>
                                             <th style="width: 8%">WAFER NO</th>
@@ -261,7 +273,7 @@
                                             <th style="width: 7%">표준편차</th>
                                             <th style="width: 6%">상태</th>
                                             <th style="width: 6%">상세</th>
-                                        </tr>`  
+                                        </tr>
                                     </thead>
                                     <tbody id="data-table-body">
                                         <!-- 데이터가 여기에 동적으로 추가됩니다 -->
@@ -413,6 +425,59 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
                         <button type="button" class="btn btn-danger" id="confirm-delete-btn">삭제</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 일괄 삭제 비밀번호 입력 모달 -->
+        <div class="modal fade" id="bulk-delete-password-modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title"><i class="fas fa-lock mr-2"></i>관리자 인증</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>일괄 삭제 기능을 사용하려면 관리자 비밀번호를 입력하세요.</p>
+                        <div class="form-group">
+                            <label for="bulk-delete-password">비밀번호</label>
+                            <input type="password" class="form-control" id="bulk-delete-password" placeholder="비밀번호 입력">
+                            <small class="text-muted">설정 페이지에서 설정한 비밀번호를 입력하세요.</small>
+                        </div>
+                        <div id="bulk-delete-password-error" class="text-danger" style="display: none;">
+                            비밀번호가 일치하지 않습니다.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-primary" id="bulk-delete-password-confirm-btn">확인</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 일괄 삭제 확인 모달 -->
+        <div class="modal fade" id="bulk-delete-confirm-modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger">
+                        <h4 class="modal-title text-white"><i class="fas fa-exclamation-triangle mr-2"></i>일괄 삭제 확인</h4>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>선택한 <strong id="bulk-delete-count">0</strong>개의 측정 데이터를 삭제하시겠습니까?</p>
+                        <p class="text-danger"><i class="fas fa-exclamation-circle mr-1"></i>이 작업은 되돌릴 수 없습니다.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-danger" id="confirm-bulk-delete-btn">
+                            <i class="fas fa-trash mr-1"></i>삭제
+                        </button>
                     </div>
                 </div>
             </div>

@@ -311,6 +311,34 @@ def delete_measurement(db: Session, measurement_id: int):
         return True
     return False
 
+
+def delete_measurements_bulk(db: Session, measurement_ids: list):
+    """
+    여러 측정 데이터를 일괄 삭제
+    최대 100개까지 허용
+    """
+    if not measurement_ids:
+        return 0
+
+    # 최대 100개까지만 허용
+    if len(measurement_ids) > 100:
+        measurement_ids = measurement_ids[:100]
+
+    # 삭제할 측정 데이터 조회
+    measurements_to_delete = db.query(models.Measurement).filter(
+        models.Measurement.id.in_(measurement_ids)
+    ).all()
+
+    deleted_count = len(measurements_to_delete)
+
+    # 삭제 실행
+    for measurement in measurements_to_delete:
+        db.delete(measurement)
+
+    db.commit()
+
+    return deleted_count
+
 def check_spec_status(db: Session, measurement_id: int):
     """
     측정값이 SPEC 내에 있는지 확인하고 상태 반환

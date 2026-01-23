@@ -68,3 +68,13 @@ class Measurement(BaseModel):
 
 class MeasurementWithSpec(Measurement):
     spec_status: Dict[str, Any]  # LSL, USL, 상태 등
+
+
+class MeasurementBulkDeleteRequest(BaseModel):
+    measurement_ids: List[int]
+
+
+class MeasurementBulkDeleteResponse(BaseModel):
+    success: bool
+    deleted_count: int
+    message: str

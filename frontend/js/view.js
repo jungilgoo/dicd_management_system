@@ -6,9 +6,13 @@
     let processesCache = {};
     let productGroupsCache = {};
     let equipmentsCache = {};
-    
+
     // 전역 변수 (함수 맨 위에 추가)
     let currentMeasurementId = null;
+
+    // 일괄 삭제 모드 관련 전역 변수
+    let isBulkDeleteMode = false;
+    let selectedMeasurementIds = new Set();
 
     // 페이지 초기화
     async function initViewPage() {
@@ -312,8 +316,14 @@
                 }
                 
                 // 행 HTML 생성
+                const checkboxStyle = isBulkDeleteMode ? '' : 'display: none;';
+                const isChecked = selectedMeasurementIds.has(measurement.id) ? 'checked' : '';
+
                 tableHtml += `
                 <tr>
+                    <td class="bulk-delete-checkbox-col text-center" style="${checkboxStyle}">
+                        <input type="checkbox" class="measurement-checkbox" data-id="${measurement.id}" ${isChecked}>
+                    </td>
                     <td>${UTILS.formatDate(measurement.created_at)}</td>
                     <td>${productGroup.name}</td>
                     <td>${process.name}</td>
@@ -347,6 +357,11 @@
                 showMeasurementDetail(measurementId);
             });
         });
+
+        // 체크박스 이벤트 설정 (일괄 삭제 모드일 때만 활성화)
+        if (isBulkDeleteMode) {
+            setupCheckboxEvents();
+        }
     }
     
     // frontend/js/view.js 파일의 showMeasurementDetail 함수만 수정
@@ -734,6 +749,59 @@
         document.getElementById('confirm-delete-btn').addEventListener('click', function() {
             const measurementId = document.getElementById('delete-measurement-id').value;
             deleteMeasurement(measurementId);
+        });
+
+        // 일괄 삭제 버튼 클릭 이벤트
+        document.getElementById('bulk-delete-btn').addEventListener('click', function() {
+            showBulkDeletePasswordModal();
+        });
+
+        // 일괄 삭제 비밀번호 확인 버튼 클릭 이벤트
+        document.getElementById('bulk-delete-password-confirm-btn').addEventListener('click', function() {
+            authenticateBulkDelete();
+        });
+
+        // 비밀번호 입력 필드에서 엔터 키 이벤트
+        document.getElementById('bulk-delete-password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                authenticateBulkDelete();
+            }
+        });
+
+        // 일괄 삭제 취소 버튼 클릭 이벤트
+        document.getElementById('cancel-bulk-delete-btn').addEventListener('click', function() {
+            disableBulkDeleteMode();
+        });
+
+        // 선택 삭제 버튼 클릭 이벤트
+        document.getElementById('delete-selected-btn').addEventListener('click', function() {
+            if (selectedMeasurementIds.size === 0) {
+                alert('삭제할 항목을 선택해주세요.');
+                return;
+            }
+            // 삭제 확인 모달 표시
+            document.getElementById('bulk-delete-count').textContent = selectedMeasurementIds.size;
+            $('#bulk-delete-confirm-modal').modal('show');
+        });
+
+        // 일괄 삭제 확인 버튼 클릭 이벤트
+        document.getElementById('confirm-bulk-delete-btn').addEventListener('click', function() {
+            bulkDeleteMeasurements();
+        });
+
+        // 전체 선택 체크박스 이벤트
+        document.getElementById('select-all-checkbox').addEventListener('change', function() {
+            const isChecked = this.checked;
+            document.querySelectorAll('.measurement-checkbox').forEach(checkbox => {
+                checkbox.checked = isChecked;
+                const measurementId = parseInt(checkbox.dataset.id);
+                if (isChecked) {
+                    selectedMeasurementIds.add(measurementId);
+                } else {
+                    selectedMeasurementIds.delete(measurementId);
+                }
+            });
+            updateSelectedCount();
         });
     }
     
@@ -1305,6 +1373,210 @@ async function deleteMeasurement(measurementId) {
         }
         
         alert('데이터 삭제 중 오류가 발생했습니다: ' + error.message);
+    }
+}
+
+// ===== 일괄 삭제 관련 함수들 =====
+
+// 비밀번호 입력 모달 표시
+function showBulkDeletePasswordModal() {
+    // 비밀번호 필드 초기화
+    document.getElementById('bulk-delete-password').value = '';
+    document.getElementById('bulk-delete-password-error').style.display = 'none';
+
+    // 모달 표시
+    $('#bulk-delete-password-modal').modal('show');
+
+    // 비밀번호 입력 필드에 포커스
+    setTimeout(() => {
+        document.getElementById('bulk-delete-password').focus();
+    }, 500);
+}
+
+// 비밀번호 검증
+function authenticateBulkDelete() {
+    const inputPassword = document.getElementById('bulk-delete-password').value;
+    const storedPassword = localStorage.getItem('admin_password');
+
+    // 비밀번호가 설정되어 있지 않은 경우
+    if (!storedPassword) {
+        alert('관리자 비밀번호가 설정되어 있지 않습니다. 설정 페이지에서 비밀번호를 먼저 설정해주세요.');
+        $('#bulk-delete-password-modal').modal('hide');
+        return;
+    }
+
+    // 비밀번호 검증
+    if (inputPassword === storedPassword) {
+        // 인증 성공
+        document.getElementById('bulk-delete-password-error').style.display = 'none';
+        $('#bulk-delete-password-modal').modal('hide');
+
+        // 일괄 삭제 모드 활성화
+        enableBulkDeleteMode();
+    } else {
+        // 인증 실패
+        document.getElementById('bulk-delete-password-error').style.display = 'block';
+        document.getElementById('bulk-delete-password').select();
+    }
+}
+
+// 일괄 삭제 모드 활성화
+function enableBulkDeleteMode() {
+    isBulkDeleteMode = true;
+    selectedMeasurementIds.clear();
+
+    // 버튼 상태 변경
+    document.getElementById('bulk-delete-btn').style.display = 'none';
+    document.getElementById('delete-selected-btn').style.display = 'inline-block';
+    document.getElementById('cancel-bulk-delete-btn').style.display = 'inline-block';
+
+    // 체크박스 열 표시
+    document.querySelectorAll('.bulk-delete-checkbox-col').forEach(col => {
+        col.style.display = '';
+    });
+
+    // 전체 선택 체크박스 초기화
+    document.getElementById('select-all-checkbox').checked = false;
+
+    // 선택 카운트 업데이트
+    updateSelectedCount();
+
+    // 체크박스 이벤트 설정
+    setupCheckboxEvents();
+
+    // 알림 표시
+    alert('일괄 삭제 모드가 활성화되었습니다. 삭제할 항목을 선택한 후 "선택 삭제" 버튼을 클릭하세요.');
+}
+
+// 일괄 삭제 모드 비활성화
+function disableBulkDeleteMode() {
+    isBulkDeleteMode = false;
+    selectedMeasurementIds.clear();
+
+    // 버튼 상태 변경
+    document.getElementById('bulk-delete-btn').style.display = 'inline-block';
+    document.getElementById('delete-selected-btn').style.display = 'none';
+    document.getElementById('cancel-bulk-delete-btn').style.display = 'none';
+
+    // 체크박스 열 숨기기
+    document.querySelectorAll('.bulk-delete-checkbox-col').forEach(col => {
+        col.style.display = 'none';
+    });
+
+    // 전체 선택 체크박스 초기화
+    document.getElementById('select-all-checkbox').checked = false;
+
+    // 개별 체크박스 초기화
+    document.querySelectorAll('.measurement-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+
+    // 선택 카운트 업데이트
+    updateSelectedCount();
+}
+
+// 체크박스 이벤트 설정
+function setupCheckboxEvents() {
+    document.querySelectorAll('.measurement-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const measurementId = parseInt(this.dataset.id);
+
+            if (this.checked) {
+                selectedMeasurementIds.add(measurementId);
+            } else {
+                selectedMeasurementIds.delete(measurementId);
+            }
+
+            // 전체 선택 체크박스 상태 업데이트
+            const allCheckboxes = document.querySelectorAll('.measurement-checkbox');
+            const checkedCheckboxes = document.querySelectorAll('.measurement-checkbox:checked');
+            document.getElementById('select-all-checkbox').checked =
+                allCheckboxes.length > 0 && allCheckboxes.length === checkedCheckboxes.length;
+
+            // 선택 카운트 업데이트
+            updateSelectedCount();
+        });
+    });
+}
+
+// 선택 카운트 업데이트
+function updateSelectedCount() {
+    document.getElementById('selected-count').textContent = selectedMeasurementIds.size;
+
+    // 선택된 항목이 없으면 삭제 버튼 비활성화
+    const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+    if (selectedMeasurementIds.size === 0) {
+        deleteSelectedBtn.classList.add('disabled');
+    } else {
+        deleteSelectedBtn.classList.remove('disabled');
+    }
+}
+
+// 일괄 삭제 실행
+async function bulkDeleteMeasurements() {
+    try {
+        // 삭제 확인 모달 닫기
+        $('#bulk-delete-confirm-modal').modal('hide');
+
+        // 로딩 표시
+        const loadingHtml = `
+        <div class="position-fixed w-100 h-100" style="top: 0; left: 0; background: rgba(0, 0, 0, 0.5); z-index: 9999;">
+            <div class="d-flex flex-column justify-content-center align-items-center h-100">
+                <div class="spinner-border text-light" role="status">
+                    <span class="sr-only">삭제 중...</span>
+                </div>
+                <p class="text-light mt-3">선택한 데이터를 삭제하는 중입니다...</p>
+            </div>
+        </div>
+        `;
+        const loadingElement = document.createElement('div');
+        loadingElement.innerHTML = loadingHtml;
+        loadingElement.id = 'bulk-delete-loading';
+        document.body.appendChild(loadingElement.firstChild);
+
+        // 선택된 ID 배열로 변환
+        const measurementIds = Array.from(selectedMeasurementIds);
+
+        // API 호출
+        const response = await api.post(`${API_CONFIG.ENDPOINTS.MEASUREMENTS}/bulk-delete`, {
+            measurement_ids: measurementIds
+        });
+
+        // 로딩 제거
+        const loading = document.getElementById('bulk-delete-loading');
+        if (loading) {
+            loading.remove();
+        } else if (document.body.lastChild.classList && document.body.lastChild.classList.contains('position-fixed')) {
+            document.body.removeChild(document.body.lastChild);
+        }
+
+        if (response.success) {
+            // 캐시에서 삭제된 항목 제거
+            measurementsCache = measurementsCache.filter(m => !selectedMeasurementIds.has(m.id));
+
+            // 일괄 삭제 모드 비활성화
+            disableBulkDeleteMode();
+
+            // 테이블 업데이트
+            updateDataTable(measurementsCache);
+
+            // 성공 메시지
+            alert(response.message);
+        } else {
+            alert('일괄 삭제에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('일괄 삭제 실패:', error);
+
+        // 로딩 제거 (오류 발생 시에도)
+        const loading = document.getElementById('bulk-delete-loading');
+        if (loading) {
+            loading.remove();
+        } else if (document.body.lastChild && document.body.lastChild.classList && document.body.lastChild.classList.contains('position-fixed')) {
+            document.body.removeChild(document.body.lastChild);
+        }
+
+        alert('일괄 삭제 중 오류가 발생했습니다: ' + error.message);
     }
 }
 })();

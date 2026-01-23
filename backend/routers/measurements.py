@@ -99,3 +99,27 @@ def delete_measurement(measurement_id: int, db: Session = Depends(database.get_d
     if not success:
         raise HTTPException(status_code=404, detail="Measurement not found")
     return success
+
+
+@router.post("/bulk-delete", response_model=measurement.MeasurementBulkDeleteResponse)
+def bulk_delete_measurements(
+    request: measurement.MeasurementBulkDeleteRequest,
+    db: Session = Depends(database.get_db)
+):
+    """
+    여러 측정 데이터를 일괄 삭제합니다.
+    최대 100개까지 허용됩니다.
+    """
+    if not request.measurement_ids:
+        raise HTTPException(status_code=400, detail="삭제할 데이터를 선택해주세요.")
+
+    if len(request.measurement_ids) > 100:
+        raise HTTPException(status_code=400, detail="한 번에 최대 100개까지만 삭제할 수 있습니다.")
+
+    deleted_count = crud.delete_measurements_bulk(db, request.measurement_ids)
+
+    return measurement.MeasurementBulkDeleteResponse(
+        success=True,
+        deleted_count=deleted_count,
+        message=f"{deleted_count}개의 측정 데이터가 삭제되었습니다."
+    )
