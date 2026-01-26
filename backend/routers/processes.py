@@ -39,9 +39,17 @@ def update_process(
         raise HTTPException(status_code=404, detail="Process not found")
     return db_process
 
-@router.delete("/{process_id}", response_model=bool)
+@router.delete("/{process_id}")
 def delete_process(process_id: int, db: Session = Depends(database.get_db)):
-    success = crud.delete_process(db, process_id=process_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Process not found")
-    return success
+    result = crud.delete_process(db, process_id=process_id)
+
+    if not result["success"]:
+        if result["reason"] == "has_measurements":
+            raise HTTPException(
+                status_code=400,
+                detail=f"측정 데이터가 {result['count']}건 존재하여 삭제할 수 없습니다. 먼저 측정 데이터를 삭제해주세요."
+            )
+        else:
+            raise HTTPException(status_code=404, detail="공정을 찾을 수 없습니다.")
+
+    return {"success": True}

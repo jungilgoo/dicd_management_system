@@ -33,10 +33,22 @@ def update_product_group(db: Session, product_group_id: int, product_group: prod
 def delete_product_group(db: Session, product_group_id: int):
     db_product_group = db.query(models.ProductGroup).filter(models.ProductGroup.id == product_group_id).first()
     if db_product_group:
+        # 하위 공정/타겟들의 측정 데이터가 있는지 확인
+        measurements_count = db.query(models.Measurement).join(
+            models.Target, models.Measurement.target_id == models.Target.id
+        ).join(
+            models.Process, models.Target.process_id == models.Process.id
+        ).filter(
+            models.Process.product_group_id == product_group_id
+        ).count()
+
+        if measurements_count > 0:
+            return {"success": False, "reason": "has_measurements", "count": measurements_count}
+
         db.delete(db_product_group)
         db.commit()
-        return True
-    return False
+        return {"success": True}
+    return {"success": False, "reason": "not_found"}
 
 # 공정 CRUD 함수
 def create_process(db: Session, process: process.ProcessCreate):
@@ -72,10 +84,20 @@ def update_process(db: Session, process_id: int, process: process.ProcessCreate)
 def delete_process(db: Session, process_id: int):
     db_process = db.query(models.Process).filter(models.Process.id == process_id).first()
     if db_process:
+        # 하위 타겟들의 측정 데이터가 있는지 확인
+        measurements_count = db.query(models.Measurement).join(
+            models.Target, models.Measurement.target_id == models.Target.id
+        ).filter(
+            models.Target.process_id == process_id
+        ).count()
+
+        if measurements_count > 0:
+            return {"success": False, "reason": "has_measurements", "count": measurements_count}
+
         db.delete(db_process)
         db.commit()
-        return True
-    return False
+        return {"success": True}
+    return {"success": False, "reason": "not_found"}
 
 # 타겟 CRUD 함수
 def create_target(db: Session, target: target.TargetCreate):
@@ -115,10 +137,18 @@ def update_target(db: Session, target_id: int, target: target.TargetCreate):
 def delete_target(db: Session, target_id: int):
     db_target = db.query(models.Target).filter(models.Target.id == target_id).first()
     if db_target:
+        # 측정 데이터가 있는지 확인
+        measurements_count = db.query(models.Measurement).filter(
+            models.Measurement.target_id == target_id
+        ).count()
+
+        if measurements_count > 0:
+            return {"success": False, "reason": "has_measurements", "count": measurements_count}
+
         db.delete(db_target)
         db.commit()
-        return True
-    return False
+        return {"success": True}
+    return {"success": False, "reason": "not_found"}
 
 # 측정 데이터 생성 함수 수정
 def create_measurement(db: Session, measurement_data: measurement.MeasurementCreate):

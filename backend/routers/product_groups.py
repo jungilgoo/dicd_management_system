@@ -37,9 +37,17 @@ def update_product_group(
         raise HTTPException(status_code=404, detail="Product group not found")
     return db_product_group
 
-@router.delete("/{product_group_id}", response_model=bool)
+@router.delete("/{product_group_id}")
 def delete_product_group(product_group_id: int, db: Session = Depends(database.get_db)):
-    success = crud.delete_product_group(db, product_group_id=product_group_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Product group not found")
-    return success
+    result = crud.delete_product_group(db, product_group_id=product_group_id)
+
+    if not result["success"]:
+        if result["reason"] == "has_measurements":
+            raise HTTPException(
+                status_code=400,
+                detail=f"측정 데이터가 {result['count']}건 존재하여 삭제할 수 없습니다. 먼저 측정 데이터를 삭제해주세요."
+            )
+        else:
+            raise HTTPException(status_code=404, detail="제품군을 찾을 수 없습니다.")
+
+    return {"success": True}
