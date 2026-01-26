@@ -493,12 +493,20 @@
     
     // DEVICE 존재 여부 확인 함수
     async function checkDeviceExists(device) {
+        const url = `${API_CONFIG.BASE_URL}/measurements/check-device?device=${encodeURIComponent(device)}`;
+        console.log('DEVICE 확인 API 호출:', url);
+
         try {
-            const response = await fetch(`${API_CONFIG.BASE_URL}/measurements/check-device?device=${encodeURIComponent(device)}`);
+            const response = await fetch(url);
+            console.log('DEVICE 확인 응답 상태:', response.status);
+
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('DEVICE 확인 API 오류 응답:', errorText);
                 throw new Error('DEVICE 확인 실패');
             }
             const result = await response.json();
+            console.log('DEVICE 확인 결과:', result);
             return result.exists;
         } catch (error) {
             console.error('DEVICE 확인 오류:', error);
