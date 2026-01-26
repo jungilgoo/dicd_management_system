@@ -255,6 +255,7 @@
             const measureParams = {
                 target_id: selectedTargetId,
                 limit: 1000,
+                process_type: window.PROCESS_TYPE || 'PHOTO',
                 ...params
             };
             const measurementsResult = await api.getMeasurements(measureParams);
