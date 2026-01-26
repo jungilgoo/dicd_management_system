@@ -582,7 +582,18 @@ def check_duplicate_measurement(db: Session, target_id: int, lot_no: str, wafer_
         models.Measurement.lot_no == lot_no,
         models.Measurement.wafer_no == wafer_no
     ).first()
-    
+
+    return existing is not None
+
+
+def check_device_exists(db: Session, device: str) -> bool:
+    """
+    해당 DEVICE명이 기존 측정 데이터에 존재하는지 확인
+    """
+    existing = db.query(models.Measurement).filter(
+        models.Measurement.device == device
+    ).first()
+
     return existing is not None
 
 

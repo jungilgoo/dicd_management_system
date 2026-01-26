@@ -11,6 +11,18 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+@router.get("/check-device")
+def check_device_exists(
+    device: str = Query(..., description="확인할 DEVICE명"),
+    db: Session = Depends(database.get_db)
+):
+    """
+    DEVICE명이 기존 측정 데이터에 존재하는지 확인합니다.
+    """
+    exists = crud.check_device_exists(db, device=device)
+    return {"exists": exists, "device": device}
+
+
 @router.post("/", response_model=measurement.Measurement)
 def create_measurement(
     measurement_data: measurement.MeasurementCreate, db: Session = Depends(database.get_db)

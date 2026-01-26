@@ -340,6 +340,43 @@
                         </div>
                     </div>
 
+                    <!-- DEVICE 확인 모달 -->
+                    <div class="modal fade" id="device-confirm-modal" tabindex="-1" role="dialog" aria-labelledby="device-confirm-modal-title" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header bg-warning">
+                                    <h5 class="modal-title" id="device-confirm-modal-title">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>새로운 DEVICE 등록
+                                    </h5>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-danger font-weight-bold">
+                                        새로운 DEVICE입니다. RUN SHEET와 동일하게 정확한 DEVICE명을 등록해주세요.
+                                    </p>
+                                    <div class="form-group">
+                                        <label>입력한 DEVICE명</label>
+                                        <input type="text" class="form-control bg-light" id="original-device" readonly>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>DEVICE명 재입력 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="confirm-device"
+                                               placeholder="위와 동일한 DEVICE명을 다시 입력하세요"
+                                               onpaste="return false" oncopy="return false" oncut="return false"
+                                               autocomplete="off">
+                                        <small class="form-text text-muted">복사/붙여넣기가 비활성화되어 있습니다.</small>
+                                        <div class="invalid-feedback" id="device-mismatch-error">
+                                            입력한 DEVICE명이 일치하지 않습니다. 다시 확인해주세요.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" id="cancel-device-btn">취소</button>
+                                    <button type="button" class="btn btn-primary" id="confirm-device-btn">확인</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
         <!-- 푸터 -->
         <footer class="main-footer">
             <strong>Copyright &copy; 2025 <a href="#">ETCH 공정 관리 시스템</a>.</strong>

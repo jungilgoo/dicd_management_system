@@ -5,6 +5,7 @@
     let selectedProcessId = null;
     let selectedTargetId = null;
     let currentSpec = null;
+    let pendingFormData = null; // DEVICE 확인 후 저장할 데이터 임시 저장
     
     // 페이지 초기화
     async function initInputPage() {
@@ -490,24 +491,151 @@
         return allValid;
     }
     
+    // DEVICE 존재 여부 확인 함수
+    async function checkDeviceExists(device) {
+        try {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/measurements/check-device?device=${encodeURIComponent(device)}`);
+            if (!response.ok) {
+                throw new Error('DEVICE 확인 실패');
+            }
+            const result = await response.json();
+            return result.exists;
+        } catch (error) {
+            console.error('DEVICE 확인 오류:', error);
+            // 오류 발생 시 기존 DEVICE로 간주하여 진행 (안전한 기본값)
+            return true;
+        }
+    }
+
+    // 실제 저장 처리 함수
+    async function performSave(formData) {
+        try {
+            // 중복 체크
+            const checkResult = await api.checkDuplicateMeasurement(
+                formData.target_id,
+                formData.lot_no,
+                formData.wafer_no
+            );
+
+            if (checkResult.isDuplicate) {
+                // 중복 데이터가 있을 경우 사용자에게 확인
+                if (!confirm('이미 동일한 타겟에 대한 LOT NO와 WAFER NO를 가진 측정 데이터가 존재합니다. 그래도 저장하시겠습니까?')) {
+                    return false; // 저장 취소
+                }
+            }
+
+            // 제출 버튼 비활성화
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> 저장 중...';
+
+            // API 호출
+            const result = await api.createMeasurement(formData);
+
+            // 성공 메시지
+            alert('측정 데이터가 성공적으로 저장되었습니다.');
+
+            // 폼 초기화 (작성자 정보 유지)
+            const authorValue = document.getElementById('author').value;
+            document.getElementById('measurement-form').reset();
+            // 작성자 정보 복원
+            document.getElementById('author').value = authorValue;
+
+            // 제출 버튼 활성화
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save mr-1"></i> 저장';
+
+            return true;
+        } catch (error) {
+            console.error('측정 데이터 저장 실패:', error);
+            alert('측정 데이터 저장 중 오류가 발생했습니다.');
+
+            // 제출 버튼 활성화
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save mr-1"></i> 저장';
+
+            return false;
+        }
+    }
+
+    // DEVICE 확인 모달 표시 함수
+    function showDeviceConfirmModal(device, formData) {
+        pendingFormData = formData;
+        document.getElementById('original-device').value = device;
+        document.getElementById('confirm-device').value = '';
+        document.getElementById('confirm-device').classList.remove('is-invalid');
+        $('#device-confirm-modal').modal('show');
+
+        // 재입력 필드에 포커스
+        setTimeout(() => {
+            document.getElementById('confirm-device').focus();
+        }, 500);
+    }
+
+    // DEVICE 확인 모달 이벤트 설정
+    function setupDeviceConfirmModal() {
+        // 확인 버튼 클릭
+        document.getElementById('confirm-device-btn').addEventListener('click', async function() {
+            const originalDevice = document.getElementById('original-device').value;
+            const confirmDevice = document.getElementById('confirm-device').value;
+
+            if (originalDevice !== confirmDevice) {
+                // 불일치: 오류 표시
+                document.getElementById('confirm-device').classList.add('is-invalid');
+                document.getElementById('confirm-device').focus();
+                return;
+            }
+
+            // 일치: 모달 닫고 저장 진행
+            $('#device-confirm-modal').modal('hide');
+            if (pendingFormData) {
+                await performSave(pendingFormData);
+                pendingFormData = null;
+            }
+        });
+
+        // 취소 버튼 클릭
+        document.getElementById('cancel-device-btn').addEventListener('click', function() {
+            $('#device-confirm-modal').modal('hide');
+            pendingFormData = null;
+        });
+
+        // 재입력 필드에서 엔터 키 처리
+        document.getElementById('confirm-device').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('confirm-device-btn').click();
+            }
+        });
+
+        // 재입력 필드 입력 시 오류 상태 초기화
+        document.getElementById('confirm-device').addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+        });
+    }
+
     // 이벤트 리스너 설정
     function setupEventListeners() {
+        // DEVICE 확인 모달 이벤트 설정
+        setupDeviceConfirmModal();
+
         document.getElementById('measurement-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             // 모든 필수 입력 항목 확인
             if (!selectedTargetId) {
                 alert('제품군, 공정, 타겟을 선택해주세요.');
                 return;
             }
-            
+
             // 측정값 검사
             if (!validateMeasurementValues()) {
                 if (!confirm('측정값이 SPEC 범위를 벗어났습니다. 계속 진행하시겠습니까?')) {
                     return;
                 }
             }
-            
+
             // 폼 데이터 수집
             const processType = window.PROCESS_TYPE || 'PHOTO';
             let formData;
@@ -546,51 +674,16 @@
                     author: document.getElementById('author').value
                 };
             }
-            
-            try {
-                // 중복 체크
-                const checkResult = await api.checkDuplicateMeasurement(
-                    selectedTargetId,
-                    formData.lot_no,
-                    formData.wafer_no
-                );
-                
-                if (checkResult.isDuplicate) {
-                    // 중복 데이터가 있을 경우 사용자에게 확인
-                    if (!confirm('이미 동일한 타겟에 대한 LOT NO와 WAFER NO를 가진 측정 데이터가 존재합니다. 그래도 저장하시겠습니까?')) {
-                        return; // 저장 취소
-                    }
-                }
-                
-                // 제출 버튼 비활성화
-                const submitBtn = document.getElementById('submit-btn');
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> 저장 중...';
-                
-                // API 호출
-                const result = await api.createMeasurement(formData);
-                
-                // 성공 메시지
-                alert('측정 데이터가 성공적으로 저장되었습니다.');
-                
-                // 폼 초기화 (작성자 정보 유지)
-                const authorValue = document.getElementById('author').value;
-                document.getElementById('measurement-form').reset();
-                // 작성자 정보 복원
-                document.getElementById('author').value = authorValue;
-                
-                // 제출 버튼 활성화
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save mr-1"></i> 저장';
-                
-            } catch (error) {
-                console.error('측정 데이터 저장 실패:', error);
-                alert('측정 데이터 저장 중 오류가 발생했습니다.');
-                
-                // 제출 버튼 활성화
-                const submitBtn = document.getElementById('submit-btn');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save mr-1"></i> 저장';
+
+            // DEVICE 존재 여부 확인
+            const deviceExists = await checkDeviceExists(formData.device);
+
+            if (deviceExists) {
+                // 기존 DEVICE: 바로 저장
+                await performSave(formData);
+            } else {
+                // 신규 DEVICE: 재입력 모달 표시
+                showDeviceConfirmModal(formData.device, formData);
             }
         });
     
