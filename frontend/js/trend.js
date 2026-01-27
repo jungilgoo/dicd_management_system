@@ -1209,6 +1209,6 @@
     // 이벤트 리스너 등록
     $(document).ready(function() {
         initTrendPage();
-        setupEventListeners();
+        // setupEventListeners()는 initTrendPage() 내에서 호출되므로 여기서 중복 호출하지 않음
     });
 })();

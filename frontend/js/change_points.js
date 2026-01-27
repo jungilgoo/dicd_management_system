@@ -212,14 +212,15 @@ async function loadTargetsForEdit(processId) {
 async function loadChangePoints() {
     try {
         showLoadingInTable();
-        const response = await api.get(`${api.endpoints.CHANGE_POINTS}/with-details`);
+        const processType = window.PROCESS_TYPE || 'PHOTO';
+        const response = await api.get(`${api.endpoints.CHANGE_POINTS}/with-details`, { process_type: processType });
 
         if (!response) {
             throw new Error('응답 데이터가 없습니다');
         }
 
         changePoints = response;
-        console.log(`[ChangePoints] 변경점 ${changePoints.length}개 로드 완료`);
+        console.log(`[ChangePoints] ${processType} 변경점 ${changePoints.length}개 로드 완료`);
         renderChangePointsTable();
 
     } catch (error) {

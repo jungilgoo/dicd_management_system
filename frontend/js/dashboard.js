@@ -543,9 +543,11 @@ function renderCpkHeatmap() {
 
 // 모니터링 타겟 초기화
 async function initMonitoringTargets() {
-    // 로컬 스토리지에서 저장된 타겟 가져오기
-    const savedTargets = localStorage.getItem('monitoring_targets');
-    
+    // 로컬 스토리지에서 저장된 타겟 가져오기 (공정 타입별로 구분)
+    const processType = window.PROCESS_TYPE || 'PHOTO';
+    const storageKey = `monitoring_targets_${processType}`;
+    const savedTargets = localStorage.getItem(storageKey);
+
     if (savedTargets) {
         monitoringTargets = JSON.parse(savedTargets);
         
@@ -708,10 +710,12 @@ async function saveMonitoringTargets() {
         }
     }
     
-    // 새 타겟 정보 저장
+    // 새 타겟 정보 저장 (공정 타입별로 구분)
+    const processType = window.PROCESS_TYPE || 'PHOTO';
+    const storageKey = `monitoring_targets_${processType}`;
     monitoringTargets = newTargets;
-    localStorage.setItem('monitoring_targets', JSON.stringify(monitoringTargets));
-    
+    localStorage.setItem(storageKey, JSON.stringify(monitoringTargets));
+
     // 모달 닫기
     $('#target-config-modal').modal('hide');
     
