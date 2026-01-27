@@ -31,6 +31,8 @@ const API_CONFIG = {
         PR_THICKNESS: '/pr-thickness',
         // 변경점 관련 엔드포인트 추가
         CHANGE_POINTS: '/change-points',
+        // 작성자 관련 엔드포인트 추가
+        AUTHORS: '/authors',
     }
 };
 

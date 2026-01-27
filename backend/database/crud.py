@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models
-from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness, change_point
+from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness, change_point, author
 import statistics
 from datetime import datetime, timedelta
 
@@ -1054,6 +1054,74 @@ def delete_change_point(db: Session, change_point_id: int):
     db_change_point = db.query(models.ChangePoint).filter(models.ChangePoint.id == change_point_id).first()
     if db_change_point:
         db.delete(db_change_point)
+        db.commit()
+        return True
+    return False
+
+
+# ===== Author CRUD 함수 =====
+
+def get_authors(db: Session, process_type: str = None, is_active: bool = None):
+    """작성자 목록 조회"""
+    query = db.query(models.Author)
+
+    if process_type:
+        query = query.filter(models.Author.process_type == process_type)
+    if is_active is not None:
+        query = query.filter(models.Author.is_active == is_active)
+
+    return query.order_by(models.Author.name).all()
+
+
+def get_author(db: Session, author_id: int):
+    """작성자 단일 조회"""
+    return db.query(models.Author).filter(models.Author.id == author_id).first()
+
+
+def get_author_by_name(db: Session, name: str, process_type: str):
+    """이름과 공정 타입으로 작성자 조회"""
+    return db.query(models.Author).filter(
+        models.Author.name == name,
+        models.Author.process_type == process_type
+    ).first()
+
+
+def create_author(db: Session, author_data: author.AuthorCreate):
+    """작성자 생성"""
+    # 중복 확인
+    existing = get_author_by_name(db, author_data.name, author_data.process_type)
+    if existing:
+        return None
+
+    db_author = models.Author(
+        name=author_data.name,
+        process_type=author_data.process_type,
+        is_active=author_data.is_active
+    )
+    db.add(db_author)
+    db.commit()
+    db.refresh(db_author)
+    return db_author
+
+
+def update_author(db: Session, author_id: int, author_data: author.AuthorUpdate):
+    """작성자 수정"""
+    db_author = db.query(models.Author).filter(models.Author.id == author_id).first()
+    if db_author:
+        if author_data.name is not None:
+            db_author.name = author_data.name
+        if author_data.is_active is not None:
+            db_author.is_active = author_data.is_active
+        db.commit()
+        db.refresh(db_author)
+    return db_author
+
+
+def delete_author(db: Session, author_id: int):
+    """작성자 삭제"""
+    db_author = db.query(models.Author).filter(models.Author.id == author_id).first()
+    if db_author:
+        db.delete(db_author)
         db.commit()
         return True
     return False

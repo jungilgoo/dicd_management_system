@@ -738,108 +738,148 @@
         });
     }
     
-    // 작성자 관리 기능 (모달 창 사용)
+    // 작성자 관리 기능 (서버 DB 사용)
     function initAuthorManagement() {
-        // 로컬 스토리지에서 작성자 목록 불러오기
-        const loadAuthors = () => {
-            const authors = localStorage.getItem('authors');
-            return authors ? JSON.parse(authors) : ['관리자']; // 기본값 설정
-        };
+        // 현재 공정 타입 (PHOTO 또는 ETCH)
+        const processType = window.PROCESS_TYPE || 'PHOTO';
 
-        // 작성자 목록 저장
-        const saveAuthors = (authors) => {
-            localStorage.setItem('authors', JSON.stringify(authors));
+        // 서버에서 작성자 목록 불러오기
+        const loadAuthors = async () => {
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/authors?process_type=${processType}&is_active=true`);
+                if (!response.ok) {
+                    throw new Error('작성자 목록 조회 실패');
+                }
+                const authors = await response.json();
+                return authors;
+            } catch (error) {
+                console.error('작성자 목록 로드 오류:', error);
+                return [];
+            }
         };
 
         // 작성자 드롭다운 업데이트
-        const updateAuthorDropdown = () => {
-            const authors = loadAuthors();
+        const updateAuthorDropdown = async () => {
+            const authors = await loadAuthors();
             const authorSelect = document.getElementById('author');
-            
+
             // 기존 옵션 제거 (첫 번째 항목 제외)
             while (authorSelect.options.length > 1) {
                 authorSelect.remove(1);
             }
-            
+
             // 작성자 옵션 추가
             authors.forEach(author => {
                 const option = document.createElement('option');
-                option.value = author;
-                option.textContent = author;
+                option.value = author.name;
+                option.textContent = author.name;
+                option.dataset.id = author.id;
                 authorSelect.appendChild(option);
             });
         };
 
         // 작성자 목록 업데이트 (모달 창)
-        const updateAuthorList = () => {
-            const authors = loadAuthors();
+        const updateAuthorList = async () => {
+            const authors = await loadAuthors();
             const authorList = document.getElementById('author-list');
-            
+
             // 목록 초기화
             authorList.innerHTML = '';
-            
+
+            if (authors.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item text-muted';
+                li.textContent = '등록된 작성자가 없습니다.';
+                authorList.appendChild(li);
+                return;
+            }
+
             // 작성자 목록 생성
             authors.forEach(author => {
                 const li = document.createElement('li');
                 li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                li.textContent = author;
-                
+                li.textContent = author.name;
+
                 // 삭제 버튼
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'btn btn-sm btn-outline-danger';
                 deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
                 deleteBtn.onclick = function() {
-                    removeAuthor(author);
+                    removeAuthor(author.id, author.name);
                 };
-                
+
                 li.appendChild(deleteBtn);
                 authorList.appendChild(li);
             });
         };
 
-        // 작성자 추가
-        const addAuthor = (newAuthor) => {
-            if (!newAuthor || newAuthor.trim() === '') {
+        // 작성자 추가 (서버 API 호출)
+        const addAuthor = async (newAuthorName) => {
+            if (!newAuthorName || newAuthorName.trim() === '') {
                 return false;
             }
-            
-            // 중복 확인
-            const authors = loadAuthors();
-            if (authors.includes(newAuthor.trim())) {
-                alert('이미 존재하는 작성자입니다.');
+
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/authors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: newAuthorName.trim(),
+                        process_type: processType,
+                        is_active: true
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    if (response.status === 400) {
+                        alert('이미 존재하는 작성자입니다.');
+                    } else {
+                        alert('작성자 추가에 실패했습니다.');
+                    }
+                    return false;
+                }
+
+                // UI 업데이트
+                await updateAuthorDropdown();
+                await updateAuthorList();
+
+                return true;
+            } catch (error) {
+                console.error('작성자 추가 오류:', error);
+                alert('작성자 추가 중 오류가 발생했습니다.');
                 return false;
             }
-            
-            // 새 작성자 추가
-            authors.push(newAuthor.trim());
-            saveAuthors(authors);
-            
-            // UI 업데이트
-            updateAuthorDropdown();
-            updateAuthorList();
-            
-            return true;
         };
 
-        // 작성자 제거
-        const removeAuthor = (authorToRemove) => {
-            const authors = loadAuthors();
-            
-            // 최소 한 명의 작성자는 유지
-            if (authors.length <= 1) {
-                alert('최소 한 명의 작성자는 유지해야 합니다.');
+        // 작성자 제거 (서버 API 호출)
+        const removeAuthor = async (authorId, authorName) => {
+            if (!confirm(`'${authorName}' 작성자를 삭제하시겠습니까?`)) {
                 return false;
             }
-            
-            // 작성자 삭제
-            const updatedAuthors = authors.filter(author => author !== authorToRemove);
-            saveAuthors(updatedAuthors);
-            
-            // UI 업데이트
-            updateAuthorDropdown();
-            updateAuthorList();
-            
-            return true;
+
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/authors/${authorId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    alert('작성자 삭제에 실패했습니다.');
+                    return false;
+                }
+
+                // UI 업데이트
+                await updateAuthorDropdown();
+                await updateAuthorList();
+
+                return true;
+            } catch (error) {
+                console.error('작성자 삭제 오류:', error);
+                alert('작성자 삭제 중 오류가 발생했습니다.');
+                return false;
+            }
         };
 
         // 추가/관리 버튼 이벤트 (인라인)
@@ -848,11 +888,11 @@
         });
 
         // 모달 창에서 추가 버튼 이벤트
-        document.getElementById('add-author-modal-btn').addEventListener('click', () => {
+        document.getElementById('add-author-modal-btn').addEventListener('click', async () => {
             const newAuthorInput = document.getElementById('new-author');
             const newAuthor = newAuthorInput.value;
-            
-            if (addAuthor(newAuthor)) {
+
+            if (await addAuthor(newAuthor)) {
                 newAuthorInput.value = ''; // 입력 필드 초기화
                 // 새로 추가된 작성자 선택
                 const authorSelect = document.getElementById('author');

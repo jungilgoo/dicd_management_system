@@ -235,6 +235,18 @@ class PRThicknessMeasurement(Base):
     equipment = relationship("PRThicknessEquipment", back_populates="measurements")
 
 
+# 작성자 테이블
+class Author(Base):
+    __tablename__ = "authors"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    process_type = Column(String(20), nullable=False, index=True)  # PHOTO, ETCH
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
 # 변경점 등록 테이블
 class ChangePoint(Base):
     __tablename__ = "change_points"
