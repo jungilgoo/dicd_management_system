@@ -131,7 +131,8 @@ function generateDistributionChartTitle() {
     const targetSelect = document.getElementById('target');
     const periodSelect = document.getElementById('analysis-period');
 
-    let title = 'DICD 분포분석';
+    const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+    let title = `${cdType} 분포분석`;
 
     if (currentTarget && productGroupSelect.value && processSelect.value) {
         const productGroupName = productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '';
@@ -159,7 +160,7 @@ function generateDistributionChartTitle() {
             periodText = periodMap[periodValue] || '최근 30일';
         }
 
-        title = `DICD 분포분석 (제품군:${productGroupName}, 공정:${processName}, 타겟:${targetName}, 기간:${periodText})`;
+        title = `${cdType} 분포분석 (제품군:${productGroupName}, 공정:${processName}, 타겟:${targetName}, 기간:${periodText})`;
     }
 
     return title;

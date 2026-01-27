@@ -615,7 +615,8 @@ function generateBoxplotTitle() {
     const targetSelect = document.getElementById('target-select');
     const daysSelect = document.getElementById('days-select');
 
-    let title = 'DICD 박스플롯분석';
+    const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+    let title = `${cdType} 박스플롯분석`;
 
     if (targetSelect && targetSelect.value && productGroupSelect.value && processSelect.value) {
         const productGroupName = productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '';
@@ -643,7 +644,7 @@ function generateBoxplotTitle() {
             periodText = periodMap[periodValue] || '최근 30일';
         }
 
-        title = `DICD 박스플롯분석 (제품군:${productGroupName}, 공정:${processName}, 타겟:${targetName}, 기간:${periodText})`;
+        title = `${cdType} 박스플롯분석 (제품군:${productGroupName}, 공정:${processName}, 타겟:${targetName}, 기간:${periodText})`;
     }
 
     return title;

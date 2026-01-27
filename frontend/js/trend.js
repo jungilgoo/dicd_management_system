@@ -128,7 +128,9 @@
         const targetSelect = document.getElementById('target');
         const periodSelect = document.getElementById('analysis-period');
 
-        let title = 'DICD 추이 분석';
+        // ETCH 공정은 FICD, PHOTO 공정은 DICD
+        const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+        let title = `${cdType} 추이 분석`;
 
         if (selectedTargetId && productGroupSelect.value && processSelect.value) {
             const productGroupName = productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '';
@@ -156,7 +158,7 @@
                 periodText = periodMap[periodValue] || '최근 30일';
             }
 
-            title = `DICD 추이 분석 (제품군:${productGroupName}, 공정:${processName}, 타겟:${targetName}, 기간:${periodText})`;
+            title = `${cdType} 추이 분석 (제품군:${productGroupName}, 공정:${processName}, 타겟:${targetName}, 기간:${periodText})`;
         }
 
         return title;
@@ -833,21 +835,26 @@
     function updateChartDataTable(measurements) {
         const tbody = document.querySelector('#chart-data-table tbody');
         if (!tbody) return;
-        
+
         // 테이블 초기화
         tbody.innerHTML = '';
-        
+
+        // ETCH 공정 여부 확인
+        const isEtch = window.PROCESS_TYPE === 'ETCH';
+
         // 데이터가 있으면 테이블 업데이트
         if (measurements && measurements.length > 0) {
             measurements.forEach(measurement => {
                 const date = new Date(measurement.created_at).toLocaleDateString();
+                // ETCH 공정에서는 Exposure Time 컬럼 제외
+                const exposureTimeCell = isEtch ? '' : `<td>${measurement.exposure_time || '-'}</td>`;
                 const row = `
                     <tr>
                         <td>${date}</td>
                         <td>${measurement.author || '-'}</td>
                         <td>${measurement.device || '-'}</td>
                         <td>${measurement.lot_no || '-'}</td>
-                        <td>${measurement.exposure_time || '-'}</td>
+                        ${exposureTimeCell}
                         <td>${measurement.value_top ? measurement.value_top.toFixed(3) : '-'}</td>
                         <td>${measurement.value_center ? measurement.value_center.toFixed(3) : '-'}</td>
                         <td>${measurement.value_bottom ? measurement.value_bottom.toFixed(3) : '-'}</td>
