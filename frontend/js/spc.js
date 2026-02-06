@@ -392,13 +392,13 @@
     }
 
     // 차트 제목 생성 함수
-    function generateChartTitle(chartType = '') {
+    function generateChartTitle() {
         const productGroupSelect = document.getElementById('product-group');
         const processSelect = document.getElementById('process');
         const targetSelect = document.getElementById('target');
         const periodSelect = document.getElementById('analysis-period');
 
-        let title = chartType ? `DICD ${chartType}` : 'DICD SPC 분석';
+        let title = '';
 
         if (selectedTargetId && productGroupSelect.value && processSelect.value) {
             const productGroupName = productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '';
@@ -426,7 +426,7 @@
                 periodText = periodMap[periodValue] || '최근 30일';
             }
 
-            title = `DICD ${chartType} (제품군:${productGroupName}, 공정:${processName}, 타겟:${targetName}, 기간:${periodText})`;
+            title = `제품군:${productGroupName}, 공정:${processName}, 타겟:${targetName}, 기간:${periodText}`;
         }
 
         return title;
