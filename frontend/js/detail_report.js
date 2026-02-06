@@ -626,7 +626,7 @@
         const spec = dist.spec || currentData.stats?.spec || {};
 
         // 히스토그램 데이터
-        const binCenters = histogram.bin_centers || [];
+        const binCenters = histogram.bins || histogram.bin_centers || [];
         const counts = histogram.counts || [];
 
         const datasets = [{
@@ -700,18 +700,20 @@
 
         // 분포 통계 표시
         const distStats = dist.distribution_stats || dist.statistics || {};
-        document.getElementById('val-normality').innerHTML = distStats.is_normal
+        const normTest = distStats.normality_test || {};
+        document.getElementById('val-normality').innerHTML = normTest.is_normal
             ? '<span class="badge badge-success">정규 분포</span>'
             : '<span class="badge badge-warning">비정규 분포</span>';
-        document.getElementById('val-pvalue').textContent = distStats.p_value != null ? distStats.p_value.toFixed(4) : '-';
+        document.getElementById('val-pvalue').textContent = normTest.p_value != null ? normTest.p_value.toFixed(4) : '-';
         document.getElementById('val-skewness').textContent = distStats.skewness != null ? distStats.skewness.toFixed(4) : '-';
         document.getElementById('val-kurtosis').textContent = distStats.kurtosis != null ? distStats.kurtosis.toFixed(4) : '-';
 
-        // 규격 이내 비율
-        if (distStats.in_spec_ratio != null) {
-            document.getElementById('val-inspec-ratio').textContent = `${(distStats.in_spec_ratio * 100).toFixed(1)}%`;
-        } else if (dist.in_spec_ratio != null) {
-            document.getElementById('val-inspec-ratio').textContent = `${(dist.in_spec_ratio * 100).toFixed(1)}%`;
+        // 규격 이내 비율 (spec 객체 안에 위치)
+        const distSpec = dist.spec || {};
+        if (distSpec.in_spec_percent != null) {
+            document.getElementById('val-inspec-ratio').textContent = `${distSpec.in_spec_percent.toFixed(1)}%`;
+        } else if (distSpec.in_spec_ratio != null) {
+            document.getElementById('val-inspec-ratio').textContent = `${(distSpec.in_spec_ratio * 100).toFixed(1)}%`;
         } else {
             document.getElementById('val-inspec-ratio').textContent = '-';
         }
