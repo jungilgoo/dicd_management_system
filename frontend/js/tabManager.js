@@ -68,9 +68,15 @@ window.TabManager = (function() {
             closable: true
         },
         'reports': {
-            title: '보고서 조회',
+            title: '요약 보고서',
             icon: 'fas fa-file-alt',
             getUrl: () => getPagePrefix() + 'reports/trend_view.html',
+            closable: true
+        },
+        'detail_reports': {
+            title: '상세 보고서',
+            icon: 'fas fa-file-alt',
+            getUrl: () => getPagePrefix() + 'reports/detail_view.html',
             closable: true
         },
         'settings': {
@@ -171,10 +177,16 @@ window.TabManager = (function() {
             openTab('boxplot');
         });
 
-        // 보고서 조회
+        // 요약 보고서
         $(`a[href="${prefix}reports/trend_view.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('reports');
+        });
+
+        // 상세 보고서
+        $(`a[href="${prefix}reports/detail_view.html"]`).on('click', function(e) {
+            e.preventDefault();
+            openTab('detail_reports');
         });
 
         // 설정
