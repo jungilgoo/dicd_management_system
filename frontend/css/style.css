@@ -138,9 +138,14 @@
     height: 400px;
 }
 
-/* R 차트 컨테이너의 높이를 200px로 지정 */
-#r-chart-container {
-    height: 200px !important; /* !important로 기존 .chart-container의 높이 설정보다 우선 적용 */
+/* SPC 통합 차트 섹션 스타일 */
+.spc-chart-section {
+    position: relative;
+    height: 300px;
+}
+
+.spc-r-chart {
+    height: 200px;
 }
 
 /* 상태 아이콘 */

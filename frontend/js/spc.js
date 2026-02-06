@@ -1010,7 +1010,7 @@
         `;
         
         // 차트 데이터 준비
-        const labels = data.data.dates.map(date => date.split('T')[0]);
+        const labels = data.data.lot_nos || data.data.dates.map(date => date.split('T')[0]);
         
         // 범위 값 계산 (subgroup 범위)
         // 현재 데이터에 범위값이 직접 포함되어 있지 않다면 계산 필요
@@ -1262,7 +1262,16 @@
                     x: {
                         title: {
                             display: true,
-                            text: '날짜'
+                            text: 'LOT NO'
+                        },
+                        ticks: {
+                            maxRotation: 90,
+                            minRotation: 90,
+                            autoSkip: true,
+                            maxTicksLimit: 30,
+                            font: {
+                                size: 10
+                            }
                         }
                     },
                     y: {
@@ -1638,57 +1647,59 @@
         }
     }
 
-    // 관리도 차트를 다운로드하는 함수
-    async function downloadControlChart() {
-        if (!controlChart) {
-            alert('다운로드할 관리도가 없습니다. 먼저 분석을 실행하세요.');
+    // SPC 차트 통합 다운로드 함수 (관리도 + R차트를 하나의 이미지로)
+    async function downloadSpcChart() {
+        if (!controlChart && !rChart) {
+            alert('다운로드할 차트가 없습니다. 먼저 분석을 실행하세요.');
             return;
         }
 
         try {
-            const canvas = controlChart.canvas;
-            const link = document.createElement('a');
-            const fileName = generateSpcChartFileName('관리도');
+            const controlCanvas = controlChart ? controlChart.canvas : null;
+            const rCanvas = rChart ? rChart.canvas : null;
 
+            const gap = 20;
+            const totalWidth = Math.max(
+                controlCanvas ? controlCanvas.width : 0,
+                rCanvas ? rCanvas.width : 0
+            );
+            const totalHeight =
+                (controlCanvas ? controlCanvas.height : 0) +
+                gap +
+                (rCanvas ? rCanvas.height : 0);
+
+            const mergedCanvas = document.createElement('canvas');
+            mergedCanvas.width = totalWidth;
+            mergedCanvas.height = totalHeight;
+            const ctx = mergedCanvas.getContext('2d');
+
+            // 배경을 흰색으로 채우기
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+            let yOffset = 0;
+            if (controlCanvas) {
+                ctx.drawImage(controlCanvas, 0, yOffset);
+                yOffset += controlCanvas.height + gap;
+            }
+            if (rCanvas) {
+                ctx.drawImage(rCanvas, 0, yOffset);
+            }
+
+            const link = document.createElement('a');
+            const fileName = generateSpcChartFileName('SPC관리도');
             link.download = fileName;
-            link.href = canvas.toDataURL('image/png');
+            link.href = mergedCanvas.toDataURL('image/png');
 
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            showNotification('관리도가 다운로드되었습니다.');
+            showNotification('SPC 차트가 다운로드되었습니다.');
 
         } catch (error) {
-            console.error('관리도 다운로드 실패:', error);
-            showNotification('관리도 다운로드 중 오류가 발생했습니다.');
-        }
-    }
-
-    // R차트를 다운로드하는 함수
-    async function downloadRChart() {
-        if (!rChart) {
-            alert('다운로드할 R차트가 없습니다. 먼저 분석을 실행하세요.');
-            return;
-        }
-
-        try {
-            const canvas = rChart.canvas;
-            const link = document.createElement('a');
-            const fileName = generateSpcChartFileName('R차트');
-
-            link.download = fileName;
-            link.href = canvas.toDataURL('image/png');
-
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            showNotification('R차트가 다운로드되었습니다.');
-
-        } catch (error) {
-            console.error('R차트 다운로드 실패:', error);
-            showNotification('R차트 다운로드 중 오류가 발생했습니다.');
+            console.error('SPC 차트 다운로드 실패:', error);
+            showNotification('SPC 차트 다운로드 중 오류가 발생했습니다.');
         }
     }
 
@@ -1764,14 +1775,9 @@
             analyzeSpc();
         });
 
-        // 관리도 다운로드 버튼 클릭 이벤트
-        document.getElementById('download-control-chart-btn').addEventListener('click', function() {
-            downloadControlChart();
-        });
-
-        // R차트 다운로드 버튼 클릭 이벤트
-        document.getElementById('download-r-chart-btn').addEventListener('click', function() {
-            downloadRChart();
+        // SPC 차트 통합 다운로드 버튼 클릭 이벤트
+        document.getElementById('download-spc-chart-btn').addEventListener('click', function() {
+            downloadSpcChart();
         });
 
         // 차트 데이터 보기 버튼 이벤트
