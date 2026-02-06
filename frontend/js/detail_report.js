@@ -292,7 +292,7 @@
         setCardBorder('card-pp', ppk != null ? ppk : pp);
 
         // 기본 통계
-        document.getElementById('val-mean').textContent = overall.mean != null ? overall.mean.toFixed(3) : '-';
+        document.getElementById('val-mean').textContent = overall.avg != null ? overall.avg.toFixed(3) : '-';
         document.getElementById('val-std').textContent = overall.std_dev != null ? overall.std_dev.toFixed(4) : '-';
         document.getElementById('val-range').textContent = overall.range != null ? overall.range.toFixed(3) : '-';
 
@@ -734,21 +734,22 @@
             top: 'Top', center: 'Center', bottom: 'Bottom', left: 'Left', right: 'Right'
         };
 
+        const posCapability = stats.position_capability || {};
+
         let html = '';
         for (const [key, name] of Object.entries(positionNames)) {
             const pos = positions[key];
             if (!pos) continue;
 
-            const basic = pos.basic || pos;
-            const cap = pos.process_capability || pos.capability || {};
+            const cap = posCapability[key] || {};
 
             html += `<tr>
                 <td><strong>${name}</strong></td>
-                <td>${fmtNum(basic.mean)}</td>
-                <td>${fmtNum(basic.std_dev, 4)}</td>
-                <td>${fmtNum(basic.min)}</td>
-                <td>${fmtNum(basic.max)}</td>
-                <td>${fmtNum(basic.range)}</td>
+                <td>${fmtNum(pos.avg)}</td>
+                <td>${fmtNum(pos.std_dev, 4)}</td>
+                <td>${fmtNum(pos.min)}</td>
+                <td>${fmtNum(pos.max)}</td>
+                <td>${fmtNum(pos.range)}</td>
                 <td class="${getCpColorClass(cap.cp)}">${fmtNum(cap.cp)}</td>
                 <td class="${getCpColorClass(cap.cpk)}">${fmtNum(cap.cpk)}</td>
             </tr>`;
@@ -761,8 +762,7 @@
             const pos = positions[key];
             const el = document.getElementById(`pos-${key}`);
             if (el && pos) {
-                const mean = pos.basic ? pos.basic.mean : pos.mean;
-                el.innerHTML = `${name}<br><small>${mean != null ? mean.toFixed(2) : '-'}</small>`;
+                el.innerHTML = `${name}<br><small>${pos.avg != null ? pos.avg.toFixed(2) : '-'}</small>`;
             }
         }
     }
@@ -782,10 +782,11 @@
         const overall = stats.overall_statistics || {};
         const cap = stats.process_capability || {};
         const spec = stats.spec || {};
+        const cl = currentData.spc?.control_limits || {};
 
         const rows = [
             { header: true, label: '기본 통계' },
-            { label: '평균 (Mean)', value: fmtNum(overall.mean) },
+            { label: '평균 (Mean)', value: fmtNum(overall.avg) },
             { label: '표준편차 (Std Dev)', value: fmtNum(overall.std_dev, 4) },
             { label: '최소값 (Min)', value: fmtNum(overall.min) },
             { label: '최대값 (Max)', value: fmtNum(overall.max) },
@@ -801,8 +802,8 @@
             { header: true, label: '규격 정보' },
             { label: 'USL (상한 규격)', value: spec.usl != null ? spec.usl : '-' },
             { label: 'LSL (하한 규격)', value: spec.lsl != null ? spec.lsl : '-' },
-            { label: 'UCL (상한 관리)', value: spec.ucl != null ? spec.ucl : '-' },
-            { label: 'LCL (하한 관리)', value: spec.lcl != null ? spec.lcl : '-' }
+            { label: 'UCL (상한 관리)', value: cl.ucl != null ? fmtNum(cl.ucl) : '-' },
+            { label: 'LCL (하한 관리)', value: cl.lcl != null ? fmtNum(cl.lcl) : '-' }
         ];
 
         let html = '';
@@ -901,7 +902,7 @@
                 pdf.setFontSize(10);
                 pdf.text(`Cp: ${fmtNum(cap.cp)}  Cpk: ${fmtNum(cap.cpk)}  Pp: ${fmtNum(cap.pp)}  Ppk: ${fmtNum(cap.ppk)}`, margin, yPos);
                 yPos += 5;
-                pdf.text(`Mean: ${fmtNum(overall.mean)}  StdDev: ${fmtNum(overall.std_dev, 4)}  Range: ${fmtNum(overall.range)}  N: ${stats.sample_count || '-'}`, margin, yPos);
+                pdf.text(`Mean: ${fmtNum(overall.avg)}  StdDev: ${fmtNum(overall.std_dev, 4)}  Range: ${fmtNum(overall.range)}  N: ${stats.sample_count || '-'}`, margin, yPos);
                 yPos += 10;
             }
 
