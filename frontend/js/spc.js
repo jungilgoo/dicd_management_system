@@ -479,7 +479,7 @@
             plugins: {
                 title: {
                     display: true,
-                    text: generateChartTitle('관리도 분석')
+                    text: generateChartTitle()
                 },
                 tooltip: {
                     mode: 'index',
@@ -493,7 +493,7 @@
                 x: {
                     title: {
                         display: true,
-                        text: 'LOT NO'  // X축 제목 변경
+                        text: 'LOT NO'
                     },
                     ticks: {
                         // LOT NO를 90도 회전시켜 세로로 표시
@@ -1010,8 +1010,8 @@
         `;
         
         // 차트 데이터 준비
-        const labels = data.data.lot_nos || data.data.dates.map(date => date.split('T')[0]);
-        
+        const labels = data.data.dates.map(date => date.split('T')[0]);
+
         // 범위 값 계산 (subgroup 범위)
         // 현재 데이터에 범위값이 직접 포함되어 있지 않다면 계산 필요
         // 여기서는 예시로 위치별 최대값-최소값 차이를 범위로 사용
@@ -1210,8 +1210,7 @@
                 maintainAspectRatio: false,
                 plugins: {
                     title: {
-                        display: true,
-                        text: generateChartTitle('R차트 분석')
+                        display: false
                     },
                     tooltip: {
                         mode: 'index',
@@ -1262,7 +1261,7 @@
                     x: {
                         title: {
                             display: true,
-                            text: 'LOT NO'
+                            text: '날짜'
                         },
                         ticks: {
                             maxRotation: 90,
