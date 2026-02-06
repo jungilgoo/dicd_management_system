@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from . import models
 from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness, change_point, author
-import statistics
+from ..services.statistics import calculate_basic_statistics
 from datetime import datetime, timedelta
 
 # 제품군 CRUD 함수
@@ -160,17 +160,11 @@ def create_measurement(db: Session, measurement_data: measurement.MeasurementCre
         measurement_data.value_left,
         measurement_data.value_right
     ]
-    
-    avg_value = statistics.mean(values)
-    min_value = min(values)
-    max_value = max(values)
-    range_value = max_value - min_value
-    std_dev = statistics.stdev(values) if len(values) > 1 else 0
-    
+    stats = calculate_basic_statistics(values)
+
     # 데이터베이스 객체 생성
     db_measurement = models.Measurement(
         target_id=measurement_data.target_id,
-        # equipment_id 대신 세 개의 장비 ID로 변경
         coating_equipment_id=measurement_data.coating_equipment_id,
         exposure_equipment_id=measurement_data.exposure_equipment_id,
         development_equipment_id=measurement_data.development_equipment_id,
@@ -184,11 +178,11 @@ def create_measurement(db: Session, measurement_data: measurement.MeasurementCre
         value_bottom=measurement_data.value_bottom,
         value_left=measurement_data.value_left,
         value_right=measurement_data.value_right,
-        avg_value=round(avg_value, 3),
-        min_value=round(min_value, 3),
-        max_value=round(max_value, 3),
-        range_value=round(range_value, 3),
-        std_dev=round(std_dev, 3),
+        avg_value=stats["avg"],
+        min_value=stats["min"],
+        max_value=stats["max"],
+        range_value=stats["range"],
+        std_dev=stats["std_dev"],
         author=measurement_data.author
     )
     
@@ -196,33 +190,7 @@ def create_measurement(db: Session, measurement_data: measurement.MeasurementCre
     db.commit()
     db.refresh(db_measurement)
 
-    # SPEC 체크 및 알림 생성
-    active_spec = db.query(models.Spec).filter(
-        models.Spec.target_id == db_measurement.target_id,
-        models.Spec.is_active == True
-    ).first()
-
-    if active_spec:
-        # SPEC 범위를 벗어난 값이 있는지 확인
-        values = [
-            db_measurement.value_top,
-            db_measurement.value_center,
-            db_measurement.value_bottom,
-            db_measurement.value_left,
-            db_measurement.value_right
-        ]
-        
-        # SPEC 범위를 벗어난 값이 있는 경우 알림 생성
-        if any(v < active_spec.lsl or v > active_spec.usl for v in values):
-            from ..services import notification_service
-            notification_service.create_spec_violation_notification(
-                db=db,
-                measurement=db_measurement,
-                spec=active_spec
-            )
     return db_measurement
-
-# backend/database/crud.py 파일의 get_measurements 함수 업데이트
 
 def get_measurements(db: Session, target_id: int = None, process_id: int = None,
                      product_group_id: int = None, device: str = None,
@@ -298,41 +266,16 @@ def update_measurement(db: Session, measurement_id: int, measurement_data: measu
             db_measurement.value_left,
             db_measurement.value_right
         ]
-        
-        db_measurement.avg_value = round(statistics.mean(values), 3)
-        db_measurement.min_value = round(min(values), 3)
-        db_measurement.max_value = round(max(values), 3)
-        db_measurement.range_value = round(db_measurement.max_value - db_measurement.min_value, 3)
-        db_measurement.std_dev = round(statistics.stdev(values), 3) if len(values) > 1 else 0
+        stats = calculate_basic_statistics(values)
+        db_measurement.avg_value = stats["avg"]
+        db_measurement.min_value = stats["min"]
+        db_measurement.max_value = stats["max"]
+        db_measurement.range_value = stats["range"]
+        db_measurement.std_dev = stats["std_dev"]
         
         db.commit()
         db.refresh(db_measurement)
 
-        # SPEC 체크 및 알림 생성
-        active_spec = db.query(models.Spec).filter(
-            models.Spec.target_id == db_measurement.target_id,
-            models.Spec.is_active == True
-        ).first()
-
-        if active_spec:
-            # SPEC 범위를 벗어난 값이 있는지 확인
-            values = [
-                db_measurement.value_top,
-                db_measurement.value_center,
-                db_measurement.value_bottom,
-                db_measurement.value_left,
-                db_measurement.value_right
-            ]
-            
-            # SPEC 범위를 벗어난 값이 있는 경우 알림 생성
-            if any(v < active_spec.lsl or v > active_spec.usl for v in values):
-                from ..services import notification_service
-                notification_service.create_spec_violation_notification(
-                    db=db,
-                    measurement=db_measurement,
-                    spec=active_spec
-                )
-    
     return db_measurement
 
 def delete_measurement(db: Session, measurement_id: int):

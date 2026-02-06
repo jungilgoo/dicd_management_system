@@ -5,7 +5,7 @@ DICD 측정 관리 시스템 - 벌크 데이터 가져오기 서비스
 
 import io
 import pandas as pd
-import numpy as np
+
 from sqlalchemy.orm import Session
 from fastapi import UploadFile, HTTPException
 from typing import Dict, List, Any, Tuple, Optional
@@ -13,6 +13,7 @@ from datetime import datetime
 
 from ..database import models
 from ..schemas import measurement
+from ..services.statistics import calculate_basic_statistics
 
 async def validate_file_extension(file: UploadFile) -> str:
     """
@@ -114,17 +115,8 @@ async def process_bulk_import(
                 measurement_data.value_left,
                 measurement_data.value_right
             ]
-            
-            avg_value = sum(values) / len(values)
-            min_value = min(values)
-            max_value = max(values)
-            range_value = max_value - min_value
-            
-            # 표준편차 계산 (샘플이 5개이므로 Bessel's correction 적용)
-            mean = sum(values) / len(values)
-            sum_sq_diff = sum((x - mean) ** 2 for x in values)
-            std_dev = (sum_sq_diff / (len(values) - 1)) ** 0.5 if len(values) > 1 else 0
-            
+            stats = calculate_basic_statistics(values)
+
             # 데이터베이스 객체 생성
             db_measurement = models.Measurement(
                 target_id=measurement_data.target_id,
@@ -140,11 +132,11 @@ async def process_bulk_import(
                 value_bottom=measurement_data.value_bottom,
                 value_left=measurement_data.value_left,
                 value_right=measurement_data.value_right,
-                avg_value=round(avg_value, 3),
-                min_value=round(min_value, 3),
-                max_value=round(max_value, 3),
-                range_value=round(range_value, 3),
-                std_dev=round(std_dev, 3),
+                avg_value=stats["avg"],
+                min_value=stats["min"],
+                max_value=stats["max"],
+                range_value=stats["range"],
+                std_dev=stats["std_dev"],
                 author=measurement_data.author
             )
             
