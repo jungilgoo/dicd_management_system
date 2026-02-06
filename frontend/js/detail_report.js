@@ -438,7 +438,7 @@
         if (rChart) { rChart.destroy(); rChart = null; }
 
         const spc = currentData.spc;
-        if (!spc || !spc.data || spc.data.length === 0) {
+        if (!spc || !spc.data || !spc.data.values || spc.data.values.length === 0) {
             document.getElementById('xbar-chart').parentElement.innerHTML =
                 '<div class="text-center py-3 text-muted">SPC 데이터가 없습니다.</div>';
             document.getElementById('r-chart').parentElement.innerHTML = '';
@@ -446,19 +446,19 @@
             return;
         }
 
-        const data = spc.data;
+        const spcData = spc.data; // { values: [], dates: [], lot_nos: [] }
         const cl = spc.control_limits || {};
         const spec = spc.spec || {};
+        const values = spcData.values;
 
         // X-bar 차트 라벨 (날짜)
-        const labels = data.map(d => {
-            if (d.date) {
-                const dt = new Date(d.date);
+        const labels = (spcData.dates || []).map(d => {
+            if (d) {
+                const dt = new Date(d);
                 return `${dt.getMonth()+1}/${dt.getDate()}`;
             }
             return '';
         });
-        const values = data.map(d => d.value);
 
         // X-bar 어노테이션
         const xbarAnnotations = {};
@@ -484,7 +484,7 @@
         const violationIndices = new Set();
         if (spc.patterns) {
             spc.patterns.forEach(p => {
-                if (p.points) p.points.forEach(idx => violationIndices.add(idx));
+                if (p.position != null) violationIndices.add(p.position);
             });
         }
         const xbarPointColors = values.map((_, i) => violationIndices.has(i) ? CHART_COLORS.DANGER : CHART_COLORS.PRIMARY);
@@ -529,8 +529,9 @@
             }
         });
 
-        // R 차트
-        const ranges = data.map(d => d.range != null ? d.range : 0);
+        // R 차트 - measurements에서 range_value 가져오기
+        const sortedMeasurements = [...(currentData.measurements || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const ranges = sortedMeasurements.map(m => m.range_value != null ? m.range_value : 0);
         const rMean = ranges.reduce((a, b) => a + b, 0) / ranges.length;
         const rUcl = rMean * 2.114; // D4 상수 (n=5)
 
@@ -595,11 +596,11 @@
         patterns.forEach(p => {
             const ruleNum = p.rule || p.rule_number || '-';
             const desc = ruleDescriptions[ruleNum] || p.description || '-';
-            const points = p.points ? p.points.map(idx => idx + 1).join(', ') : '-';
+            const posInfo = p.position != null ? `포인트 ${p.position + 1}${p.lot_no ? ' (Lot: ' + p.lot_no + ')' : ''}` : '-';
             html += `<tr>
                 <td class="nelson-violation">규칙 ${ruleNum}</td>
                 <td>${desc}</td>
-                <td>${points}</td>
+                <td>${posInfo}</td>
             </tr>`;
         });
 
