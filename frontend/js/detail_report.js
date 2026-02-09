@@ -11,6 +11,49 @@
         console.error('[DetailReport] Annotation 플러그인 등록 실패:', error);
     }
 
+    // 우측 라벨 커스텀 플러그인: annotation 라벨 대신 차트 우측에 직접 텍스트 렌더링
+    try {
+        if (typeof Chart !== 'undefined') {
+            Chart.register({
+                id: 'rightLabels',
+                afterDraw(chart) {
+                    const labels = chart.options.plugins.rightLabels?.labels;
+                    if (!labels || !labels.length) return;
+                    const { ctx, chartArea, scales: { y } } = chart;
+                    if (!y) return;
+
+                    // 픽셀 위치 계산 및 차트 영역 내 필터링
+                    const positioned = labels
+                        .filter(l => l.value != null)
+                        .map(l => ({ ...l, yPx: y.getPixelForValue(l.value) }))
+                        .filter(l => l.yPx >= chartArea.top - 10 && l.yPx <= chartArea.bottom + 10)
+                        .sort((a, b) => a.yPx - b.yPx);
+
+                    // 겹침 방지: 최소 14px 간격 보장
+                    for (let i = 1; i < positioned.length; i++) {
+                        if (positioned[i].yPx - positioned[i - 1].yPx < 14) {
+                            const overlap = 14 - (positioned[i].yPx - positioned[i - 1].yPx);
+                            positioned[i - 1].yPx -= Math.ceil(overlap / 2);
+                            positioned[i].yPx += Math.ceil(overlap / 2);
+                        }
+                    }
+
+                    ctx.save();
+                    positioned.forEach(lbl => {
+                        ctx.fillStyle = lbl.color || '#666';
+                        ctx.font = (lbl.fontSize || 10) + 'px sans-serif';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(lbl.text, chartArea.right + 8, lbl.yPx);
+                    });
+                    ctx.restore();
+                }
+            });
+        }
+    } catch (error) {
+        console.error('[DetailReport] RightLabels 플러그인 등록 실패:', error);
+    }
+
     // 상태 변수
     let selectedProductGroupId = null;
     let selectedProcessId = null;
@@ -369,15 +412,19 @@
 
         // SPEC 어노테이션
         const annotations = {};
+        const trendRightLabels = [];
         if (spec.usl != null) {
-            annotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `USL: ${spec.usl}`, position: 'end', xAdjust: 70, font: { size: 10 } } };
+            annotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
+            trendRightLabels.push({ value: spec.usl, text: `USL: ${spec.usl}`, color: 'rgba(220,53,69,0.8)' });
         }
         if (spec.lsl != null) {
-            annotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `LSL: ${spec.lsl}`, position: 'end', xAdjust: 70, font: { size: 10 } } };
+            annotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
+            trendRightLabels.push({ value: spec.lsl, text: `LSL: ${spec.lsl}`, color: 'rgba(220,53,69,0.8)' });
         }
         if (spec.usl != null && spec.lsl != null) {
             const target = (spec.usl + spec.lsl) / 2;
-            annotations.target = { type: 'line', yMin: target, yMax: target, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [4, 4], label: { display: true, content: `Target: ${target.toFixed(3)}`, position: 'end', xAdjust: 70, font: { size: 10 } } };
+            annotations.target = { type: 'line', yMin: target, yMax: target, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [4, 4] };
+            trendRightLabels.push({ value: target, text: `Target: ${target.toFixed(3)}`, color: 'rgba(0,123,255,0.6)' });
         }
 
         const ctx = document.getElementById('trend-chart').getContext('2d');
@@ -404,7 +451,8 @@
                 layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
-                    annotation: { clip: false, annotations: annotations },
+                    annotation: { annotations: annotations },
+                    rightLabels: { labels: trendRightLabels },
                     tooltip: {
                         callbacks: {
                             title: function(items) {
@@ -463,22 +511,28 @@
 
         // X-bar 어노테이션
         const xbarAnnotations = {};
+        const xbarRightLabels = [];
         if (cl.cl != null) {
-            xbarAnnotations.cl = { type: 'line', yMin: cl.cl, yMax: cl.cl, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `CL: ${cl.cl.toFixed(3)}`, position: 'end', xAdjust: 70, font: { size: 9 } } };
+            xbarAnnotations.cl = { type: 'line', yMin: cl.cl, yMax: cl.cl, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4] };
+            xbarRightLabels.push({ value: cl.cl, text: `CL: ${cl.cl.toFixed(3)}`, color: 'rgba(40,167,69,0.8)' });
         }
         if (cl.ucl != null || spec.ucl != null) {
             const ucl = spec.ucl != null ? spec.ucl : cl.ucl;
-            xbarAnnotations.ucl = { type: 'line', yMin: ucl, yMax: ucl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `UCL: ${ucl.toFixed(3)}`, position: 'end', xAdjust: 70, font: { size: 9 } } };
+            xbarAnnotations.ucl = { type: 'line', yMin: ucl, yMax: ucl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
+            xbarRightLabels.push({ value: ucl, text: `UCL: ${ucl.toFixed(3)}`, color: 'rgba(220,53,69,0.8)' });
         }
         if (cl.lcl != null || spec.lcl != null) {
             const lcl = spec.lcl != null ? spec.lcl : cl.lcl;
-            xbarAnnotations.lcl = { type: 'line', yMin: lcl, yMax: lcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `LCL: ${lcl.toFixed(3)}`, position: 'end', xAdjust: 70, font: { size: 9 } } };
+            xbarAnnotations.lcl = { type: 'line', yMin: lcl, yMax: lcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
+            xbarRightLabels.push({ value: lcl, text: `LCL: ${lcl.toFixed(3)}`, color: 'rgba(220,53,69,0.8)' });
         }
         if (spec.usl != null) {
-            xbarAnnotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3], label: { display: true, content: `USL: ${spec.usl}`, position: 'end', xAdjust: 70, font: { size: 9 } } };
+            xbarAnnotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3] };
+            xbarRightLabels.push({ value: spec.usl, text: `USL: ${spec.usl}`, color: 'rgba(0,123,255,0.6)' });
         }
         if (spec.lsl != null) {
-            xbarAnnotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3], label: { display: true, content: `LSL: ${spec.lsl}`, position: 'end', xAdjust: 70, font: { size: 9 } } };
+            xbarAnnotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3] };
+            xbarRightLabels.push({ value: spec.lsl, text: `LSL: ${spec.lsl}`, color: 'rgba(0,123,255,0.6)' });
         }
 
         // 위반 포인트 색상
@@ -514,7 +568,8 @@
                 layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
-                    annotation: { clip: false, annotations: xbarAnnotations },
+                    annotation: { annotations: xbarAnnotations },
+                    rightLabels: { labels: xbarRightLabels },
                     tooltip: {
                         callbacks: {
                             afterTitle: function(items) {
@@ -538,8 +593,11 @@
         const rUcl = rMean * 2.114; // D4 상수 (n=5)
 
         const rAnnotations = {};
-        rAnnotations.rbar = { type: 'line', yMin: rMean, yMax: rMean, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `R-bar: ${rMean.toFixed(4)}`, position: 'end', xAdjust: 70, font: { size: 9 } } };
-        rAnnotations.rucl = { type: 'line', yMin: rUcl, yMax: rUcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `UCL: ${rUcl.toFixed(4)}`, position: 'end', xAdjust: 70, font: { size: 9 } } };
+        const rRightLabels = [];
+        rAnnotations.rbar = { type: 'line', yMin: rMean, yMax: rMean, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4] };
+        rRightLabels.push({ value: rMean, text: `R-bar: ${rMean.toFixed(4)}`, color: 'rgba(40,167,69,0.8)' });
+        rAnnotations.rucl = { type: 'line', yMin: rUcl, yMax: rUcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
+        rRightLabels.push({ value: rUcl, text: `UCL: ${rUcl.toFixed(4)}`, color: 'rgba(220,53,69,0.8)' });
 
         const rCtx = document.getElementById('r-chart').getContext('2d');
         rChart = new Chart(rCtx, {
@@ -563,7 +621,8 @@
                 layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
-                    annotation: { clip: false, annotations: rAnnotations }
+                    annotation: { annotations: rAnnotations },
+                    rightLabels: { labels: rRightLabels }
                 },
                 scales: {
                     y: { title: { display: true, text: '범위(R)' }, beginAtZero: true }
@@ -686,7 +745,7 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: true, position: 'top' },
-                    annotation: { clip: false, annotations: annotations }
+                    annotation: { annotations: annotations }
                 },
                 scales: {
                     x: {
