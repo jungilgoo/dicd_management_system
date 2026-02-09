@@ -41,7 +41,7 @@
                     ctx.save();
                     positioned.forEach(lbl => {
                         ctx.fillStyle = lbl.color || '#666';
-                        ctx.font = (lbl.fontSize || 10) + 'px sans-serif';
+                        ctx.font = 'bold ' + (lbl.fontSize || 11) + 'px sans-serif';
                         ctx.textAlign = 'left';
                         ctx.textBaseline = 'middle';
                         ctx.fillText(lbl.text, chartArea.right + 8, lbl.yPx);
