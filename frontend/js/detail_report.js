@@ -404,7 +404,7 @@
                 layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
-                    annotation: { annotations: annotations },
+                    annotation: { clip: false, annotations: annotations },
                     tooltip: {
                         callbacks: {
                             title: function(items) {
@@ -514,7 +514,7 @@
                 layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
-                    annotation: { annotations: xbarAnnotations },
+                    annotation: { clip: false, annotations: xbarAnnotations },
                     tooltip: {
                         callbacks: {
                             afterTitle: function(items) {
@@ -563,7 +563,7 @@
                 layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
-                    annotation: { annotations: rAnnotations }
+                    annotation: { clip: false, annotations: rAnnotations }
                 },
                 scales: {
                     y: { title: { display: true, text: '범위(R)' }, beginAtZero: true }
@@ -686,7 +686,7 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: true, position: 'top' },
-                    annotation: { annotations: annotations }
+                    annotation: { clip: false, annotations: annotations }
                 },
                 scales: {
                     x: {
