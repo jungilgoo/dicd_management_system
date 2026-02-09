@@ -370,14 +370,14 @@
         // SPEC 어노테이션
         const annotations = {};
         if (spec.usl != null) {
-            annotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `USL: ${spec.usl}`, position: 'end', font: { size: 10 } } };
+            annotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `USL: ${spec.usl}`, position: 'end', xAdjust: 40, font: { size: 10 } } };
         }
         if (spec.lsl != null) {
-            annotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `LSL: ${spec.lsl}`, position: 'end', font: { size: 10 } } };
+            annotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `LSL: ${spec.lsl}`, position: 'end', xAdjust: 40, font: { size: 10 } } };
         }
         if (spec.usl != null && spec.lsl != null) {
             const target = (spec.usl + spec.lsl) / 2;
-            annotations.target = { type: 'line', yMin: target, yMax: target, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [4, 4], label: { display: true, content: `Target: ${target.toFixed(3)}`, position: 'end', font: { size: 10 } } };
+            annotations.target = { type: 'line', yMin: target, yMax: target, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [4, 4], label: { display: true, content: `Target: ${target.toFixed(3)}`, position: 'end', xAdjust: 40, font: { size: 10 } } };
         }
 
         const ctx = document.getElementById('trend-chart').getContext('2d');
@@ -464,21 +464,21 @@
         // X-bar 어노테이션
         const xbarAnnotations = {};
         if (cl.cl != null) {
-            xbarAnnotations.cl = { type: 'line', yMin: cl.cl, yMax: cl.cl, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `CL: ${cl.cl.toFixed(3)}`, position: 'end', font: { size: 9 } } };
+            xbarAnnotations.cl = { type: 'line', yMin: cl.cl, yMax: cl.cl, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `CL: ${cl.cl.toFixed(3)}`, position: 'end', xAdjust: 40, font: { size: 9 } } };
         }
         if (cl.ucl != null || spec.ucl != null) {
             const ucl = spec.ucl != null ? spec.ucl : cl.ucl;
-            xbarAnnotations.ucl = { type: 'line', yMin: ucl, yMax: ucl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `UCL: ${ucl.toFixed(3)}`, position: 'end', font: { size: 9 } } };
+            xbarAnnotations.ucl = { type: 'line', yMin: ucl, yMax: ucl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `UCL: ${ucl.toFixed(3)}`, position: 'end', xAdjust: 40, font: { size: 9 } } };
         }
         if (cl.lcl != null || spec.lcl != null) {
             const lcl = spec.lcl != null ? spec.lcl : cl.lcl;
-            xbarAnnotations.lcl = { type: 'line', yMin: lcl, yMax: lcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `LCL: ${lcl.toFixed(3)}`, position: 'end', font: { size: 9 } } };
+            xbarAnnotations.lcl = { type: 'line', yMin: lcl, yMax: lcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `LCL: ${lcl.toFixed(3)}`, position: 'end', xAdjust: 40, font: { size: 9 } } };
         }
         if (spec.usl != null) {
-            xbarAnnotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3], label: { display: true, content: `USL: ${spec.usl}`, position: 'end', font: { size: 9 } } };
+            xbarAnnotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3], label: { display: true, content: `USL: ${spec.usl}`, position: 'end', xAdjust: 40, font: { size: 9 } } };
         }
         if (spec.lsl != null) {
-            xbarAnnotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3], label: { display: true, content: `LSL: ${spec.lsl}`, position: 'end', font: { size: 9 } } };
+            xbarAnnotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3], label: { display: true, content: `LSL: ${spec.lsl}`, position: 'end', xAdjust: 40, font: { size: 9 } } };
         }
 
         // 위반 포인트 색상
@@ -538,8 +538,8 @@
         const rUcl = rMean * 2.114; // D4 상수 (n=5)
 
         const rAnnotations = {};
-        rAnnotations.rbar = { type: 'line', yMin: rMean, yMax: rMean, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `R-bar: ${rMean.toFixed(4)}`, position: 'end', font: { size: 9 } } };
-        rAnnotations.rucl = { type: 'line', yMin: rUcl, yMax: rUcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `UCL: ${rUcl.toFixed(4)}`, position: 'end', font: { size: 9 } } };
+        rAnnotations.rbar = { type: 'line', yMin: rMean, yMax: rMean, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `R-bar: ${rMean.toFixed(4)}`, position: 'end', xAdjust: 40, font: { size: 9 } } };
+        rAnnotations.rucl = { type: 'line', yMin: rUcl, yMax: rUcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `UCL: ${rUcl.toFixed(4)}`, position: 'end', xAdjust: 40, font: { size: 9 } } };
 
         const rCtx = document.getElementById('r-chart').getContext('2d');
         rChart = new Chart(rCtx, {
