@@ -535,13 +535,15 @@ class ChartManager {
             try {
                 if (!window._cachedKoreanFont) {
                     const resp = await fetch('/static/fonts/malgun.ttf');
+                    if (!resp.ok) throw new Error('Font fetch failed: ' + resp.status);
                     const buf = await resp.arrayBuffer();
-                    const u8 = new Uint8Array(buf);
-                    let bin = '';
-                    for (let i = 0; i < u8.length; i++) {
-                        bin += String.fromCharCode(u8[i]);
-                    }
-                    window._cachedKoreanFont = btoa(bin);
+                    const blob = new Blob([buf]);
+                    window._cachedKoreanFont = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
                 }
                 pdf.addFileToVFS('malgun.ttf', window._cachedKoreanFont);
                 pdf.addFont('malgun.ttf', 'MalgunGothic', 'normal');

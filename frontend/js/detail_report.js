@@ -872,13 +872,15 @@
     async function loadKoreanFont() {
         if (cachedKoreanFont) return cachedKoreanFont;
         const response = await fetch('/static/fonts/malgun.ttf');
+        if (!response.ok) throw new Error('Font fetch failed: ' + response.status);
         const arrayBuffer = await response.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        let binary = '';
-        for (let i = 0; i < uint8Array.length; i++) {
-            binary += String.fromCharCode(uint8Array[i]);
-        }
-        cachedKoreanFont = btoa(binary);
+        const blob = new Blob([arrayBuffer]);
+        cachedKoreanFont = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
         return cachedKoreanFont;
     }
 
