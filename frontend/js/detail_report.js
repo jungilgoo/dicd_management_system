@@ -26,6 +26,9 @@
     // API 인스턴스
     let api = null;
 
+    // 한글 폰트 캐시
+    let cachedKoreanFont = null;
+
     // =============================================
     // 초기화
     // =============================================
@@ -866,6 +869,19 @@
     // =============================================
     // PDF 내보내기
     // =============================================
+    async function loadKoreanFont() {
+        if (cachedKoreanFont) return cachedKoreanFont;
+        const response = await fetch('/static/fonts/malgun.ttf');
+        const arrayBuffer = await response.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < uint8Array.length; i++) {
+            binary += String.fromCharCode(uint8Array[i]);
+        }
+        cachedKoreanFont = btoa(binary);
+        return cachedKoreanFont;
+    }
+
     async function exportToPDF() {
         const btn = document.getElementById('export-pdf-btn');
         btn.disabled = true;
@@ -879,6 +895,16 @@
             const margin = 15;
             const contentWidth = pageWidth - margin * 2;
 
+            // 한글 폰트 등록
+            try {
+                const fontBase64 = await loadKoreanFont();
+                pdf.addFileToVFS('malgun.ttf', fontBase64);
+                pdf.addFont('malgun.ttf', 'MalgunGothic', 'normal');
+                pdf.setFont('MalgunGothic');
+            } catch (fontError) {
+                console.warn('한글 폰트 로드 실패, 기본 폰트 사용:', fontError);
+            }
+
             // 제목
             const pgName = document.getElementById('product-group').selectedOptions[0]?.text || '';
             const procName = document.getElementById('process').selectedOptions[0]?.text || '';
@@ -886,12 +912,12 @@
             const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
 
             pdf.setFontSize(16);
-            pdf.text(`${cdType} Detail Report`, margin, 20);
+            pdf.text(`${cdType} 상세 보고서`, margin, 20);
             pdf.setFontSize(11);
             pdf.text(`${pgName} - ${procName} - ${targetName}`, margin, 28);
             pdf.setFontSize(9);
             pdf.setTextColor(100);
-            pdf.text(`Period: ${getPeriodText()} | Generated: ${new Date().toLocaleString('ko-KR')}`, margin, 34);
+            pdf.text(`기간: ${getPeriodText()} | 생성일시: ${new Date().toLocaleString('ko-KR')}`, margin, 34);
             pdf.setTextColor(0);
 
             let yPos = 42;
@@ -912,7 +938,7 @@
             if (trendChart) {
                 const trendImg = trendChart.toBase64Image();
                 pdf.setFontSize(11);
-                pdf.text('Trend Chart', margin, yPos);
+                pdf.text('추이 차트', margin, yPos);
                 yPos += 3;
                 pdf.addImage(trendImg, 'PNG', margin, yPos, contentWidth, 60);
                 yPos += 65;
@@ -925,7 +951,7 @@
                     yPos = margin;
                 }
                 pdf.setFontSize(11);
-                pdf.text('SPC X-bar Chart', margin, yPos);
+                pdf.text('SPC X-bar 관리도', margin, yPos);
                 yPos += 3;
                 const xbarImg = xbarChart.toBase64Image();
                 pdf.addImage(xbarImg, 'PNG', margin, yPos, contentWidth, 50);
@@ -939,7 +965,7 @@
                     yPos = margin;
                 }
                 pdf.setFontSize(11);
-                pdf.text('SPC R Chart', margin, yPos);
+                pdf.text('SPC R 관리도', margin, yPos);
                 yPos += 3;
                 const rImg = rChart.toBase64Image();
                 pdf.addImage(rImg, 'PNG', margin, yPos, contentWidth, 35);
@@ -953,7 +979,7 @@
                     yPos = margin;
                 }
                 pdf.setFontSize(11);
-                pdf.text('Distribution', margin, yPos);
+                pdf.text('분포 분석', margin, yPos);
                 yPos += 3;
                 const distImg = distributionChart.toBase64Image();
                 pdf.addImage(distImg, 'PNG', margin, yPos, contentWidth, 50);

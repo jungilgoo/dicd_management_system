@@ -530,7 +530,26 @@ class ChartManager {
             // jsPDF 초기화
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('l', 'mm', 'a4'); // 가로 방향으로 변경
-            
+
+            // 한글 폰트 등록
+            try {
+                if (!window._cachedKoreanFont) {
+                    const resp = await fetch('/static/fonts/malgun.ttf');
+                    const buf = await resp.arrayBuffer();
+                    const u8 = new Uint8Array(buf);
+                    let bin = '';
+                    for (let i = 0; i < u8.length; i++) {
+                        bin += String.fromCharCode(u8[i]);
+                    }
+                    window._cachedKoreanFont = btoa(bin);
+                }
+                pdf.addFileToVFS('malgun.ttf', window._cachedKoreanFont);
+                pdf.addFont('malgun.ttf', 'MalgunGothic', 'normal');
+                pdf.setFont('MalgunGothic');
+            } catch (fontError) {
+                console.warn('한글 폰트 로드 실패, 기본 폰트 사용:', fontError);
+            }
+
             // 페이지 설정
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
