@@ -377,7 +377,7 @@
         }
         if (spec.usl != null && spec.lsl != null) {
             const target = (spec.usl + spec.lsl) / 2;
-            annotations.target = { type: 'line', yMin: target, yMax: target, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [4, 4], label: { display: true, content: `Target: ${target.toFixed(3)}`, position: 'start', font: { size: 10 } } };
+            annotations.target = { type: 'line', yMin: target, yMax: target, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [4, 4], label: { display: true, content: `Target: ${target.toFixed(3)}`, position: 'end', font: { size: 10 } } };
         }
 
         const ctx = document.getElementById('trend-chart').getContext('2d');
@@ -401,6 +401,7 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
                     annotation: { annotations: annotations },
@@ -463,7 +464,7 @@
         // X-bar 어노테이션
         const xbarAnnotations = {};
         if (cl.cl != null) {
-            xbarAnnotations.cl = { type: 'line', yMin: cl.cl, yMax: cl.cl, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `CL: ${cl.cl.toFixed(3)}`, position: 'start', font: { size: 9 } } };
+            xbarAnnotations.cl = { type: 'line', yMin: cl.cl, yMax: cl.cl, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `CL: ${cl.cl.toFixed(3)}`, position: 'end', font: { size: 9 } } };
         }
         if (cl.ucl != null || spec.ucl != null) {
             const ucl = spec.ucl != null ? spec.ucl : cl.ucl;
@@ -510,6 +511,7 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
                     annotation: { annotations: xbarAnnotations },
@@ -536,7 +538,7 @@
         const rUcl = rMean * 2.114; // D4 상수 (n=5)
 
         const rAnnotations = {};
-        rAnnotations.rbar = { type: 'line', yMin: rMean, yMax: rMean, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `R-bar: ${rMean.toFixed(4)}`, position: 'start', font: { size: 9 } } };
+        rAnnotations.rbar = { type: 'line', yMin: rMean, yMax: rMean, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4], label: { display: true, content: `R-bar: ${rMean.toFixed(4)}`, position: 'end', font: { size: 9 } } };
         rAnnotations.rucl = { type: 'line', yMin: rUcl, yMax: rUcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], label: { display: true, content: `UCL: ${rUcl.toFixed(4)}`, position: 'end', font: { size: 9 } } };
 
         const rCtx = document.getElementById('r-chart').getContext('2d');
@@ -558,6 +560,7 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
                     annotation: { annotations: rAnnotations }
