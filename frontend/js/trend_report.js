@@ -531,132 +531,55 @@ class ChartManager {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('l', 'mm', 'a4'); // 가로 방향으로 변경
 
-            // 한글 폰트 등록
-            try {
-                if (!window._cachedKoreanFont) {
-                    const resp = await fetch('/static/fonts/malgun.ttf');
-                    if (!resp.ok) throw new Error('Font fetch failed: ' + resp.status);
-                    const buf = await resp.arrayBuffer();
-                    const blob = new Blob([buf]);
-                    window._cachedKoreanFont = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result.split(',')[1]);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-                }
-                pdf.addFileToVFS('malgun.ttf', window._cachedKoreanFont);
-                pdf.addFont('malgun.ttf', 'MalgunGothic', 'normal');
-                pdf.setFont('MalgunGothic');
-            } catch (fontError) {
-                console.warn('한글 폰트 로드 실패, 기본 폰트 사용:', fontError);
-            }
-
             // 페이지 설정
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = {
-                top: 8,     // 상단 여백 축소
-                bottom: 5,  // 하단 여백 축소
-                left: 12,   // 좌측 여백
-                right: 12   // 우측 여백
-            };
-            
-            // 날짜 범위 가져오기
-            const dateRange = document.getElementById('date-range').value;
-            
-            // 제목 추가 - 여백 최소화
-            pdf.setFontSize(16); // 제목 크기 약간 축소
-            pdf.text(`DICD Monitoring (${dateRange})`, pageWidth / 2, margin.top + 5, { align: 'center' });
-            
-            // 차트 배치를 위한 설정 - 더 큰 차트
-            const titleSpace = 12; // 제목 공간 축소
-            const chartWidth = (pageWidth - margin.left - margin.right - 8) / 2; // 2열, 중간 간격만 8mm
-            const chartHeight = (pageHeight - margin.top - margin.bottom - titleSpace - 10) / 3; // 3행, 간격 5mm씩
-            
+            const margin = { top: 8, bottom: 5, left: 12, right: 12 };
+
+            // 차트 배치를 위한 설정 - 2x3 그리드
+            const titleSpace = 2;
+            const chartWidth = (pageWidth - margin.left - margin.right - 8) / 2;
+            const chartHeight = (pageHeight - margin.top - margin.bottom - titleSpace - 10) / 3;
+
             const chartIds = Object.keys(this.charts);
-            
-            // 차트 개수에 따라 필요한 페이지 수 계산
-            const chartsPerPage = 6; // 3x2 그리드
+            const chartsPerPage = 6;
             const totalPages = Math.ceil(chartIds.length / chartsPerPage);
-            
+
             for (let page = 0; page < totalPages; page++) {
-                // 첫 페이지가 아니면 새 페이지 추가
-                if (page > 0) {
-                    pdf.addPage();
-                    // 새 페이지에도 제목 추가
-                    pdf.setFontSize(16);
-                    pdf.text(`DICD Monitoring (${dateRange})`, pageWidth / 2, margin.top + 5, { align: 'center' });
-                }
-                
-                // 현재 페이지의 차트 개수 (마지막 페이지는 남은 차트 수)
+                if (page > 0) pdf.addPage();
+
                 const chartsOnPage = Math.min(chartsPerPage, chartIds.length - page * chartsPerPage);
-                
-                // 페이지 내 차트 위치 계산 및 추가
+
                 for (let i = 0; i < chartsOnPage; i++) {
                     const chartId = chartIds[page * chartsPerPage + i];
                     const chartInfo = this.charts[chartId];
-                    
-                    // 행과 열 계산 (3x2 그리드)
-                    const row = Math.floor(i / 2); // 0, 0, 1, 1, 2, 2
-                    const col = i % 2; // 0, 1, 0, 1, 0, 1
-                    
-                    // 현재 차트의 x, y 좌표 계산 - 정확한 그리드 위치, 간격 최소화
-                    const x = margin.left + col * (chartWidth + 8); // 중간 간격만 8mm로 설정
-                    const y = margin.top + titleSpace + row * (chartHeight + 5); // 행 간격 5mm로 축소
-                    
-                    // 차트 제목 가져오기
-                    const targetInfo = targetManager.getTargetById(chartInfo.targetId);
-                    
-                    // Cp 값 가져오기 (있는 경우)
-                    let cpValue = '';
+
+                    const row = Math.floor(i / 2);
+                    const col = i % 2;
+                    const x = margin.left + col * (chartWidth + 8);
+                    const y = margin.top + titleSpace + row * (chartHeight + 5);
+
+                    // 차트 카드를 html2canvas로 캡처 (제목+차트 포함)
                     const chartCard = document.getElementById(`chart-card-${chartInfo.targetId}`);
                     if (chartCard) {
-                        const cpBadge = chartCard.querySelector('.cp-badge');
-                        if (cpBadge) {
-                            cpValue = cpBadge.textContent;
+                        const canvas = await html2canvas(chartCard, {
+                            scale: 2,
+                            useCORS: true,
+                            logging: false,
+                            backgroundColor: '#ffffff'
+                        });
+                        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+                        const imgAspect = canvas.width / canvas.height;
+
+                        let imgW = chartWidth;
+                        let imgH = imgW / imgAspect;
+                        if (imgH > chartHeight) {
+                            imgH = chartHeight;
+                            imgW = imgH * imgAspect;
                         }
+                        const xOffset = (chartWidth - imgW) / 2;
+                        pdf.addImage(imgData, 'JPEG', x + xOffset, y, imgW, imgH);
                     }
-                    
-                    // 차트 제목 생성: 제품군_STEP_TARGET(Cp:Cp값)
-                    const chartTitle = `${targetInfo.productGroupName}_${targetInfo.processName}_${targetInfo.targetName} (${cpValue})`;
-                    
-                    // 차트 제목 추가 - 차트와 더 가깝게
-                    pdf.setFontSize(8); // 글꼴 크기 축소
-                    pdf.text(chartTitle, x + chartWidth/2, y - 2, { align: 'center' });
-                    
-                    // 차트 캔버스를 이미지로 변환
-                    const canvas = document.getElementById(chartId);
-                    
-                    // 차트 비율을 조정하여 Y축 길이 늘리기
-                    // 원본 크기의 비율을 계산하되 높이를 약간 늘림
-                    const originalAspectRatio = canvas.width / canvas.height;
-                    // Y축을 늘리려면 가로세로 비율을 약간 줄임 (0.85를 곱해 세로를 약 15% 늘림)
-                    const adjustedAspectRatio = originalAspectRatio * 0.85;
-                    
-                    // 조정된 비율로 이미지 크기 계산
-                    let imgWidth = chartWidth;
-                    let imgHeight = imgWidth / adjustedAspectRatio; // 높이가 더 커짐
-                    
-                    // 높이가 할당된 공간을 초과하면 조정
-                    if (imgHeight > chartHeight) {
-                        imgHeight = chartHeight;
-                        imgWidth = imgHeight * adjustedAspectRatio;
-                    }
-                    
-                    // 중앙 정렬을 위한 오프셋 계산
-                    const xOffset = (chartWidth - imgWidth) / 2;
-                    
-                    // 캔버스를 이미지로 변환
-                    const chartImage = canvas.toDataURL('image/png', 1.0);
-                    
-                    // 차트 주변에 얇은 경계선 그리기
-                    pdf.setDrawColor(230, 230, 230); // 더 연한 회색 테두리
-                    pdf.setLineWidth(0.1); // 더 얇은 선
-                    pdf.rect(x, y, chartWidth, chartHeight);
-                    
-                    // 차트 이미지 추가 (정확한 위치와 크기로)
-                    pdf.addImage(chartImage, 'PNG', x + xOffset, y, imgWidth, imgHeight);
                 }
             }
             

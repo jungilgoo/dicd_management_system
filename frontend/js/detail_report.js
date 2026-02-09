@@ -26,9 +26,6 @@
     // API 인스턴스
     let api = null;
 
-    // 한글 폰트 캐시
-    let cachedKoreanFont = null;
-
     // =============================================
     // 초기화
     // =============================================
@@ -869,126 +866,60 @@
     // =============================================
     // PDF 내보내기
     // =============================================
-    async function loadKoreanFont() {
-        if (cachedKoreanFont) return cachedKoreanFont;
-        const response = await fetch('/static/fonts/malgun.ttf');
-        if (!response.ok) throw new Error('Font fetch failed: ' + response.status);
-        const arrayBuffer = await response.arrayBuffer();
-        const blob = new Blob([arrayBuffer]);
-        cachedKoreanFont = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-        return cachedKoreanFont;
-    }
-
     async function exportToPDF() {
         const btn = document.getElementById('export-pdf-btn');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> 생성 중...';
 
         try {
+            const reportContent = document.getElementById('report-content');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageWidth = 210;
             const pageHeight = 297;
-            const margin = 15;
+            const margin = 10;
             const contentWidth = pageWidth - margin * 2;
 
-            // 한글 폰트 등록
-            try {
-                const fontBase64 = await loadKoreanFont();
-                pdf.addFileToVFS('malgun.ttf', fontBase64);
-                pdf.addFont('malgun.ttf', 'MalgunGothic', 'normal');
-                pdf.setFont('MalgunGothic');
-            } catch (fontError) {
-                console.warn('한글 폰트 로드 실패, 기본 폰트 사용:', fontError);
-            }
+            // report-content의 직접 자식 요소들 (card, row 등)
+            const sections = reportContent.querySelectorAll(':scope > .card, :scope > .row');
+            let yPos = margin;
+            let firstPage = true;
 
-            // 제목
-            const pgName = document.getElementById('product-group').selectedOptions[0]?.text || '';
-            const procName = document.getElementById('process').selectedOptions[0]?.text || '';
-            const targetName = document.getElementById('target').selectedOptions[0]?.text || '';
-            const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+            for (const section of sections) {
+                // 숨겨진 섹션 건너뛰기
+                if (section.offsetParent === null || section.style.display === 'none') continue;
 
-            pdf.setFontSize(16);
-            pdf.text(`${cdType} 상세 보고서`, margin, 20);
-            pdf.setFontSize(11);
-            pdf.text(`${pgName} - ${procName} - ${targetName}`, margin, 28);
-            pdf.setFontSize(9);
-            pdf.setTextColor(100);
-            pdf.text(`기간: ${getPeriodText()} | 생성일시: ${new Date().toLocaleString('ko-KR')}`, margin, 34);
-            pdf.setTextColor(0);
+                const canvas = await html2canvas(section, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
 
-            let yPos = 42;
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const imgWidth = contentWidth;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-            // 요약 통계 텍스트
-            const stats = currentData.stats;
-            if (stats) {
-                const cap = stats.process_capability || {};
-                const overall = stats.overall_statistics || {};
-                pdf.setFontSize(10);
-                pdf.text(`Cp: ${fmtNum(cap.cp)}  Cpk: ${fmtNum(cap.cpk)}  Pp: ${fmtNum(cap.pp)}  Ppk: ${fmtNum(cap.ppk)}`, margin, yPos);
-                yPos += 5;
-                pdf.text(`Mean: ${fmtNum(overall.avg)}  StdDev: ${fmtNum(overall.std_dev, 4)}  Range: ${fmtNum(overall.range)}  N: ${stats.sample_count || '-'}`, margin, yPos);
-                yPos += 10;
-            }
-
-            // 추이 차트 이미지
-            if (trendChart) {
-                const trendImg = trendChart.toBase64Image();
-                pdf.setFontSize(11);
-                pdf.text('추이 차트', margin, yPos);
-                yPos += 3;
-                pdf.addImage(trendImg, 'PNG', margin, yPos, contentWidth, 60);
-                yPos += 65;
-            }
-
-            // X-bar 차트
-            if (xbarChart) {
-                if (yPos + 55 > pageHeight - margin) {
+                // 페이지에 들어가지 않으면 새 페이지
+                if (!firstPage && yPos + imgHeight > pageHeight - margin) {
                     pdf.addPage();
                     yPos = margin;
                 }
-                pdf.setFontSize(11);
-                pdf.text('SPC X-bar 관리도', margin, yPos);
-                yPos += 3;
-                const xbarImg = xbarChart.toBase64Image();
-                pdf.addImage(xbarImg, 'PNG', margin, yPos, contentWidth, 50);
-                yPos += 55;
-            }
 
-            // R 차트
-            if (rChart) {
-                if (yPos + 40 > pageHeight - margin) {
+                pdf.addImage(imgData, 'JPEG', margin, yPos, imgWidth, imgHeight);
+                yPos += imgHeight + 3;
+                firstPage = false;
+
+                // 현재 페이지 넘치면 다음 페이지 준비
+                if (yPos > pageHeight - margin) {
                     pdf.addPage();
                     yPos = margin;
                 }
-                pdf.setFontSize(11);
-                pdf.text('SPC R 관리도', margin, yPos);
-                yPos += 3;
-                const rImg = rChart.toBase64Image();
-                pdf.addImage(rImg, 'PNG', margin, yPos, contentWidth, 35);
-                yPos += 40;
-            }
-
-            // 분포 차트
-            if (distributionChart) {
-                if (yPos + 55 > pageHeight - margin) {
-                    pdf.addPage();
-                    yPos = margin;
-                }
-                pdf.setFontSize(11);
-                pdf.text('분포 분석', margin, yPos);
-                yPos += 3;
-                const distImg = distributionChart.toBase64Image();
-                pdf.addImage(distImg, 'PNG', margin, yPos, contentWidth, 50);
-                yPos += 55;
             }
 
             // PDF 저장
+            const targetName = document.getElementById('target').selectedOptions[0]?.text || 'report';
+            const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
             const fileName = `${cdType}_DetailReport_${targetName}_${new Date().toISOString().split('T')[0]}.pdf`;
             pdf.save(fileName);
 
