@@ -3,6 +3,7 @@ import math
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from ..database import models
+from .spec_segments import build_spec_segments
 
 def calculate_basic_statistics(values: List[float]) -> Dict[str, float]:
     """
@@ -155,7 +156,11 @@ def get_process_statistics(db: Session, target_id: int, start_date=None, end_dat
         result["position_capability"] = {}
         for position, values in position_values.items():
             result["position_capability"][position] = calculate_process_capability(values, lsl, usl)
-    
+
+    # SPEC 구간 정보 추가 (차트 구간 분리 표시용)
+    sorted_measurements = sorted(measurements, key=lambda m: m.created_at)
+    result["spec_segments"] = build_spec_segments(sorted_measurements, db)
+
     return result
 
 def get_boxplot_data(db: Session, target_id: int, group_by: str, start_date=None, end_date=None) -> Dict[str, Any]:

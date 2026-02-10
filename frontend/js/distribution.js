@@ -303,37 +303,59 @@ function renderDistributionChart(data) {
     // const n = data.values.length;
     // const optimalBins = Math.ceil(3.5 * Math.pow(n, -1/3) * data.distribution_stats.std_dev);
     
-    // SPEC 라인 데이터
+    // SPEC 라인 데이터 (다중 SPEC 구간 지원)
     let specAnnotations = [];
-    if (data.spec) {
+    if (data.spec_segments && data.spec_segments.length > 0) {
+        // 고유한 LSL/USL 쌍 추출 (중복 제거)
+        const uniqueSpecs = [];
+        const seen = new Set();
+        data.spec_segments.forEach(seg => {
+            if (seg.lsl == null && seg.usl == null) return;
+            const key = `${seg.lsl}_${seg.usl}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueSpecs.push({ lsl: seg.lsl, usl: seg.usl, spec_id: seg.spec_id });
+            }
+        });
+        // 마지막 구간이 현재 SPEC (가장 높은 opacity)
+        const lastSpecId = data.spec_segments[data.spec_segments.length - 1].spec_id;
+        uniqueSpecs.forEach(spec => {
+            const isCurrent = spec.spec_id === lastSpecId;
+            const opacity = isCurrent ? 0.7 : 0.3;
+            const width = isCurrent ? 2 : 1;
+            const labelSuffix = isCurrent ? '' : ' (이전)';
+            if (spec.lsl != null) {
+                specAnnotations.push({
+                    type: 'line', mode: 'vertical', scaleID: 'x',
+                    value: spec.lsl,
+                    borderColor: `rgba(255, 0, 0, ${opacity})`,
+                    borderWidth: width, borderDash: [5, 5],
+                    label: { content: `LSL: ${spec.lsl}${labelSuffix}`, enabled: true, position: 'bottom' }
+                });
+            }
+            if (spec.usl != null) {
+                specAnnotations.push({
+                    type: 'line', mode: 'vertical', scaleID: 'x',
+                    value: spec.usl,
+                    borderColor: `rgba(255, 0, 0, ${opacity})`,
+                    borderWidth: width, borderDash: [5, 5],
+                    label: { content: `USL: ${spec.usl}${labelSuffix}`, enabled: true, position: 'bottom' }
+                });
+            }
+        });
+    } else if (data.spec) {
         specAnnotations = [
             {
-                type: 'line',
-                mode: 'vertical',
-                scaleID: 'x',
+                type: 'line', mode: 'vertical', scaleID: 'x',
                 value: data.spec.lsl,
-                borderColor: 'rgba(255, 0, 0, 0.7)',
-                borderWidth: 2,
-                borderDash: [5, 5],
-                label: {
-                    content: `LSL: ${data.spec.lsl}`,
-                    enabled: true,
-                    position: 'bottom'
-                }
+                borderColor: 'rgba(255, 0, 0, 0.7)', borderWidth: 2, borderDash: [5, 5],
+                label: { content: `LSL: ${data.spec.lsl}`, enabled: true, position: 'bottom' }
             },
             {
-                type: 'line',
-                mode: 'vertical',
-                scaleID: 'x',
+                type: 'line', mode: 'vertical', scaleID: 'x',
                 value: data.spec.usl,
-                borderColor: 'rgba(255, 0, 0, 0.7)',
-                borderWidth: 2,
-                borderDash: [5, 5],
-                label: {
-                    content: `USL: ${data.spec.usl}`,
-                    enabled: true,
-                    position: 'bottom'
-                }
+                borderColor: 'rgba(255, 0, 0, 0.7)', borderWidth: 2, borderDash: [5, 5],
+                label: { content: `USL: ${data.spec.usl}`, enabled: true, position: 'bottom' }
             }
         ];
     }
@@ -996,37 +1018,57 @@ function updatePositionChart() {
     const maxPdfValue = Math.max(...smoothY);
     const scaledY = smoothY.map(y => y * (maxHistCount / maxPdfValue));
     
-    // SPEC 라인 데이터
+    // SPEC 라인 데이터 (다중 SPEC 구간 지원)
     let specAnnotations = [];
-    if (currentData.spec) {
+    if (currentData.spec_segments && currentData.spec_segments.length > 0) {
+        const uniqueSpecs = [];
+        const seen = new Set();
+        currentData.spec_segments.forEach(seg => {
+            if (seg.lsl == null && seg.usl == null) return;
+            const key = `${seg.lsl}_${seg.usl}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueSpecs.push({ lsl: seg.lsl, usl: seg.usl, spec_id: seg.spec_id });
+            }
+        });
+        const lastSpecId = currentData.spec_segments[currentData.spec_segments.length - 1].spec_id;
+        uniqueSpecs.forEach(spec => {
+            const isCurrent = spec.spec_id === lastSpecId;
+            const opacity = isCurrent ? 0.7 : 0.3;
+            const width = isCurrent ? 2 : 1;
+            const labelSuffix = isCurrent ? '' : ' (이전)';
+            if (spec.lsl != null) {
+                specAnnotations.push({
+                    type: 'line', mode: 'vertical', scaleID: 'x',
+                    value: spec.lsl,
+                    borderColor: `rgba(255, 0, 0, ${opacity})`,
+                    borderWidth: width, borderDash: [5, 5],
+                    label: { content: `LSL: ${spec.lsl}${labelSuffix}`, enabled: true, position: 'bottom' }
+                });
+            }
+            if (spec.usl != null) {
+                specAnnotations.push({
+                    type: 'line', mode: 'vertical', scaleID: 'x',
+                    value: spec.usl,
+                    borderColor: `rgba(255, 0, 0, ${opacity})`,
+                    borderWidth: width, borderDash: [5, 5],
+                    label: { content: `USL: ${spec.usl}${labelSuffix}`, enabled: true, position: 'bottom' }
+                });
+            }
+        });
+    } else if (currentData.spec) {
         specAnnotations = [
             {
-                type: 'line',
-                mode: 'vertical',
-                scaleID: 'x',
+                type: 'line', mode: 'vertical', scaleID: 'x',
                 value: currentData.spec.lsl,
-                borderColor: 'rgba(255, 0, 0, 0.7)',
-                borderWidth: 2,
-                borderDash: [5, 5],
-                label: {
-                    content: `LSL: ${currentData.spec.lsl}`,
-                    enabled: true,
-                    position: 'bottom'
-                }
+                borderColor: 'rgba(255, 0, 0, 0.7)', borderWidth: 2, borderDash: [5, 5],
+                label: { content: `LSL: ${currentData.spec.lsl}`, enabled: true, position: 'bottom' }
             },
             {
-                type: 'line',
-                mode: 'vertical',
-                scaleID: 'x',
+                type: 'line', mode: 'vertical', scaleID: 'x',
                 value: currentData.spec.usl,
-                borderColor: 'rgba(255, 0, 0, 0.7)',
-                borderWidth: 2,
-                borderDash: [5, 5],
-                label: {
-                    content: `USL: ${currentData.spec.usl}`,
-                    enabled: true,
-                    position: 'bottom'
-                }
+                borderColor: 'rgba(255, 0, 0, 0.7)', borderWidth: 2, borderDash: [5, 5],
+                label: { content: `USL: ${currentData.spec.usl}`, enabled: true, position: 'bottom' }
             }
         ];
     }

@@ -14,6 +14,19 @@
         console.error('[Trend] Annotation 플러그인 등록 실패:', error);
     }
 
+    // SPEC 구간별 배열 생성 헬퍼
+    function buildSegmentedArray(specSegments, length, field) {
+        const arr = new Array(length).fill(null);
+        if (!specSegments || specSegments.length === 0) return arr;
+        specSegments.forEach(seg => {
+            if (seg[field] == null) return;
+            for (let i = seg.start_index; i <= Math.min(seg.end_index, length - 1); i++) {
+                arr[i] = seg[field];
+            }
+        });
+        return arr;
+    }
+
     // 전역 변수
     let trendChart = null;
     let selectedProductGroupId = null;
@@ -391,14 +404,46 @@
             }
         ];
         
-        // SPEC 정보 추가
-        if (stats && stats.spec) {
+        // SPEC 정보 추가 (구간 분리 지원)
+        if (stats && stats.spec_segments && stats.spec_segments.length > 0) {
+            datasets.push(
+                {
+                    label: 'LSL',
+                    data: buildSegmentedArray(stats.spec_segments, labels.length, 'lsl'),
+                    borderColor: '#3366ff',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                    borderDash: [5, 5],
+                    spanGaps: false
+                },
+                {
+                    label: 'USL',
+                    data: buildSegmentedArray(stats.spec_segments, labels.length, 'usl'),
+                    borderColor: '#3366ff',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                    borderDash: [5, 5],
+                    spanGaps: false
+                },
+                {
+                    label: '타겟',
+                    data: buildSegmentedArray(stats.spec_segments, labels.length, 'target'),
+                    borderColor: '#ff9900',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                    spanGaps: false
+                }
+            );
+        } else if (stats && stats.spec) {
+            // 폴백: 기존 방식 (단일 SPEC)
             const spec = stats.spec;
             const specLSL = spec.lsl;
             const specUSL = spec.usl;
             const target = spec.target || ((specLSL + specUSL) / 2);
-            
-            // SPEC 라인 추가
+
             datasets.push(
                 {
                     label: 'LSL',

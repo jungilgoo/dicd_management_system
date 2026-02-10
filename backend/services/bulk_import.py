@@ -77,6 +77,13 @@ async def process_bulk_import(
         # 중복 검사
         duplicates = check_duplicates(db, validated_data)
         
+        # 측정 시점의 활성 SPEC 조회
+        active_spec = db.query(models.Spec).filter(
+            models.Spec.target_id == target_id,
+            models.Spec.is_active == True
+        ).first()
+        active_spec_id = active_spec.id if active_spec else None
+
         # 측정 데이터 생성
         imported_count = 0
         for row in validated_data:
@@ -120,6 +127,7 @@ async def process_bulk_import(
             # 데이터베이스 객체 생성
             db_measurement = models.Measurement(
                 target_id=measurement_data.target_id,
+                spec_id=active_spec_id,
                 coating_equipment_id=measurement_data.coating_equipment_id,
                 exposure_equipment_id=measurement_data.exposure_equipment_id,
                 development_equipment_id=measurement_data.development_equipment_id,

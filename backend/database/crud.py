@@ -162,9 +162,13 @@ def create_measurement(db: Session, measurement_data: measurement.MeasurementCre
     ]
     stats = calculate_basic_statistics(values)
 
+    # 측정 시점의 활성 SPEC 조회
+    active_spec = get_active_spec(db, measurement_data.target_id)
+
     # 데이터베이스 객체 생성
     db_measurement = models.Measurement(
         target_id=measurement_data.target_id,
+        spec_id=active_spec.id if active_spec else None,
         coating_equipment_id=measurement_data.coating_equipment_id,
         exposure_equipment_id=measurement_data.exposure_equipment_id,
         development_equipment_id=measurement_data.development_equipment_id,
@@ -185,7 +189,7 @@ def create_measurement(db: Session, measurement_data: measurement.MeasurementCre
         std_dev=stats["std_dev"],
         author=measurement_data.author
     )
-    
+
     db.add(db_measurement)
     db.commit()
     db.refresh(db_measurement)

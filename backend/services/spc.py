@@ -4,6 +4,7 @@ import numpy as np
 from sqlalchemy.orm import Session
 from ..database import models
 from . import statistics as stats_service
+from .spec_segments import build_spec_segments
 
 def calculate_control_limits(values: List[float], sigma_level: int = 3) -> Dict[str, float]:
     """
@@ -285,10 +286,13 @@ def analyze_spc(db: Session, target_id: int, days: int = 30, start_date: Optiona
             "usl": active_spec.usl,
             "target": (active_spec.usl + active_spec.lsl) / 2  # 타겟 추가
         }
-        
+
         # 공정 능력 지수 계산 및 추가
         result["process_capability"] = stats_service.calculate_process_capability(
             values, active_spec.lsl, active_spec.usl
         )
-    
+
+    # SPEC 구간 정보 추가 (차트 구간 분리 표시용)
+    result["spec_segments"] = build_spec_segments(measurements, db)
+
     return result

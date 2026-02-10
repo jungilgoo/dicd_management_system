@@ -54,6 +54,28 @@
         console.error('[DetailReport] RightLabels 플러그인 등록 실패:', error);
     }
 
+    // SPEC 구간별 배열 생성 헬퍼
+    function buildSegmentedArray(specSegments, length, field) {
+        const arr = new Array(length).fill(null);
+        if (!specSegments || specSegments.length === 0) return arr;
+        specSegments.forEach(seg => {
+            if (seg[field] == null) return;
+            for (let i = seg.start_index; i <= Math.min(seg.end_index, length - 1); i++) {
+                arr[i] = seg[field];
+            }
+        });
+        return arr;
+    }
+
+    // 마지막 구간의 SPEC 값 가져오기 (우측 라벨용)
+    function getLastSegmentValue(specSegments, field) {
+        if (!specSegments || specSegments.length === 0) return null;
+        for (let i = specSegments.length - 1; i >= 0; i--) {
+            if (specSegments[i][field] != null) return specSegments[i][field];
+        }
+        return null;
+    }
+
     // 상태 변수
     let selectedProductGroupId = null;
     let selectedProcessId = null;
@@ -410,21 +432,83 @@
             return 3;
         });
 
-        // SPEC 어노테이션
-        const annotations = {};
+        // SPEC 라인 (구간 분리 지원)
+        const specSegments = currentData.spc?.spec_segments || currentData.stats?.spec_segments || [];
         const trendRightLabels = [];
-        if (spec.usl != null) {
-            annotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
-            trendRightLabels.push({ value: spec.usl, text: `USL: ${spec.usl}`, color: 'rgba(220,53,69,0.8)' });
-        }
-        if (spec.lsl != null) {
-            annotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
-            trendRightLabels.push({ value: spec.lsl, text: `LSL: ${spec.lsl}`, color: 'rgba(220,53,69,0.8)' });
-        }
-        if (spec.usl != null && spec.lsl != null) {
-            const target = (spec.usl + spec.lsl) / 2;
-            annotations.target = { type: 'line', yMin: target, yMax: target, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [4, 4] };
-            trendRightLabels.push({ value: target, text: `Target: ${target.toFixed(3)}`, color: 'rgba(0,123,255,0.6)' });
+        const specDatasets = [];
+
+        if (specSegments.length > 0) {
+            // 구간별 SPEC 배열로 dataset 추가
+            const uslArr = buildSegmentedArray(specSegments, sorted.length, 'usl');
+            const lslArr = buildSegmentedArray(specSegments, sorted.length, 'lsl');
+            const targetArr = buildSegmentedArray(specSegments, sorted.length, 'target');
+
+            if (uslArr.some(v => v != null)) {
+                specDatasets.push({
+                    label: 'USL',
+                    data: uslArr,
+                    borderColor: 'rgba(220,53,69,0.8)',
+                    borderWidth: 2,
+                    borderDash: [6, 3],
+                    pointRadius: 0,
+                    fill: false,
+                    spanGaps: false
+                });
+                const lastUsl = getLastSegmentValue(specSegments, 'usl');
+                if (lastUsl != null) trendRightLabels.push({ value: lastUsl, text: `USL: ${lastUsl}`, color: 'rgba(220,53,69,0.8)' });
+            }
+            if (lslArr.some(v => v != null)) {
+                specDatasets.push({
+                    label: 'LSL',
+                    data: lslArr,
+                    borderColor: 'rgba(220,53,69,0.8)',
+                    borderWidth: 2,
+                    borderDash: [6, 3],
+                    pointRadius: 0,
+                    fill: false,
+                    spanGaps: false
+                });
+                const lastLsl = getLastSegmentValue(specSegments, 'lsl');
+                if (lastLsl != null) trendRightLabels.push({ value: lastLsl, text: `LSL: ${lastLsl}`, color: 'rgba(220,53,69,0.8)' });
+            }
+            if (targetArr.some(v => v != null)) {
+                specDatasets.push({
+                    label: 'Target',
+                    data: targetArr,
+                    borderColor: 'rgba(0,123,255,0.6)',
+                    borderWidth: 1,
+                    borderDash: [4, 4],
+                    pointRadius: 0,
+                    fill: false,
+                    spanGaps: false
+                });
+                const lastTarget = getLastSegmentValue(specSegments, 'target');
+                if (lastTarget != null) trendRightLabels.push({ value: lastTarget, text: `Target: ${lastTarget.toFixed(3)}`, color: 'rgba(0,123,255,0.6)' });
+            }
+        } else if (spec.usl != null || spec.lsl != null) {
+            // 폴백: 기존 단일 SPEC annotation 방식
+            if (spec.usl != null) {
+                specDatasets.push({
+                    label: 'USL', data: Array(sorted.length).fill(spec.usl),
+                    borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], pointRadius: 0, fill: false
+                });
+                trendRightLabels.push({ value: spec.usl, text: `USL: ${spec.usl}`, color: 'rgba(220,53,69,0.8)' });
+            }
+            if (spec.lsl != null) {
+                specDatasets.push({
+                    label: 'LSL', data: Array(sorted.length).fill(spec.lsl),
+                    borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], pointRadius: 0, fill: false
+                });
+                trendRightLabels.push({ value: spec.lsl, text: `LSL: ${spec.lsl}`, color: 'rgba(220,53,69,0.8)' });
+            }
+            if (spec.usl != null && spec.lsl != null) {
+                const target = (spec.usl + spec.lsl) / 2;
+                specDatasets.push({
+                    label: 'Target', data: Array(sorted.length).fill(target),
+                    borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, fill: false
+                });
+                trendRightLabels.push({ value: target, text: `Target: ${target.toFixed(3)}`, color: 'rgba(0,123,255,0.6)' });
+            }
         }
 
         const ctx = document.getElementById('trend-chart').getContext('2d');
@@ -443,7 +527,7 @@
                     borderWidth: 2,
                     tension: 0.1,
                     fill: false
-                }]
+                }, ...specDatasets]
             },
             options: {
                 responsive: true,
@@ -451,9 +535,13 @@
                 layout: { padding: { right: 70 } },
                 plugins: {
                     legend: { display: false },
-                    annotation: { annotations: annotations },
+                    annotation: { annotations: {} },
                     rightLabels: { labels: trendRightLabels },
                     tooltip: {
+                        filter: function(tooltipItem) {
+                            const label = tooltipItem.dataset.label;
+                            return label === '평균값';
+                        },
                         callbacks: {
                             title: function(items) {
                                 const idx = items[0].dataIndex;
@@ -509,30 +597,65 @@
             return '';
         });
 
-        // X-bar 어노테이션
+        // X-bar: CL은 annotation 유지, UCL/LCL/USL/LSL은 구간 분리 dataset
         const xbarAnnotations = {};
         const xbarRightLabels = [];
+        const xbarSpecDatasets = [];
+        const spcSegments = spc.spec_segments || [];
+
+        // CL (중심선) - 단일 annotation 유지
         if (cl.cl != null) {
             xbarAnnotations.cl = { type: 'line', yMin: cl.cl, yMax: cl.cl, borderColor: 'rgba(40,167,69,0.8)', borderWidth: 2, borderDash: [4, 4] };
             xbarRightLabels.push({ value: cl.cl, text: `CL: ${cl.cl.toFixed(3)}`, color: 'rgba(40,167,69,0.8)' });
         }
-        if (cl.ucl != null || spec.ucl != null) {
-            const ucl = spec.ucl != null ? spec.ucl : cl.ucl;
-            xbarAnnotations.ucl = { type: 'line', yMin: ucl, yMax: ucl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
-            xbarRightLabels.push({ value: ucl, text: `UCL: ${ucl.toFixed(3)}`, color: 'rgba(220,53,69,0.8)' });
-        }
-        if (cl.lcl != null || spec.lcl != null) {
-            const lcl = spec.lcl != null ? spec.lcl : cl.lcl;
-            xbarAnnotations.lcl = { type: 'line', yMin: lcl, yMax: lcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
-            xbarRightLabels.push({ value: lcl, text: `LCL: ${lcl.toFixed(3)}`, color: 'rgba(220,53,69,0.8)' });
-        }
-        if (spec.usl != null) {
-            xbarAnnotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3] };
-            xbarRightLabels.push({ value: spec.usl, text: `USL: ${spec.usl}`, color: 'rgba(0,123,255,0.6)' });
-        }
-        if (spec.lsl != null) {
-            xbarAnnotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3] };
-            xbarRightLabels.push({ value: spec.lsl, text: `LSL: ${spec.lsl}`, color: 'rgba(0,123,255,0.6)' });
+
+        if (spcSegments.length > 0) {
+            // 구간별 UCL/LCL/USL/LSL dataset
+            const uclArr = buildSegmentedArray(spcSegments, values.length, 'ucl');
+            const lclArr = buildSegmentedArray(spcSegments, values.length, 'lcl');
+            const uslArr = buildSegmentedArray(spcSegments, values.length, 'usl');
+            const lslArr = buildSegmentedArray(spcSegments, values.length, 'lsl');
+
+            if (uclArr.some(v => v != null)) {
+                xbarSpecDatasets.push({ label: 'UCL', data: uclArr, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], pointRadius: 0, fill: false, spanGaps: false });
+                const lastUcl = getLastSegmentValue(spcSegments, 'ucl');
+                if (lastUcl != null) xbarRightLabels.push({ value: lastUcl, text: `UCL: ${lastUcl.toFixed(3)}`, color: 'rgba(220,53,69,0.8)' });
+            }
+            if (lclArr.some(v => v != null)) {
+                xbarSpecDatasets.push({ label: 'LCL', data: lclArr, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3], pointRadius: 0, fill: false, spanGaps: false });
+                const lastLcl = getLastSegmentValue(spcSegments, 'lcl');
+                if (lastLcl != null) xbarRightLabels.push({ value: lastLcl, text: `LCL: ${lastLcl.toFixed(3)}`, color: 'rgba(220,53,69,0.8)' });
+            }
+            if (uslArr.some(v => v != null)) {
+                xbarSpecDatasets.push({ label: 'USL', data: uslArr, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3], pointRadius: 0, fill: false, spanGaps: false });
+                const lastUsl = getLastSegmentValue(spcSegments, 'usl');
+                if (lastUsl != null) xbarRightLabels.push({ value: lastUsl, text: `USL: ${lastUsl}`, color: 'rgba(0,123,255,0.6)' });
+            }
+            if (lslArr.some(v => v != null)) {
+                xbarSpecDatasets.push({ label: 'LSL', data: lslArr, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3], pointRadius: 0, fill: false, spanGaps: false });
+                const lastLsl = getLastSegmentValue(spcSegments, 'lsl');
+                if (lastLsl != null) xbarRightLabels.push({ value: lastLsl, text: `LSL: ${lastLsl}`, color: 'rgba(0,123,255,0.6)' });
+            }
+        } else {
+            // 폴백: 기존 단일 SPEC annotation
+            if (cl.ucl != null || spec.ucl != null) {
+                const ucl = spec.ucl != null ? spec.ucl : cl.ucl;
+                xbarAnnotations.ucl = { type: 'line', yMin: ucl, yMax: ucl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
+                xbarRightLabels.push({ value: ucl, text: `UCL: ${ucl.toFixed(3)}`, color: 'rgba(220,53,69,0.8)' });
+            }
+            if (cl.lcl != null || spec.lcl != null) {
+                const lcl = spec.lcl != null ? spec.lcl : cl.lcl;
+                xbarAnnotations.lcl = { type: 'line', yMin: lcl, yMax: lcl, borderColor: 'rgba(220,53,69,0.8)', borderWidth: 2, borderDash: [6, 3] };
+                xbarRightLabels.push({ value: lcl, text: `LCL: ${lcl.toFixed(3)}`, color: 'rgba(220,53,69,0.8)' });
+            }
+            if (spec.usl != null) {
+                xbarAnnotations.usl = { type: 'line', yMin: spec.usl, yMax: spec.usl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3] };
+                xbarRightLabels.push({ value: spec.usl, text: `USL: ${spec.usl}`, color: 'rgba(0,123,255,0.6)' });
+            }
+            if (spec.lsl != null) {
+                xbarAnnotations.lsl = { type: 'line', yMin: spec.lsl, yMax: spec.lsl, borderColor: 'rgba(0,123,255,0.6)', borderWidth: 1, borderDash: [3, 3] };
+                xbarRightLabels.push({ value: spec.lsl, text: `LSL: ${spec.lsl}`, color: 'rgba(0,123,255,0.6)' });
+            }
         }
 
         // 위반 포인트 색상
@@ -560,7 +683,7 @@
                     borderWidth: 1.5,
                     tension: 0.1,
                     fill: false
-                }]
+                }, ...xbarSpecDatasets]
             },
             options: {
                 responsive: true,
@@ -571,6 +694,10 @@
                     annotation: { annotations: xbarAnnotations },
                     rightLabels: { labels: xbarRightLabels },
                     tooltip: {
+                        filter: function(tooltipItem) {
+                            const label = tooltipItem.dataset.label;
+                            return label === '평균값';
+                        },
                         callbacks: {
                             afterTitle: function(items) {
                                 const idx = items[0].dataIndex;
@@ -826,7 +953,7 @@
             const pos = positions[key];
             const el = document.getElementById(`pos-${key}`);
             if (el && pos) {
-                el.innerHTML = `${name}<br><small>${pos.avg != null ? pos.avg.toFixed(2) : '-'}</small>`;
+                el.innerHTML = `<div>${name}</div><div style="font-size:0.65rem;font-weight:normal;color:#555;margin-top:1px">${pos.avg != null ? pos.avg.toFixed(2) : '-'}</div>`;
             }
         }
     }

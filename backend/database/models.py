@@ -66,6 +66,7 @@ class Spec(Base):
 
     # 관계 설정
     target = relationship("Target", back_populates="specs")
+    measurements = relationship("Measurement", back_populates="spec")
 
 # Equipment 클래스 (models.py 파일에 있는 기존 코드 확인)
 class Equipment(Base):
@@ -93,7 +94,8 @@ class Measurement(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     target_id = Column(Integer, ForeignKey("targets.id"), nullable=False)
-    
+    spec_id = Column(Integer, ForeignKey("specs.id"), nullable=True)  # 측정 시점의 활성 SPEC
+
     # 기존 equipment_id를 세 개의 장비 ID로 변경
     # equipment_id = Column(Integer, ForeignKey("equipments.id"), nullable=True)  # 이 줄 제거
     coating_equipment_id = Column(Integer, ForeignKey("equipments.id"), nullable=True)
@@ -124,7 +126,8 @@ class Measurement(Base):
     
     # 관계 설정 수정
     target = relationship("Target", back_populates="measurements")
-    
+    spec = relationship("Spec", back_populates="measurements")
+
     coating_equipment = relationship("Equipment", foreign_keys=[coating_equipment_id], back_populates="coating_measurements")
     exposure_equipment = relationship("Equipment", foreign_keys=[exposure_equipment_id], back_populates="exposure_measurements")
     development_equipment = relationship("Equipment", foreign_keys=[development_equipment_id], back_populates="development_measurements")

@@ -42,6 +42,7 @@ class MeasurementCreate(BaseModel):
 class Measurement(BaseModel):
     id: int
     target_id: int
+    spec_id: Optional[int] = None
     # equipment_id 대신 세 개의 장비 ID로 변경
     coating_equipment_id: Optional[int] = None
     exposure_equipment_id: Optional[int] = None

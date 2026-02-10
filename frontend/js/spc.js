@@ -14,6 +14,19 @@
         console.error('[SPC] Annotation 플러그인 등록 실패:', error);
     }
 
+    // SPEC 구간별 배열 생성 헬퍼
+    function buildSegmentedArray(specSegments, length, field) {
+        const arr = new Array(length).fill(null);
+        if (!specSegments || specSegments.length === 0) return arr;
+        specSegments.forEach(seg => {
+            if (seg[field] == null) return;
+            for (let i = seg.start_index; i <= Math.min(seg.end_index, length - 1); i++) {
+                arr[i] = seg[field];
+            }
+        });
+        return arr;
+    }
+
     // 전역 변수
     let controlChart = null;
     let selectedProductGroupId = null;
@@ -700,13 +713,42 @@
             }
         }
         
-        // SPEC 추가
-        if (data.spec) {
+        // SPEC 추가 (구간 분리 지원)
+        if (data.spec_segments && data.spec_segments.length > 0) {
+            // 구간별 SPEC 배열 생성
+            datasets.push({
+                label: 'USL',
+                data: buildSegmentedArray(data.spec_segments, labels.length, 'usl'),
+                borderColor: '#3366ff',
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: false,
+                spanGaps: false
+            });
+            datasets.push({
+                label: 'LSL',
+                data: buildSegmentedArray(data.spec_segments, labels.length, 'lsl'),
+                borderColor: '#3366ff',
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: false,
+                spanGaps: false
+            });
+            datasets.push({
+                label: '타겟',
+                data: buildSegmentedArray(data.spec_segments, labels.length, 'target'),
+                borderColor: '#FF9900',
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: false,
+                spanGaps: false
+            });
+        } else if (data.spec) {
+            // 폴백: 기존 방식 (단일 SPEC)
             const usl = data.spec.usl;
             const lsl = data.spec.lsl;
             const target = data.spec.target || ((usl + lsl) / 2);
-            
-            // USL 추가
+
             datasets.push({
                 label: 'USL',
                 data: Array(labels.length).fill(usl),
@@ -715,8 +757,6 @@
                 pointRadius: 0,
                 fill: false
             });
-            
-            // LSL 추가
             datasets.push({
                 label: 'LSL',
                 data: Array(labels.length).fill(lsl),
@@ -725,12 +765,10 @@
                 pointRadius: 0,
                 fill: false
             });
-
-            // 타겟값 추가 - 새로 추가하는 코드
             datasets.push({
                 label: '타겟',
                 data: Array(labels.length).fill(target),
-                borderColor: '#FF9900',  // 주황색 사용
+                borderColor: '#FF9900',
                 borderWidth: 1.5,
                 pointRadius: 0,
                 fill: false

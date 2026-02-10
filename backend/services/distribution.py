@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import numpy as np
 from sqlalchemy.orm import Session
 from ..database import models
+from .spec_segments import build_spec_segments
 import math
 
 def calculate_histogram(values: List[float], bins: int = None) -> Dict[str, Any]:
@@ -239,6 +240,9 @@ def get_distribution_analysis(
 
     if spec_info:
         result["spec"] = spec_info
+
+    # SPEC 구간 정보 추가 (다중 SPEC 수직선 표시용)
+    result["spec_segments"] = build_spec_segments(measurements, db)
 
     # NumPy 타입을 Python 내장 타입으로 변환
     result = convert_numpy_types(result)
