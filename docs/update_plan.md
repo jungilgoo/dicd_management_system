@@ -571,6 +571,32 @@
   2. 템플릿에 exposure_time 필드가 없는지 확인
   3. 템플릿에 데이터 입력 후 업로드 테스트
 
+### 2026-02-10 - UCL/LCL 반기 자동 업데이트 기능 추가
+- **목적**: 매년 1월 1일, 7월 1일에 측정 데이터 기반으로 UCL/LCL을 자동 재계산
+- **우선순위**: 중간
+- **상태**: ✅ 완료 (2026-02-10)
+- **수정 범위**:
+  | 파일 | 수정 내용 | 상태 |
+  |------|----------|------|
+  | `requirements.txt` | APScheduler 패키지 추가 | ✅ 완료 |
+  | `backend/services/auto_update_spec.py` | 자동 업데이트 핵심 비즈니스 로직 (신규) | ✅ 완료 |
+  | `backend/scheduler.py` | APScheduler 설정 및 cron 작업 등록 (신규) | ✅ 완료 |
+  | `backend/routers/auto_update_spec.py` | 수동 트리거 및 상태 조회 API (신규) | ✅ 완료 |
+  | `backend/main.py` | 스케줄러 연동 + 라우터 등록 | ✅ 완료 |
+- **비즈니스 규칙**:
+  - 6개월 데이터 기반 3-시그마 방식 UCL/LCL 계산
+  - 데이터 25개 이하 시 1년으로 확장, 여전히 25개 이하 시 기존 값 유지
+  - LSL/USL은 기존 값 유지, UCL/LCL만 업데이트
+  - 새 SPEC 레코드 생성 (이력 보존)
+- **API 엔드포인트**:
+  - `POST /api/auto-update-spec/run` - 전체 타겟 수동 실행
+  - `POST /api/auto-update-spec/run/{target_id}` - 특정 타겟 수동 실행
+  - `GET /api/auto-update-spec/status` - 스케줄러 상태 조회
+- **검증 방법**:
+  1. 서버에서 `pip install APScheduler` 실행
+  2. 서버 재시작 후 `GET /api/auto-update-spec/status`로 스케줄러 확인
+  3. `POST /api/auto-update-spec/run`으로 수동 테스트
+
 ### [날짜] - [업데이트 제목]
 - **목적**:
 - **우선순위**: 높음 / 중간 / 낮음

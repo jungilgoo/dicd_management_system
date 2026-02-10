@@ -28,6 +28,7 @@ from backend.routers import bulk_upload as bulk_upload_router
 from backend.routers import pr_thickness as pr_thickness_router
 from backend.routers import change_points as change_points_router
 from backend.routers import authors as authors_router
+from backend.routers import auto_update_spec as auto_update_spec_router
 
 # 데이터베이스 테이블 생성 (에러 발생 시 서버는 계속 실행)
 try:
@@ -74,8 +75,20 @@ app.include_router(bulk_upload_router.router)
 app.include_router(pr_thickness_router.router)
 app.include_router(change_points_router.router)
 app.include_router(authors_router.router)
+app.include_router(auto_update_spec_router.router)
 print("✅ 모든 API 라우터 등록 완료")
 
+
+# 🔽 스케줄러 시작/종료 이벤트
+from backend.scheduler import start_scheduler, shutdown_scheduler
+
+@app.on_event("startup")
+async def startup_event():
+    start_scheduler()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    shutdown_scheduler()
 
 # 🔽 프론트엔드 서빙 라우터들 (API 라우터들 다음에 등록)
 
