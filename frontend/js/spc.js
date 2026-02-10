@@ -1564,18 +1564,72 @@
         controlChart.update();
     }
 
+    // Nelson Rules 추정 원인 데이터
+    const ruleCauses = {
+        1: [
+            '설비 고장 또는 갑작스러운 이상 (공구 파손, 금형 손상 등)',
+            '원자재 로트 변경으로 인한 급격한 특성 변화',
+            '측정 장비 오류 또는 작업자의 조작 실수',
+            '셋업(setup) 오류'
+        ],
+        2: [
+            '공정 평균의 이동(shift)이 발생한 상태',
+            '원자재 공급업체 변경 또는 로트 간 차이',
+            '설비 마모가 점진적으로 진행 (공구 마모, 베어링 열화 등)',
+            '작업 환경 변화 (온도, 습도의 지속적 변동)',
+            '측정 장비의 편향(bias) 발생'
+        ],
+        3: [
+            '공구나 금형의 점진적 마모',
+            '장비 부품의 열화 (필터 막힘, 윤활유 열화 등)',
+            '환경 요인의 점진적 변화 (시간에 따른 온도 상승 등)',
+            '화학 공정에서 촉매 성능 저하',
+            '작업자 피로 누적'
+        ],
+        4: [
+            '두 대의 설비, 두 명의 작업자, 두 개의 원자재 로트가 교대로 투입',
+            '과도한 공정 조정(over-adjustment) — 목표값 위아래로 반복 보정',
+            '주기적 환경 변화 (주간/야간 온도 차이, 냉각수 온도 변동)',
+            '두 개의 측정기를 교대 사용'
+        ],
+        5: [
+            '공정 산포의 증가 징후',
+            '두 가지 이상 공정 조건이 혼재 (예: 두 가지 원자재 혼용)',
+            '설비 상태가 불안정해지기 시작하는 초기 단계',
+            '간헐적인 외부 교란 요인 발생'
+        ],
+        6: [
+            '공정 평균이 서서히 이동 중인 상태',
+            'Rule 2(런)로 발전하기 전 단계의 초기 경고 신호',
+            '소규모의 원자재 특성 변화',
+            '설비 조건(압력, 온도 등)의 미세한 드리프트'
+        ],
+        7: [
+            '부분군(subgroup) 구성 오류 — 서로 다른 모집단의 데이터를 하나의 부분군으로 혼합',
+            '관리한계선이 너무 넓게 설정됨',
+            '데이터 조작 또는 기록 오류 의심',
+            '산포가 실제로 크게 줄었을 경우 (공정 개선 후 관리한계 미갱신)'
+        ],
+        8: [
+            '다수의 설비(기계)에서 나온 제품을 혼합 측정',
+            '서로 다른 작업자, 원자재, 금형 캐비티의 결과가 섞임',
+            '부분군 내에 체계적인 차이가 존재',
+            '과도한 공정 조정(over-control)으로 인해 중심 부근 데이터가 사라짐'
+        ]
+    };
+
     // 패턴 설명 영역 표시 함수
     function showPatternExplanation(pattern, positions) {
         // 패턴 설명 컨테이너 찾기 (없으면 생성)
         let patternExplanationEl = document.querySelector('#pattern-explanation');
-        
+
         if (!patternExplanationEl) {
             patternExplanationEl = document.createElement('div');
             patternExplanationEl.id = 'pattern-explanation';
             patternExplanationEl.className = 'alert alert-info mt-3';
             document.querySelector('#control-chart-container').after(patternExplanationEl);
         }
-        
+
         // 시그마 구간 설명 준비
         let zoneExplanation = '';
         switch (pattern.rule) {
@@ -1589,13 +1643,25 @@
                 zoneExplanation = '<span class="badge sigma-zone-c">Zone C (0-1σ)</span> 구간은 중심선(CL)에서 0-시그마와 1-시그마 사이의 영역입니다.';
                 break;
         }
-        
+
+        // 추정 원인 목록 생성
+        const causes = ruleCauses[pattern.rule] || [];
+        const causesHtml = causes.length > 0 ? `
+            <div class="mt-2 mb-2">
+                <strong>추정 원인:</strong>
+                <ul class="mb-0 mt-1 pl-3">
+                    ${causes.map(c => `<li>${c}</li>`).join('')}
+                </ul>
+            </div>
+        ` : '';
+
         // 패턴 설명 내용 설정
         patternExplanationEl.innerHTML = `
             <h5 class="mb-2">Rule ${pattern.rule} 패턴 설명</h5>
             <p class="mb-1"><strong>${pattern.description}</strong></p>
             <p class="mb-2 small">위치: ${positions.map(p => `포인트 ${p+1}`).join(', ')}</p>
             ${zoneExplanation ? `<p class="mb-0">${zoneExplanation}</p>` : ''}
+            ${causesHtml}
             <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="reset-highlight">강조 표시 지우기</button>
         `;
         
