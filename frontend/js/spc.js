@@ -396,7 +396,11 @@
         
         // 공정능력지수 테이블 업데이트 (process_capability가 없을 수도 있음)
         updateCapabilityTable(result.process_capability || {});
-        
+
+        // 공정능력지수 진단 실행
+        const diagnosisResults = diagnoseCapabilityIndices(result.process_capability);
+        showCapabilityDiagnosis(diagnosisResults);
+
         // SPEC 테이블 업데이트
         updateSpecTable(result.spec);
         
@@ -1422,7 +1426,247 @@
         </tr>
         `;
     }
-    
+
+    // ===== 공정능력지수 진단 =====
+
+    // 진단 임계값
+    const RATIO_THRESHOLD = 1.3;
+    const APPROX_RATIO = 1.15;
+    const LOW_CAPABILITY = 1.0;
+    const GOOD_CAPABILITY = 1.33;
+
+    // 진단 데이터 사전
+    const capabilityDiagnosisRules = {
+        1: {
+            name: 'Cp ≫ Cpk',
+            summary: '산포는 충분히 작지만 공정 평균이 규격 중심에서 벗어나 있음',
+            icon: 'fas fa-arrows-alt-h',
+            alertClass: 'diagnosis-warning',
+            causes: [
+                '설비 셋업 시 목표값 설정이 규격 중심과 불일치',
+                '공구/금형 마모로 인한 평균 드리프트',
+                '원자재 로트 변경 후 평균 이동',
+                '측정 장비의 편향(bias) 또는 캘리브레이션 오류',
+                '작업자가 의도적으로 한쪽 규격한계를 피해 치우쳐 운영'
+            ],
+            action: '공정 평균을 규격 중심으로 조정 (상대적으로 쉬운 개선)'
+        },
+        2: {
+            name: 'Cp ≈ Cpk 이지만 둘 다 낮음',
+            summary: '평균은 중심에 있으나 산포 자체가 너무 큼',
+            icon: 'fas fa-expand-arrows-alt',
+            alertClass: 'diagnosis-danger',
+            causes: [
+                '설비 정밀도 부족 (기계 자체의 반복성/재현성 부족)',
+                '원자재 특성의 산포가 큼',
+                'Gage R&R 불량 — 측정 시스템 변동이 공정 변동에 혼입',
+                '작업 조건(온도, 압력, 속도 등)의 제어가 불충분',
+                '공정 파라미터 최적화가 안 된 상태'
+            ],
+            action: '산포 자체를 줄여야 하므로 근본적인 공정 개선 필요 (DOE, 설비 개조 등)'
+        },
+        3: {
+            name: 'Cp ≫ Pp',
+            summary: '단기(군내) 산포는 작지만 장기(전체) 산포가 큼 — 군간 변동이 큰 상태',
+            icon: 'fas fa-chart-line',
+            alertClass: 'diagnosis-danger',
+            causes: [
+                '시간에 따른 공정 평균의 이동 (교대 간 작업자 차이, 주간/야간 환경 차이, 원자재 로트 간 차이)',
+                '설비 상태 변동 (웜업 전후 차이, 정기 보전 전후 성능 차이, 공구 교체 주기에 따른 변동)',
+                '셋업 간 변동 (매 셋업마다 미세하게 다른 조건, 여러 캐비티/스핀들 간 차이)',
+                '과잉 조정(over-adjustment) — 불필요한 공정 조정이 오히려 변동을 증가시킴'
+            ],
+            action: '군간 변동의 원인(시간, 로트, 교대, 설비 등)을 층별 분석하여 특정하고 제거'
+        },
+        4: {
+            name: 'Cpk ≫ Ppk',
+            summary: '단기적으로는 능력이 좋지만 장기적으로 치우침과 산포가 모두 불안정',
+            icon: 'fas fa-wave-square',
+            alertClass: 'diagnosis-warning',
+            causes: [
+                '공정 평균이 시간에 따라 표류(drift)하면서 규격 중심에서 점점 벗어남',
+                '교대/로트/계절별로 평균 위치가 다름',
+                '설비 마모가 진행되면서 평균이 한쪽으로 이동',
+                'SPC 관리가 형식적이어서 이상 징후를 적시에 조치하지 못함'
+            ],
+            action: '장기적 평균 이동 원인 추적 및 공정 안정화'
+        },
+        5: {
+            name: 'Pp ≫ Ppk',
+            summary: '장기 산포는 규격 대비 충분하지만 장기적으로 평균이 치우쳐 있음',
+            icon: 'fas fa-balance-scale-left',
+            alertClass: 'diagnosis-warning',
+            causes: [
+                '공정 목표값 자체가 규격 중심과 다르게 설정됨',
+                '비대칭 마모 패턴 (한 방향으로만 마모 진행)',
+                '의도적 편향 운영 (예: 한쪽 규격이 더 치명적이라 반대쪽으로 치우쳐 운영)',
+                '조건 1(Cp ≫ Cpk)과 유사하되 장기 관점에서의 치우침'
+            ],
+            action: '평균 재조정, 단 의도적 편향이면 합리적 근거 문서화'
+        },
+        6: {
+            name: 'Cp ≈ Pp, Cpk ≈ Ppk (안정 상태)',
+            summary: '군내 변동 ≈ 전체 변동 — 공정이 매우 안정적 (통계적 관리 상태)',
+            icon: 'fas fa-check-circle',
+            alertClass: 'diagnosis-success',
+            causes: [
+                '군간 변동이 거의 없음',
+                '공정이 잘 관리되고 있는 이상적인 상태',
+                '특수 원인이 없고 우연 원인만 존재'
+            ],
+            action: '현 수준 유지 관리'
+        },
+        7: {
+            name: 'Pp > Cp (비정상)',
+            summary: '이론적으로 발생하기 어려운 상황 — 데이터 또는 계산 문제 의심',
+            icon: 'fas fa-exclamation-triangle',
+            alertClass: 'diagnosis-info',
+            causes: [
+                '부분군(subgroup) 구성 오류 — 서로 다른 모집단을 하나의 군으로 묶어 군내 변동이 과대 추정됨',
+                '부분군 크기(n) 또는 빈도 설정이 부적절',
+                '데이터 수집 기간이 너무 짧아 전체 변동이 과소 추정',
+                '측정 시스템 문제',
+                '계산 공식 적용 오류'
+            ],
+            action: '부분군 구성 전략(rational subgrouping) 재검토'
+        }
+    };
+
+    // 공정능력지수 진단 함수
+    function diagnoseCapabilityIndices(capability) {
+        const results = [];
+
+        if (!capability) return results;
+
+        const { cp, cpk, pp, ppk } = capability;
+
+        // 값 유효성 검사
+        if (cp == null || cpk == null || pp == null || ppk == null) return results;
+        if (!isFinite(cp) || !isFinite(cpk) || !isFinite(pp) || !isFinite(ppk)) return results;
+
+        // 안전한 비율 계산 헬퍼
+        function safeRatio(a, b) {
+            if (b <= 0.001) return Infinity;
+            return a / b;
+        }
+
+        const cpToCpk = safeRatio(cp, cpk);
+        const cpkToCp = safeRatio(cpk, cp);
+        const cpToPp = safeRatio(cp, pp);
+        const ppToCp = safeRatio(pp, cp);
+        const cpkToPpk = safeRatio(cpk, ppk);
+        const ppToPpk = safeRatio(pp, ppk);
+
+        // 조건 7: Pp > Cp (비정상) - 우선 체크
+        if (ppToCp > APPROX_RATIO) {
+            const rule = capabilityDiagnosisRules[7];
+            results.push({
+                rule: 7,
+                ...rule,
+                details: `Pp=${pp.toFixed(3)}, Cp=${cp.toFixed(3)}, 비율(Pp/Cp)=${ppToCp.toFixed(2)}`
+            });
+        }
+
+        // 조건 1: Cp >> Cpk (치우침)
+        if (cpToCpk > RATIO_THRESHOLD && cp >= LOW_CAPABILITY) {
+            const rule = capabilityDiagnosisRules[1];
+            results.push({
+                rule: 1,
+                ...rule,
+                details: `Cp=${cp.toFixed(3)}, Cpk=${cpk.toFixed(3)}, 비율(Cp/Cpk)=${cpToCpk.toFixed(2)}`
+            });
+        }
+
+        // 조건 2: Cp ≈ Cpk 이지만 둘 다 낮음
+        if (cpToCpk < APPROX_RATIO && cpkToCp < APPROX_RATIO && cp < LOW_CAPABILITY && cpk < LOW_CAPABILITY) {
+            const rule = capabilityDiagnosisRules[2];
+            results.push({
+                rule: 2,
+                ...rule,
+                details: `Cp=${cp.toFixed(3)}, Cpk=${cpk.toFixed(3)}`
+            });
+        }
+
+        // 조건 3: Cp >> Pp (군간 변동)
+        if (cpToPp > RATIO_THRESHOLD && cp >= LOW_CAPABILITY) {
+            const rule = capabilityDiagnosisRules[3];
+            results.push({
+                rule: 3,
+                ...rule,
+                details: `Cp=${cp.toFixed(3)}, Pp=${pp.toFixed(3)}, 비율(Cp/Pp)=${cpToPp.toFixed(2)}`
+            });
+        }
+
+        // 조건 4: Cpk >> Ppk (장기 불안정)
+        if (cpkToPpk > RATIO_THRESHOLD && cpk >= LOW_CAPABILITY) {
+            const rule = capabilityDiagnosisRules[4];
+            results.push({
+                rule: 4,
+                ...rule,
+                details: `Cpk=${cpk.toFixed(3)}, Ppk=${ppk.toFixed(3)}, 비율(Cpk/Ppk)=${cpkToPpk.toFixed(2)}`
+            });
+        }
+
+        // 조건 5: Pp >> Ppk (장기 치우침)
+        if (ppToPpk > RATIO_THRESHOLD && pp >= LOW_CAPABILITY) {
+            const rule = capabilityDiagnosisRules[5];
+            results.push({
+                rule: 5,
+                ...rule,
+                details: `Pp=${pp.toFixed(3)}, Ppk=${ppk.toFixed(3)}, 비율(Pp/Ppk)=${ppToPpk.toFixed(2)}`
+            });
+        }
+
+        // 조건 6: 안정 상태 (Cp ≈ Pp, Cpk ≈ Ppk)
+        if (cpToPp < APPROX_RATIO && ppToCp < APPROX_RATIO &&
+            cpkToPpk < APPROX_RATIO && safeRatio(ppk, cpk) < APPROX_RATIO &&
+            Math.max(cp, cpk, pp, ppk) >= GOOD_CAPABILITY) {
+            const rule = capabilityDiagnosisRules[6];
+            results.push({
+                rule: 6,
+                ...rule,
+                details: `Cp=${cp.toFixed(3)}, Cpk=${cpk.toFixed(3)}, Pp=${pp.toFixed(3)}, Ppk=${ppk.toFixed(3)}`
+            });
+        }
+
+        // 심각도순 정렬: danger → warning → info → success
+        const severityOrder = { 'diagnosis-danger': 0, 'diagnosis-warning': 1, 'diagnosis-info': 2, 'diagnosis-success': 3 };
+        results.sort((a, b) => (severityOrder[a.alertClass] || 99) - (severityOrder[b.alertClass] || 99));
+
+        return results;
+    }
+
+    // 공정능력지수 진단 결과 표시 함수
+    function showCapabilityDiagnosis(diagnosisResults) {
+        const container = document.getElementById('capability-diagnosis');
+        if (!container) return;
+
+        if (!diagnosisResults || diagnosisResults.length === 0) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            return;
+        }
+
+        let html = '<div class="card"><div class="card-header"><h3 class="card-title"><i class="fas fa-stethoscope mr-1"></i> 공정능력지수 진단</h3></div><div class="card-body">';
+
+        diagnosisResults.forEach(item => {
+            const causesHtml = item.causes.map(c => `<li>${c}</li>`).join('');
+            html += `
+            <div class="capability-diagnosis-item ${item.alertClass}">
+                <h6><i class="${item.icon} mr-1"></i> ${item.name}</h6>
+                <p class="mb-1">${item.summary}</p>
+                <div class="diagnosis-values">${item.details}</div>
+                <div class="mt-2 mb-1"><strong>추정 원인:</strong></div>
+                <ul>${causesHtml}</ul>
+                <div class="diagnosis-action"><i class="fas fa-wrench mr-1"></i> 조치 방향: ${item.action}</div>
+            </div>`;
+        });
+
+        html += '</div></div>';
+        container.innerHTML = html;
+        container.style.display = 'block';
+    }
+
     // SPEC 테이블 업데이트
     function updateSpecTable(spec) {
         if (!spec) {
