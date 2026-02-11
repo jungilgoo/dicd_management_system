@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload, contains_eager
+from sqlalchemy.orm import Session, selectinload
 from . import models
 from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness, change_point, author
 from ..services.statistics import calculate_basic_statistics
@@ -206,12 +206,15 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
     query = db.query(models.Measurement)
     query = query.join(models.Target, models.Measurement.target_id == models.Target.id)
 
-    # 장비 관계 eager loading
+    # 관계 데이터 eager loading (selectinload는 별도 IN 쿼리로 기존 JOIN과 충돌 없음)
     query = query.options(
-        joinedload(models.Measurement.coating_equipment),
-        joinedload(models.Measurement.exposure_equipment),
-        joinedload(models.Measurement.development_equipment),
-        joinedload(models.Measurement.etch_equipment),
+        selectinload(models.Measurement.target)
+            .selectinload(models.Target.process)
+            .selectinload(models.Process.product_group),
+        selectinload(models.Measurement.coating_equipment),
+        selectinload(models.Measurement.exposure_equipment),
+        selectinload(models.Measurement.development_equipment),
+        selectinload(models.Measurement.etch_equipment),
     )
 
     # process_type 필터 적용
@@ -221,23 +224,12 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
     # 제품군 또는 공정으로 필터링이 필요한 경우 추가 조인 수행
     if product_group_id or process_id:
         query = query.join(models.Process, models.Target.process_id == models.Process.id)
-        query = query.options(
-            contains_eager(models.Measurement.target)
-                .contains_eager(models.Target.process)
-                .joinedload(models.Process.product_group)
-        )
 
         if product_group_id:
             query = query.filter(models.Process.product_group_id == product_group_id)
 
         if process_id:
             query = query.filter(models.Target.process_id == process_id)
-    else:
-        query = query.options(
-            contains_eager(models.Measurement.target)
-                .joinedload(models.Target.process)
-                .joinedload(models.Process.product_group)
-        )
     
     # 기존 필터 적용
     if target_id:
