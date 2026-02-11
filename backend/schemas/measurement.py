@@ -69,6 +69,17 @@ class Measurement(BaseModel):
     class Config:
         orm_mode = True
 
+class MeasurementListItem(Measurement):
+    target_name: Optional[str] = None
+    process_name: Optional[str] = None
+    product_group_name: Optional[str] = None
+    coating_equipment_name: Optional[str] = None
+    exposure_equipment_name: Optional[str] = None
+    development_equipment_name: Optional[str] = None
+    etch_equipment_name: Optional[str] = None
+    spec_lsl: Optional[float] = None
+    spec_usl: Optional[float] = None
+
 class MeasurementWithSpec(Measurement):
     spec_status: Dict[str, Any]  # LSL, USL, 상태 등
 

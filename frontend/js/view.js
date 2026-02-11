@@ -178,143 +178,43 @@
             `;
             return;
         }
-        
+
         let tableHtml = '';
-        
-        // 필요한 모든 ID 목록 수집
-        const targetIds = new Set();
-        const processIds = new Set();
-        const productGroupIds = new Set();
-        const equipmentIds = new Set();
-        
-        measurements.forEach(measurement => {
-            targetIds.add(measurement.target_id);
-            if (window.PROCESS_TYPE === 'ETCH') {
-                // ETCH: 단일 장비
-                if (measurement.etch_equipment_id) equipmentIds.add(measurement.etch_equipment_id);
-            } else {
-                // PHOTO: 코팅/노광/현상 장비
-                if (measurement.coating_equipment_id) equipmentIds.add(measurement.coating_equipment_id);
-                if (measurement.exposure_equipment_id) equipmentIds.add(measurement.exposure_equipment_id);
-                if (measurement.development_equipment_id) equipmentIds.add(measurement.development_equipment_id);
+
+        // enriched 응답 데이터로 캐시 채우기 (상세 모달/내보내기 호환성 유지)
+        if (!window.activeSpecCache) window.activeSpecCache = {};
+        measurements.forEach(m => {
+            if (m.target_id && m.target_name && !targetsCache[m.target_id]) {
+                targetsCache[m.target_id] = { id: m.target_id, name: m.target_name };
+            }
+            if (m.spec_lsl != null && m.spec_usl != null && !window.activeSpecCache[m.target_id]) {
+                window.activeSpecCache[m.target_id] = { lsl: m.spec_lsl, usl: m.spec_usl };
             }
         });
-        
-        // 캐시에 없는 타겟 정보 병렬로 로드
-        const targetFetchPromises = Array.from(targetIds)
-            .filter(id => !targetsCache[id])
-            .map(async id => {
-                try {
-                    const target = await api.get(`${API_CONFIG.ENDPOINTS.TARGETS}/${id}`);
-                    targetsCache[id] = target;
-                    processIds.add(target.process_id);
-                } catch (error) {
-                    console.error(`타겟 ID ${id} 정보 로드 실패:`, error);
-                }
-            });
-        
-        await Promise.all(targetFetchPromises);
-        
-        // 캐시에 없는 공정 정보 병렬로 로드
-        const processFetchPromises = Array.from(processIds)
-            .filter(id => !processesCache[id])
-            .map(async id => {
-                try {
-                    const process = await api.get(`${API_CONFIG.ENDPOINTS.PROCESSES}/${id}`);
-                    processesCache[id] = process;
-                    productGroupIds.add(process.product_group_id);
-                } catch (error) {
-                    console.error(`공정 ID ${id} 정보 로드 실패:`, error);
-                }
-            });
-        
-        await Promise.all(processFetchPromises);
-        
-        // 캐시에 없는 제품군 정보 병렬로 로드
-        const productGroupFetchPromises = Array.from(productGroupIds)
-            .filter(id => !productGroupsCache[id])
-            .map(async id => {
-                try {
-                    const productGroup = await api.get(`${API_CONFIG.ENDPOINTS.PRODUCT_GROUPS}/${id}`);
-                    productGroupsCache[id] = productGroup;
-                } catch (error) {
-                    console.error(`제품군 ID ${id} 정보 로드 실패:`, error);
-                }
-            });
-        
-        // 캐시에 없는 장비 정보 병렬로 로드
-        const equipmentFetchPromises = Array.from(equipmentIds)
-            .filter(id => !equipmentsCache[id])
-            .map(async id => {
-                try {
-                    const equipment = await api.get(`${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${id}`);
-                    equipmentsCache[id] = equipment;
-                } catch (error) {
-                    console.error(`장비 ID ${id} 정보 로드 실패:`, error);
-                }
-            });
-        
-        // 모든 필요한 데이터 병렬로 로드
-        await Promise.all([
-            ...productGroupFetchPromises,
-            ...equipmentFetchPromises
-        ]);
-        
-        // 이제 모든 필요한 데이터가 캐시에 있으므로, 측정 데이터 테이블 생성
+
         for (const measurement of measurements) {
             try {
-                const target = targetsCache[measurement.target_id];
-                if (!target) continue;
-                
-                const process = processesCache[target.process_id];
-                if (!process) continue;
-                
-                const productGroup = productGroupsCache[process.product_group_id];
-                if (!productGroup) continue;
-                
+                const productGroupName = measurement.product_group_name || '-';
+                const processName = measurement.process_name || '-';
+                const targetName = measurement.target_name || '-';
+
                 // 장비 정보 생성 (ETCH/PHOTO 분기 처리)
                 let equipmentNames = [];
-
                 if (window.PROCESS_TYPE === 'ETCH') {
-                    // ETCH: 단일 장비
-                    if (measurement.etch_equipment_id && equipmentsCache[measurement.etch_equipment_id]) {
-                        equipmentNames.push(equipmentsCache[measurement.etch_equipment_id].name);
-                    }
+                    if (measurement.etch_equipment_name) equipmentNames.push(measurement.etch_equipment_name);
                 } else {
-                    // PHOTO: 코팅/노광/현상 장비
-                    if (measurement.coating_equipment_id && equipmentsCache[measurement.coating_equipment_id]) {
-                        equipmentNames.push(equipmentsCache[measurement.coating_equipment_id].name);
-                    }
-
-                    if (measurement.exposure_equipment_id && equipmentsCache[measurement.exposure_equipment_id]) {
-                        equipmentNames.push(equipmentsCache[measurement.exposure_equipment_id].name);
-                    }
-
-                    if (measurement.development_equipment_id && equipmentsCache[measurement.development_equipment_id]) {
-                        equipmentNames.push(equipmentsCache[measurement.development_equipment_id].name);
-                    }
+                    if (measurement.coating_equipment_name) equipmentNames.push(measurement.coating_equipment_name);
+                    if (measurement.exposure_equipment_name) equipmentNames.push(measurement.exposure_equipment_name);
+                    if (measurement.development_equipment_name) equipmentNames.push(measurement.development_equipment_name);
                 }
-
                 const equipmentInfo = equipmentNames.length > 0 ? equipmentNames.join(', ') : '-';
-                
-                // SPEC 정보 가져오기
+
+                // SPEC 상태 배지
                 let statusBadge = '<span class="badge badge-secondary">SPEC 없음</span>';
-                try {
-                    // 캐시된 활성 SPEC 확인
-                    if (!window.activeSpecCache) window.activeSpecCache = {};
-                    
-                    if (!window.activeSpecCache[measurement.target_id]) {
-                        window.activeSpecCache[measurement.target_id] = await api.getActiveSpec(measurement.target_id);
-                    }
-                    
-                    const spec = window.activeSpecCache[measurement.target_id];
-                    if (spec) {
-                        statusBadge = UTILS.getStatusBadge(measurement.avg_value, spec.lsl, spec.usl);
-                    }
-                } catch (error) {
-                    console.warn(`타겟 ID ${measurement.target_id}에 대한 활성 SPEC이 없습니다.`);
+                if (measurement.spec_lsl != null && measurement.spec_usl != null) {
+                    statusBadge = UTILS.getStatusBadge(measurement.avg_value, measurement.spec_lsl, measurement.spec_usl);
                 }
-                
+
                 // 행 HTML 생성
                 const checkboxStyle = isBulkDeleteMode ? '' : 'display: none;';
                 const isChecked = selectedMeasurementIds.has(measurement.id) ? 'checked' : '';
@@ -325,9 +225,9 @@
                         <input type="checkbox" class="measurement-checkbox" data-id="${measurement.id}" ${isChecked}>
                     </td>
                     <td>${UTILS.formatDate(measurement.created_at)}</td>
-                    <td>${productGroup.name}</td>
-                    <td>${process.name}</td>
-                    <td>${target.name}</td>
+                    <td>${productGroupName}</td>
+                    <td>${processName}</td>
+                    <td>${targetName}</td>
                     <td class="equipment-cell text-center">${equipmentInfo}</td>
                     <td>${measurement.device}</td>
                     <td>${measurement.lot_no}</td>
@@ -346,10 +246,10 @@
                 console.error('측정 데이터 추가 정보 로드 실패:', error);
             }
         }
-        
+
         // 테이블에 HTML 삽입
         document.getElementById('data-table-body').innerHTML = tableHtml;
-        
+
         // 상세 정보 버튼 이벤트 설정
         document.querySelectorAll('.view-detail').forEach(button => {
             button.addEventListener('click', function() {

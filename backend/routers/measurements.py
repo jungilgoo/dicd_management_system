@@ -31,7 +31,7 @@ def create_measurement(
 
 # backend/routers/measurements.py 파일의 read_measurements 함수 업데이트
 
-@router.get("/", response_model=List[measurement.Measurement])
+@router.get("/", response_model=List[measurement.MeasurementListItem])
 def read_measurements(
     target_id: Optional[int] = None,
     process_id: Optional[int] = None,
@@ -48,7 +48,7 @@ def read_measurements(
 ):
     # 날짜 처리 로직 수정
     start_datetime = None
-    
+
     # 문자열 날짜가 제공된 경우 datetime으로 변환
     if start_date and end_date:
         try:
@@ -62,7 +62,7 @@ def read_measurements(
         # 기존 로직: 일수 기준으로 시작 날짜 계산
         start_datetime = datetime.now() - timedelta(days=days)
         end_datetime = None
-    
+
     measurements = crud.get_measurements(
         db,
         target_id=target_id,
@@ -76,7 +76,38 @@ def read_measurements(
         keyword=keyword,
         process_type=process_type,
     )
-    return measurements
+
+    # 활성 SPEC 일괄 조회 (N+1 방지)
+    target_ids = list(set(m.target_id for m in measurements))
+    active_specs = {}
+    if target_ids:
+        specs = db.query(models.Spec).filter(
+            models.Spec.target_id.in_(target_ids),
+            models.Spec.is_active == True
+        ).all()
+        for s in specs:
+            active_specs[s.target_id] = s
+
+    # enriched 응답 구성
+    result = []
+    for m in measurements:
+        item = measurement.Measurement.from_orm(m).dict()
+        item["target_name"] = m.target.name if m.target else None
+        item["process_name"] = m.target.process.name if m.target and m.target.process else None
+        item["product_group_name"] = (
+            m.target.process.product_group.name
+            if m.target and m.target.process and m.target.process.product_group else None
+        )
+        item["coating_equipment_name"] = m.coating_equipment.name if m.coating_equipment else None
+        item["exposure_equipment_name"] = m.exposure_equipment.name if m.exposure_equipment else None
+        item["development_equipment_name"] = m.development_equipment.name if m.development_equipment else None
+        item["etch_equipment_name"] = m.etch_equipment.name if m.etch_equipment else None
+        spec = active_specs.get(m.target_id)
+        item["spec_lsl"] = spec.lsl if spec else None
+        item["spec_usl"] = spec.usl if spec else None
+        result.append(item)
+
+    return result
 
 @router.get("/{measurement_id}", response_model=measurement.MeasurementWithSpec)
 def read_measurement(measurement_id: int, db: Session = Depends(database.get_db)):
