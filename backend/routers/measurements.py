@@ -77,10 +77,36 @@ def read_measurements(
         process_type=process_type,
     )
 
-    # 활성 SPEC 일괄 조회 (N+1 방지)
+    # 배치 쿼리용 ID 수집
     target_ids = list(set(m.target_id for m in measurements))
+    equip_ids = set()
+    for m in measurements:
+        for eid in (m.coating_equipment_id, m.exposure_equipment_id,
+                    m.development_equipment_id, m.etch_equipment_id):
+            if eid:
+                equip_ids.add(eid)
+
+    # 배치 쿼리: 타겟, 공정, 제품군, 장비, SPEC (ORM relationship 접근 없이)
+    targets_map = {}
+    processes_map = {}
+    product_groups_map = {}
+    equipments_map = {}
     active_specs = {}
+
     if target_ids:
+        targets = db.query(models.Target).filter(models.Target.id.in_(target_ids)).all()
+        targets_map = {t.id: t for t in targets}
+
+        process_ids = list(set(t.process_id for t in targets if t.process_id))
+        if process_ids:
+            processes = db.query(models.Process).filter(models.Process.id.in_(process_ids)).all()
+            processes_map = {p.id: p for p in processes}
+
+            pg_ids = list(set(p.product_group_id for p in processes if p.product_group_id))
+            if pg_ids:
+                pgs = db.query(models.ProductGroup).filter(models.ProductGroup.id.in_(pg_ids)).all()
+                product_groups_map = {pg.id: pg for pg in pgs}
+
         specs = db.query(models.Spec).filter(
             models.Spec.target_id.in_(target_ids),
             models.Spec.is_active == True
@@ -88,20 +114,25 @@ def read_measurements(
         for s in specs:
             active_specs[s.target_id] = s
 
-    # enriched 응답 구성
+    if equip_ids:
+        equips = db.query(models.Equipment).filter(models.Equipment.id.in_(list(equip_ids))).all()
+        equipments_map = {e.id: e for e in equips}
+
+    # enriched 응답 구성 (딕셔너리 룩업만 사용, ORM relationship 접근 없음)
     result = []
     for m in measurements:
         item = measurement.Measurement.from_orm(m).dict()
-        item["target_name"] = m.target.name if m.target else None
-        item["process_name"] = m.target.process.name if m.target and m.target.process else None
-        item["product_group_name"] = (
-            m.target.process.product_group.name
-            if m.target and m.target.process and m.target.process.product_group else None
-        )
-        item["coating_equipment_name"] = m.coating_equipment.name if m.coating_equipment else None
-        item["exposure_equipment_name"] = m.exposure_equipment.name if m.exposure_equipment else None
-        item["development_equipment_name"] = m.development_equipment.name if m.development_equipment else None
-        item["etch_equipment_name"] = m.etch_equipment.name if m.etch_equipment else None
+        target = targets_map.get(m.target_id)
+        process = processes_map.get(target.process_id) if target else None
+        pg = product_groups_map.get(process.product_group_id) if process else None
+
+        item["target_name"] = target.name if target else None
+        item["process_name"] = process.name if process else None
+        item["product_group_name"] = pg.name if pg else None
+        item["coating_equipment_name"] = equipments_map[m.coating_equipment_id].name if m.coating_equipment_id and m.coating_equipment_id in equipments_map else None
+        item["exposure_equipment_name"] = equipments_map[m.exposure_equipment_id].name if m.exposure_equipment_id and m.exposure_equipment_id in equipments_map else None
+        item["development_equipment_name"] = equipments_map[m.development_equipment_id].name if m.development_equipment_id and m.development_equipment_id in equipments_map else None
+        item["etch_equipment_name"] = equipments_map[m.etch_equipment_id].name if m.etch_equipment_id and m.etch_equipment_id in equipments_map else None
         spec = active_specs.get(m.target_id)
         item["spec_lsl"] = spec.lsl if spec else None
         item["spec_usl"] = spec.usl if spec else None
