@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 from . import models
 from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness, change_point, author
 from ..services.statistics import calculate_basic_statistics
@@ -205,17 +205,6 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
     # 조인 쿼리를 위한 설정 (process_type 필터링을 위해 항상 Target과 조인)
     query = db.query(models.Measurement)
     query = query.join(models.Target, models.Measurement.target_id == models.Target.id)
-
-    # 관계 데이터 eager loading (selectinload는 별도 IN 쿼리로 기존 JOIN과 충돌 없음)
-    query = query.options(
-        selectinload(models.Measurement.target)
-            .selectinload(models.Target.process)
-            .selectinload(models.Process.product_group),
-        selectinload(models.Measurement.coating_equipment),
-        selectinload(models.Measurement.exposure_equipment),
-        selectinload(models.Measurement.development_equipment),
-        selectinload(models.Measurement.etch_equipment),
-    )
 
     # process_type 필터 적용
     if process_type:
