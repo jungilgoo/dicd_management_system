@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
+import traceback
 from ..database import crud, models, database
 from ..schemas import measurement
 
@@ -31,7 +33,7 @@ def create_measurement(
 
 # backend/routers/measurements.py 파일의 read_measurements 함수 업데이트
 
-@router.get("/", response_model=List[measurement.MeasurementListItem])
+@router.get("/")
 def read_measurements(
     target_id: Optional[int] = None,
     process_id: Optional[int] = None,
@@ -39,106 +41,136 @@ def read_measurements(
     device: Optional[str] = None,
     lot_no: Optional[str] = None,
     days: Optional[int] = Query(7, description="최근 일수 (기본 1주)"),
-    start_date: Optional[str] = None,  # 문자열로 날짜 받기 추가
-    end_date: Optional[str] = None,    # 문자열로 날짜 받기 추가
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     equipment_id: Optional[int] = None,
     keyword: Optional[str] = None,
     process_type: str = Query("PHOTO", description="공정 타입 (PHOTO, ETCH)"),
     db: Session = Depends(database.get_db)
 ):
-    # 날짜 처리 로직 수정
-    start_datetime = None
-
-    # 문자열 날짜가 제공된 경우 datetime으로 변환
-    if start_date and end_date:
-        try:
-            start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
-            end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
-            # 종료일은 해당 일자의 마지막 시간으로 설정
-            end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
-    elif days:
-        # 기존 로직: 일수 기준으로 시작 날짜 계산
-        start_datetime = datetime.now() - timedelta(days=days)
+    try:
+        # 날짜 처리
+        start_datetime = None
         end_datetime = None
 
-    measurements = crud.get_measurements(
-        db,
-        target_id=target_id,
-        process_id=process_id,
-        product_group_id=product_group_id,
-        device=device,
-        lot_no=lot_no,
-        start_date=start_datetime,  # 변환된 datetime 사용
-        end_date=end_datetime if 'end_datetime' in locals() else None,  # 변환된 datetime 사용
-        equipment_id=equipment_id,
-        keyword=keyword,
-        process_type=process_type,
-    )
+        if start_date and end_date:
+            try:
+                start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
+                end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
+                end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        elif days:
+            start_datetime = datetime.now() - timedelta(days=days)
 
-    # 배치 쿼리용 ID 수집
-    target_ids = list(set(m.target_id for m in measurements))
-    equip_ids = set()
-    for m in measurements:
-        for eid in (m.coating_equipment_id, m.exposure_equipment_id,
-                    m.development_equipment_id, m.etch_equipment_id):
-            if eid:
-                equip_ids.add(eid)
+        measurements = crud.get_measurements(
+            db,
+            target_id=target_id,
+            process_id=process_id,
+            product_group_id=product_group_id,
+            device=device,
+            lot_no=lot_no,
+            start_date=start_datetime,
+            end_date=end_datetime,
+            equipment_id=equipment_id,
+            keyword=keyword,
+            process_type=process_type,
+        )
 
-    # 배치 쿼리: 타겟, 공정, 제품군, 장비, SPEC (ORM relationship 접근 없이)
-    targets_map = {}
-    processes_map = {}
-    product_groups_map = {}
-    equipments_map = {}
-    active_specs = {}
+        # 배치 쿼리용 ID 수집
+        target_ids = list(set(m.target_id for m in measurements))
+        equip_ids = set()
+        for m in measurements:
+            for eid in (m.coating_equipment_id, m.exposure_equipment_id,
+                        m.development_equipment_id, m.etch_equipment_id):
+                if eid:
+                    equip_ids.add(eid)
 
-    if target_ids:
-        targets = db.query(models.Target).filter(models.Target.id.in_(target_ids)).all()
-        targets_map = {t.id: t for t in targets}
+        # 배치 쿼리: 타겟, 공정, 제품군, 장비, SPEC
+        targets_map = {}
+        processes_map = {}
+        product_groups_map = {}
+        equipments_map = {}
+        active_specs = {}
 
-        process_ids = list(set(t.process_id for t in targets if t.process_id))
-        if process_ids:
-            processes = db.query(models.Process).filter(models.Process.id.in_(process_ids)).all()
-            processes_map = {p.id: p for p in processes}
+        if target_ids:
+            targets = db.query(models.Target).filter(models.Target.id.in_(target_ids)).all()
+            targets_map = {t.id: t for t in targets}
 
-            pg_ids = list(set(p.product_group_id for p in processes if p.product_group_id))
-            if pg_ids:
-                pgs = db.query(models.ProductGroup).filter(models.ProductGroup.id.in_(pg_ids)).all()
-                product_groups_map = {pg.id: pg for pg in pgs}
+            process_ids = list(set(t.process_id for t in targets if t.process_id))
+            if process_ids:
+                processes = db.query(models.Process).filter(models.Process.id.in_(process_ids)).all()
+                processes_map = {p.id: p for p in processes}
 
-        specs = db.query(models.Spec).filter(
-            models.Spec.target_id.in_(target_ids),
-            models.Spec.is_active == True
-        ).all()
-        for s in specs:
-            active_specs[s.target_id] = s
+                pg_ids = list(set(p.product_group_id for p in processes if p.product_group_id))
+                if pg_ids:
+                    pgs = db.query(models.ProductGroup).filter(models.ProductGroup.id.in_(pg_ids)).all()
+                    product_groups_map = {pg.id: pg for pg in pgs}
 
-    if equip_ids:
-        equips = db.query(models.Equipment).filter(models.Equipment.id.in_(list(equip_ids))).all()
-        equipments_map = {e.id: e for e in equips}
+            specs = db.query(models.Spec).filter(
+                models.Spec.target_id.in_(target_ids),
+                models.Spec.is_active == True
+            ).all()
+            for s in specs:
+                active_specs[s.target_id] = s
 
-    # enriched 응답 구성 (딕셔너리 룩업만 사용, ORM relationship 접근 없음)
-    result = []
-    for m in measurements:
-        item = measurement.Measurement.from_orm(m).dict()
-        target = targets_map.get(m.target_id)
-        process = processes_map.get(target.process_id) if target else None
-        pg = product_groups_map.get(process.product_group_id) if process else None
+        if equip_ids:
+            equips = db.query(models.Equipment).filter(models.Equipment.id.in_(list(equip_ids))).all()
+            equipments_map = {e.id: e for e in equips}
 
-        item["target_name"] = target.name if target else None
-        item["process_name"] = process.name if process else None
-        item["product_group_name"] = pg.name if pg else None
-        item["coating_equipment_name"] = equipments_map[m.coating_equipment_id].name if m.coating_equipment_id and m.coating_equipment_id in equipments_map else None
-        item["exposure_equipment_name"] = equipments_map[m.exposure_equipment_id].name if m.exposure_equipment_id and m.exposure_equipment_id in equipments_map else None
-        item["development_equipment_name"] = equipments_map[m.development_equipment_id].name if m.development_equipment_id and m.development_equipment_id in equipments_map else None
-        item["etch_equipment_name"] = equipments_map[m.etch_equipment_id].name if m.etch_equipment_id and m.etch_equipment_id in equipments_map else None
-        spec = active_specs.get(m.target_id)
-        item["spec_lsl"] = spec.lsl if spec else None
-        item["spec_usl"] = spec.usl if spec else None
-        result.append(item)
+        # enriched 응답 구성 (from_orm 없이 수동 딕셔너리)
+        result = []
+        for m in measurements:
+            target = targets_map.get(m.target_id)
+            process = processes_map.get(target.process_id) if target else None
+            pg = product_groups_map.get(process.product_group_id) if process else None
+            spec = active_specs.get(m.target_id)
 
-    return result
+            item = {
+                "id": m.id,
+                "target_id": m.target_id,
+                "spec_id": m.spec_id,
+                "coating_equipment_id": m.coating_equipment_id,
+                "exposure_equipment_id": m.exposure_equipment_id,
+                "development_equipment_id": m.development_equipment_id,
+                "etch_equipment_id": m.etch_equipment_id,
+                "device": m.device,
+                "lot_no": m.lot_no,
+                "wafer_no": m.wafer_no,
+                "exposure_time": m.exposure_time,
+                "value_top": m.value_top,
+                "value_center": m.value_center,
+                "value_bottom": m.value_bottom,
+                "value_left": m.value_left,
+                "value_right": m.value_right,
+                "avg_value": m.avg_value,
+                "min_value": m.min_value,
+                "max_value": m.max_value,
+                "range_value": m.range_value,
+                "std_dev": m.std_dev,
+                "author": m.author,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+                "updated_at": m.updated_at.isoformat() if m.updated_at else None,
+                "target_name": target.name if target else None,
+                "process_name": process.name if process else None,
+                "product_group_name": pg.name if pg else None,
+                "coating_equipment_name": equipments_map[m.coating_equipment_id].name if m.coating_equipment_id and m.coating_equipment_id in equipments_map else None,
+                "exposure_equipment_name": equipments_map[m.exposure_equipment_id].name if m.exposure_equipment_id and m.exposure_equipment_id in equipments_map else None,
+                "development_equipment_name": equipments_map[m.development_equipment_id].name if m.development_equipment_id and m.development_equipment_id in equipments_map else None,
+                "etch_equipment_name": equipments_map[m.etch_equipment_id].name if m.etch_equipment_id and m.etch_equipment_id in equipments_map else None,
+                "spec_lsl": spec.lsl if spec else None,
+                "spec_usl": spec.usl if spec else None,
+            }
+            result.append(item)
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[measurements GET /] Error: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"서버 오류: {str(e)}")
 
 @router.get("/{measurement_id}", response_model=measurement.MeasurementWithSpec)
 def read_measurement(measurement_id: int, db: Session = Depends(database.get_db)):
