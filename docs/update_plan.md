@@ -597,6 +597,40 @@
   2. 서버 재시작 후 `GET /api/auto-update-spec/status`로 스케줄러 확인
   3. `POST /api/auto-update-spec/run`으로 수동 테스트
 
+### 2026-02-11 - 데이터 조회 페이지 N+1 API 호출 성능 개선
+- **목적**: 데이터 조회 페이지에서 측정 데이터 로딩 시 37+ API 호출 → 1 API 호출로 개선
+- **우선순위**: 높음
+- **상태**: ✅ 완료 (2026-02-11)
+- **문제 분석**:
+  1. 프론트엔드 N+1 폭포수 패턴: 측정 데이터 100건 표시 시 타겟, 공정, 제품군, 장비 정보를 개별 API로 가져옴 (37+ 호출)
+  2. 순차적 SPEC 호출: for 루프 안에서 `await getActiveSpec()` 개별 호출 (N회)
+- **수정 범위**:
+  | 파일 | 수정 내용 | 상태 |
+  |------|----------|------|
+  | `backend/schemas/measurement.py` | `MeasurementListItem` 스키마 추가 (9개 Optional 필드) | ✅ 완료 |
+  | `backend/routers/measurements.py` | 배치 쿼리 + 수동 딕셔너리 enrichment 방식으로 변경 | ✅ 완료 |
+  | `frontend/js/view.js` | `updateDataTable()` 개별 API 호출 제거, enriched 응답 직접 사용 | ✅ 완료 |
+- **구현 내용**:
+  1. `MeasurementListItem` 스키마: `Measurement` 상속 + `target_name`, `process_name`, `product_group_name`, 장비명 4개, `spec_lsl`, `spec_usl` 추가
+  2. 라우터 `GET /api/measurements/`: 측정 데이터 조회 후 target_ids, equipment_ids 수집 → IN 쿼리로 Target, Process, ProductGroup, Equipment, Spec 일괄 조회 → 딕셔너리 룩업으로 enriched 응답 구성
+  3. 프론트엔드: 기존 개별 API 호출 블록 제거, 순차 SPEC 호출 제거, API 응답의 enriched 필드 직접 사용
+- **트러블슈팅 이력**:
+  | 커밋 | 시도 | 결과 |
+  |------|------|------|
+  | `7548b46` | 초기 구현 (contains_eager + from_orm + response_model) | 모든 필드 "-" 표시 |
+  | `7ce843e` | selectinload로 변경 | 500 Internal Server Error |
+  | `840d143` | eager loading 전체 제거, lazy loading 의존 | 500 유지 |
+  | `8e2462b` | ORM relationship 접근 제거, 명시적 배치 쿼리 + 딕셔너리 룩업 | 500 유지 |
+  | `8da04f9` | from_orm/response_model 제거, 수동 딕셔너리 구성 + traceback 로깅 | ✅ 성공 |
+- **핵심 원인**: SQLAlchemy 2.0에서 Pydantic v1의 `from_orm()` 및 FastAPI `response_model` ORM 변환 과정에서 호환성 문제 발생
+- **최종 해결 방식**: ORM 매직 완전 배제 - `response_model` 제거, `from_orm()` 제거, 모든 필드를 수동 딕셔너리로 직접 구성, try/except + traceback으로 에러 상세 로깅
+- **검증 방법**:
+  1. 서버에서 `git pull` → 서비스 재시작
+  2. 데이터 조회 페이지 접속 → 제품군, 공정, 타겟, 장비명, SPEC 상태 정상 표시 확인
+  3. 브라우저 DevTools Network 탭에서 API 호출 수 확인 (1건으로 감소)
+  4. 에러 발생 시 서버 콘솔에 `[measurements GET /] Error: ...` 상세 메시지 확인
+  5. 상세 모달, 수정, 삭제, 내보내기 기능 정상 동작 확인
+
 ### [날짜] - [업데이트 제목]
 - **목적**:
 - **우선순위**: 높음 / 중간 / 낮음

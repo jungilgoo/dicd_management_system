@@ -729,7 +729,11 @@
         try {
             // 전체 데이터 가져오기 (페이지네이션 없이)
             fetchAllMeasurements(filterParams).then(allData => {
-                if (!allData || allData.length === 0) {
+                if (allData === null) {
+                    removeLoading();
+                    return;
+                }
+                if (allData.length === 0) {
                     removeLoading();
                     alert('내보낼 데이터가 없습니다.');
                     return;
@@ -775,7 +779,7 @@
             // 사용자에게 데이터 양이 많을 수 있음을 알림
             const proceed = confirm("현재 필터 조건에 맞는 모든 데이터를 내보내시겠습니까? 데이터 양이 많을 경우 시간이 오래 걸릴 수 있습니다.");
             if (!proceed) {
-                return [];
+                return null;
             }
             
             // API 호출 파라미터 (limit을 최대값으로 설정)
