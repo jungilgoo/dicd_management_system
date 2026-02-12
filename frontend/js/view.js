@@ -800,60 +800,43 @@
 
     // 내보내기용 데이터 준비
     async function prepareExportData(measurements) {
-        // 측정 데이터 추가 정보 로드
         let exportData = [];
-        let count = 0;
-        const total = measurements.length;
-        
-        // 진행상황 표시를 위한 요소 가져오기
-        const progressText = document.querySelector('.position-fixed p');
-        if (progressText) {
-            progressText.textContent = `데이터 처리 중... (0/${total})`;
-        }
-        
+
         for (const measurement of measurements) {
             try {
-                // 타겟 정보
-                let target = await getOrFetchData(targetsCache, measurement.target_id, `${API_CONFIG.ENDPOINTS.TARGETS}/${measurement.target_id}`);
-                
-                // 공정 정보
-                let process = await getOrFetchData(processesCache, target.process_id, `${API_CONFIG.ENDPOINTS.PROCESSES}/${target.process_id}`);
-                
-                // 제품군 정보
-                let productGroup = await getOrFetchData(productGroupsCache, process.product_group_id, `${API_CONFIG.ENDPOINTS.PRODUCT_GROUPS}/${process.product_group_id}`);
-                
-                // 장비 정보
-                let equipmentNames = await getEquipmentNames(measurement);
-                
-                // SPEC 상태 가져오기
-                let specStatus = "N/A";
-                try {
-                    // 캐시된 활성 SPEC 확인
-                    if (!window.activeSpecCache) window.activeSpecCache = {};
-                    
-                    if (!window.activeSpecCache[measurement.target_id]) {
-                        window.activeSpecCache[measurement.target_id] = await api.getActiveSpec(measurement.target_id);
-                    }
-                    
-                    const spec = window.activeSpecCache[measurement.target_id];
-                    if (spec) {
-                        if (measurement.avg_value < spec.lsl || measurement.avg_value > spec.usl) {
-                            specStatus = "SPEC 초과";
-                        } else {
-                            specStatus = "정상";
-                        }
-                    }
-                } catch (error) {
-                    console.warn(`타겟 ID ${measurement.target_id}에 대한 활성 SPEC이 없습니다.`);
+                // enriched 응답 필드 직접 사용 (개별 API 호출 불필요)
+                const productGroupName = measurement.product_group_name || '-';
+                const processName = measurement.process_name || '-';
+                const targetName = measurement.target_name || '-';
+
+                // 장비 정보 (enriched 응답 필드 직접 사용)
+                let equipmentParts = [];
+                if (window.PROCESS_TYPE === 'ETCH') {
+                    if (measurement.etch_equipment_name) equipmentParts.push(measurement.etch_equipment_name);
+                } else {
+                    if (measurement.coating_equipment_name) equipmentParts.push(`코팅: ${measurement.coating_equipment_name}`);
+                    if (measurement.exposure_equipment_name) equipmentParts.push(`노광: ${measurement.exposure_equipment_name}`);
+                    if (measurement.development_equipment_name) equipmentParts.push(`현상: ${measurement.development_equipment_name}`);
                 }
-                
+                const equipmentInfo = equipmentParts.join(', ') || '-';
+
+                // SPEC 상태 (enriched 응답 필드 직접 사용)
+                let specStatus = "N/A";
+                if (measurement.spec_lsl != null && measurement.spec_usl != null) {
+                    if (measurement.avg_value < measurement.spec_lsl || measurement.avg_value > measurement.spec_usl) {
+                        specStatus = "SPEC 초과";
+                    } else {
+                        specStatus = "정상";
+                    }
+                }
+
                 // 행 데이터 추가
                 exportData.push({
                     날짜: formatDate(measurement.created_at),
-                    제품군: productGroup.name,
-                    공정: process.name,
-                    타겟: target.name,
-                    장비: equipmentNames,
+                    제품군: productGroupName,
+                    공정: processName,
+                    타겟: targetName,
+                    장비: equipmentInfo,
                     DEVICE: measurement.device,
                     LOT_NO: measurement.lot_no,
                     ExposureTime: measurement.exposure_time,
@@ -871,12 +854,6 @@
                     작성자: measurement.author,
                     SPEC상태: specStatus
                 });
-                
-                // 진행 상황 업데이트
-                count++;
-                if (progressText && count % 10 === 0) {
-                    progressText.textContent = `데이터 처리 중... (${count}/${total})`;
-                }
             } catch (error) {
                 console.error('측정 데이터 내보내기 정보 준비 실패:', error);
             }
@@ -885,63 +862,6 @@
         return exportData;
     }
 
-    // 캐시에서 데이터 가져오거나 API 호출
-    async function getOrFetchData(cache, id, endpoint) {
-        if (cache[id]) {
-            return cache[id];
-        } else {
-            const data = await api.get(endpoint);
-            cache[id] = data;
-            return data;
-        }
-    }
-
-    // 장비 이름 가져오기 (ETCH/PHOTO 분기 처리)
-    async function getEquipmentNames(measurement) {
-        let equipmentNames = [];
-
-        if (window.PROCESS_TYPE === 'ETCH') {
-            // ETCH: 단일 장비
-            if (measurement.etch_equipment_id) {
-                try {
-                    const equipment = await getOrFetchData(equipmentsCache, measurement.etch_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.etch_equipment_id}`);
-                    equipmentNames.push(`ETCH: ${equipment.name}`);
-                } catch (error) {
-                    console.warn(`ETCH 장비 ID ${measurement.etch_equipment_id} 정보를 가져올 수 없습니다.`);
-                }
-            }
-        } else {
-            // PHOTO: 코팅/노광/현상 장비
-            if (measurement.coating_equipment_id) {
-                try {
-                    const equipment = await getOrFetchData(equipmentsCache, measurement.coating_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.coating_equipment_id}`);
-                    equipmentNames.push(`코팅: ${equipment.name}`);
-                } catch (error) {
-                    console.warn(`코팅 장비 ID ${measurement.coating_equipment_id} 정보를 가져올 수 없습니다.`);
-                }
-            }
-
-            if (measurement.exposure_equipment_id) {
-                try {
-                    const equipment = await getOrFetchData(equipmentsCache, measurement.exposure_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.exposure_equipment_id}`);
-                    equipmentNames.push(`노광: ${equipment.name}`);
-                } catch (error) {
-                    console.warn(`노광 장비 ID ${measurement.exposure_equipment_id} 정보를 가져올 수 없습니다.`);
-                }
-            }
-
-            if (measurement.development_equipment_id) {
-                try {
-                    const equipment = await getOrFetchData(equipmentsCache, measurement.development_equipment_id, `${API_CONFIG.ENDPOINTS.EQUIPMENTS}/${measurement.development_equipment_id}`);
-                    equipmentNames.push(`현상: ${equipment.name}`);
-                } catch (error) {
-                    console.warn(`현상 장비 ID ${measurement.development_equipment_id} 정보를 가져올 수 없습니다.`);
-                }
-            }
-        }
-
-        return equipmentNames.join(', ') || '-';
-    }
 
     // CSV로 내보내기
     function exportToCSV(data) {
