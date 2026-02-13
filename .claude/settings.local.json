@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for file in *.html)",
+      "Bash(do sed -i 's|href=\"\"view.html\"\"|href=\"\"etch/view.html\"\"|g' \"$file\")",
+      "Bash(done)",
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

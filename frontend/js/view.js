@@ -185,7 +185,11 @@
         if (!window.activeSpecCache) window.activeSpecCache = {};
         measurements.forEach(m => {
             if (m.target_id && m.target_name && !targetsCache[m.target_id]) {
-                targetsCache[m.target_id] = { id: m.target_id, name: m.target_name };
+                targetsCache[m.target_id] = {
+                    id: m.target_id,
+                    name: m.target_name,
+                    process_id: m.process_id || null
+                };
             }
             if (m.spec_lsl != null && m.spec_usl != null && !window.activeSpecCache[m.target_id]) {
                 window.activeSpecCache[m.target_id] = { lsl: m.spec_lsl, usl: m.spec_usl };
@@ -300,12 +304,23 @@
                 target = await api.get(`${API_CONFIG.ENDPOINTS.TARGETS}/${cachedMeasurement.target_id}`);
                 targetsCache[cachedMeasurement.target_id] = target;
             }
-            
+
+            // 목록 응답에서 채운 축약 캐시에는 process_id가 없을 수 있어 상세 조회 전 보정
+            if (!target.process_id) {
+                target = await api.get(`${API_CONFIG.ENDPOINTS.TARGETS}/${cachedMeasurement.target_id}`);
+                targetsCache[cachedMeasurement.target_id] = target;
+            }
+             
             // 공정 정보
             if (processesCache[target.process_id]) {
                 process = processesCache[target.process_id];
             } else {
                 // 캐시에 없으면 새로 가져오기
+                process = await api.get(`${API_CONFIG.ENDPOINTS.PROCESSES}/${target.process_id}`);
+                processesCache[target.process_id] = process;
+            }
+
+            if (!process.product_group_id) {
                 process = await api.get(`${API_CONFIG.ENDPOINTS.PROCESSES}/${target.process_id}`);
                 processesCache[target.process_id] = process;
             }
