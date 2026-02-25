@@ -475,10 +475,13 @@
         let zone_a_upper = null, zone_a_lower = null;
         let zone_b_upper = null, zone_b_lower = null;
         
+        // ETCH 공정은 FICD, PHOTO 공정은 DICD
+        const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+
         // 데이터셋 준비
         const datasets = [
             {
-                label: 'DICD 값',
+                label: `${cdType} 값`,
                 data: values,
                 borderColor: '#3c8dbc',
                 backgroundColor: 'rgba(60, 141, 188, 0.1)',
@@ -526,7 +529,7 @@
                 y: {
                     title: {
                         display: true,
-                        text: 'DICD 값'
+                        text: `${cdType} 값`
                     }
                 }
             }
@@ -590,7 +593,7 @@
                     label: function(context) {
                         let label = context.dataset.label || '';
 
-                        if (label === 'DICD 값') {
+                        if (label === `${cdType} 값`) {
                             const value = context.parsed.y;
                             let zoneInfo = '';
 

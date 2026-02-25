@@ -910,7 +910,9 @@
         // 파일명 생성
         const date = new Date();
         const timestamp = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}`;
-        const fileName = `DICD_측정데이터_${timestamp}.csv`;
+        // ETCH 공정은 FICD, PHOTO 공정은 DICD
+        const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+        const fileName = `${cdType}_측정데이터_${timestamp}.csv`;
         
         // Blob 생성 및 다운로드
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -971,7 +973,9 @@
         // 파일명 생성
         const date = new Date();
         const timestamp = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}`;
-        const fileName = `DICD_측정데이터_${timestamp}.xlsx`;
+        // ETCH 공정은 FICD, PHOTO 공정은 DICD
+        const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+        const fileName = `${cdType}_측정데이터_${timestamp}.xlsx`;
         
         // 파일 다운로드
         XLSX.writeFile(wb, fileName);

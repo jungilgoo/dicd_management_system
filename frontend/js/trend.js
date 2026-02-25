@@ -645,7 +645,7 @@
                 y: {
                     title: {
                         display: true,
-                        text: 'DICD 값'
+                        text: `${cdType} 값`
                     }
                 }
             },
@@ -1084,7 +1084,9 @@
         const targetSelect = document.getElementById('target');
         const periodSelect = document.getElementById('analysis-period');
 
-        let fileName = 'DICD_추이분석';
+        // ETCH 공정은 FICD, PHOTO 공정은 DICD
+        const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+        let fileName = `${cdType}_추이분석`;
 
         if (selectedTargetId && productGroupSelect.value && processSelect.value) {
             const productGroupName = productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '';
@@ -1094,7 +1096,7 @@
             // 파일명에 사용할 수 없는 문자 제거
             const cleanName = (name) => name.replace(/[<>:"/\\|?*]/g, '_');
 
-            fileName = `DICD_${cleanName(productGroupName)}_${cleanName(processName)}_${cleanName(targetName)}`;
+            fileName = `${cdType}_${cleanName(productGroupName)}_${cleanName(processName)}_${cleanName(targetName)}`;
         }
 
         // 현재 날짜 추가

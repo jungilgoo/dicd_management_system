@@ -844,10 +844,13 @@ async function createMonitoringChart(index) {
             lsl = spcResult.spec.lsl;
         }
         
+        // ETCH 공정은 FICD, PHOTO 공정은 DICD
+        const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+
         // 데이터셋 준비
         const datasets = [
             {
-                label: 'DICD 값',
+                label: `${cdType} 값`,
                 data: values,
                 borderColor: '#3c8dbc',
                 backgroundColor: 'rgba(60, 141, 188, 0.1)',

@@ -586,7 +586,9 @@ class ChartManager {
             // PDF 저장
             const now = new Date();
             const dateStr = now.toISOString().split('T')[0];
-            pdf.save(`DICD_Monitoring_${dateStr}.pdf`);
+            // ETCH 공정은 FICD, PHOTO 공정은 DICD
+            const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+            pdf.save(`${cdType}_Monitoring_${dateStr}.pdf`);
             
         } catch (error) {
             console.error('PDF 내보내기 오류:', error);
