@@ -342,6 +342,8 @@
         // 현재 측정 데이터 저장 (tooltip에서 사용)
         currentMeasurements = measurements;
 
+        const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+
         // 데이터 체크
         if (!measurements || measurements.length === 0) {
             document.getElementById('trend-chart-container').innerHTML = `
