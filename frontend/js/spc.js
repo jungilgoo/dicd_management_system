@@ -2082,8 +2082,8 @@
             }
 
             // 오프스크린 차트 렌더링 (기존 화면 차트에 영향 없음)
-            const ctrlOffCanvas = ptRenderControlChart(newUCL, newLCL);
-            const rOffCanvas    = ptRenderRChart();
+            const ctrlOffCanvas = await ptRenderControlChart(newUCL, newLCL);
+            const rOffCanvas    = await ptRenderRChart();
 
             const totalWidth = Math.max(
                 ctrlOffCanvas ? ctrlOffCanvas.width : 800,
