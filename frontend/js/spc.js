@@ -2066,19 +2066,34 @@
         }
 
         try {
-            const controlCanvas = controlChart ? controlChart.canvas : null;
-            const rCanvas = rChart ? rChart.canvas : null;
+            // 장기표준편차: σ_long = (USL - LSL) / (6 × Pp)
+            const spec = (currentSpcResult && currentSpcResult.spec)              || {};
+            const cap  = (currentSpcResult && currentSpcResult.process_capability) || {};
+            const ptTarget = (spec.target != null) ? Number(spec.target) : null;
+            const ptPp     = (cap.pp      != null && Number(cap.pp) > 0) ? Number(cap.pp) : null;
+            const ptUsl    = (spec.usl    != null) ? Number(spec.usl)    : null;
+            const ptLsl    = (spec.lsl    != null) ? Number(spec.lsl)    : null;
+
+            let newUCL = null, newLCL = null;
+            if (ptTarget !== null && ptPp !== null && ptUsl !== null && ptLsl !== null) {
+                const sigmaLong = (ptUsl - ptLsl) / (6 * ptPp);
+                newUCL = ptTarget + 3 * sigmaLong;
+                newLCL = ptTarget - 3 * sigmaLong;
+            }
+
+            // 오프스크린 차트 렌더링 (기존 화면 차트에 영향 없음)
+            const ctrlOffCanvas = ptRenderControlChart(newUCL, newLCL);
+            const rOffCanvas    = ptRenderRChart();
 
             const totalWidth = Math.max(
-                controlCanvas ? controlCanvas.width : 800,
-                rCanvas ? rCanvas.width : 800
+                ctrlOffCanvas ? ctrlOffCanvas.width : 800,
+                rOffCanvas    ? rOffCanvas.width    : 800
             );
-
             const TITLE_H    = 44;
             const TBL_HDR_H  = 54;
             const TBL_DATA_H = 32;
-            const ctrlH = controlCanvas ? controlCanvas.height : 0;
-            const rH    = rCanvas ? rCanvas.height : 0;
+            const ctrlH = ctrlOffCanvas ? ctrlOffCanvas.height : 0;
+            const rH    = rOffCanvas    ? rOffCanvas.height    : 0;
             const totalHeight = TITLE_H + TBL_HDR_H + TBL_DATA_H + ctrlH + rH;
 
             const canvas = document.createElement('canvas');
@@ -2093,12 +2108,12 @@
             ptDrawTable(ctx, totalWidth, TITLE_H, TBL_HDR_H, TBL_DATA_H);
 
             let yOff = TITLE_H + TBL_HDR_H + TBL_DATA_H;
-            if (controlCanvas) {
-                ctx.drawImage(controlCanvas, 0, yOff);
+            if (ctrlOffCanvas) {
+                ctx.drawImage(ctrlOffCanvas, 0, yOff);
                 yOff += ctrlH;
             }
-            if (rCanvas) {
-                ctx.drawImage(rCanvas, 0, yOff);
+            if (rOffCanvas) {
+                ctx.drawImage(rOffCanvas, 0, yOff);
             }
 
             const link = document.createElement('a');
@@ -2115,14 +2130,112 @@
         }
     }
 
+    // 공정팀 양식용 X-bar 관리도 오프스크린 렌더링
+    // CL 제거 + UCL/LCL = Target ± 장기표준편차×3
+    function ptRenderControlChart(newUCL, newLCL) {
+        if (!controlChart) return null;
+
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width  = controlChart.canvas.width;
+        offCanvas.height = controlChart.canvas.height;
+
+        const datasets = controlChart.data.datasets
+            .filter(ds => ds.label !== 'CL')
+            .map(ds => {
+                const copy = Object.assign({}, ds, { data: ds.data.slice() });
+                if (ds.label === 'UCL' && newUCL !== null) {
+                    copy.data = Array(ds.data.length).fill(newUCL);
+                } else if (ds.label === 'LCL' && newLCL !== null) {
+                    copy.data = Array(ds.data.length).fill(newLCL);
+                }
+                return copy;
+            });
+
+        const tempChart = new Chart(offCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels:   controlChart.data.labels.slice(),
+                datasets: datasets
+            },
+            options: {
+                animation:           false,
+                responsive:          false,
+                maintainAspectRatio: false,
+                plugins: {
+                    title:      { display: false },
+                    legend:     controlChart.options.plugins.legend,
+                    tooltip:    { enabled: false },
+                    annotation: controlChart.options.plugins.annotation
+                },
+                scales: {
+                    x: {
+                        title: { display: false },
+                        ticks: Object.assign({}, controlChart.options.scales.x.ticks)
+                    },
+                    y: { title: { display: false } }
+                }
+            }
+        });
+        tempChart.draw();
+        tempChart.destroy();
+
+        return offCanvas;
+    }
+
+    // 공정팀 양식용 R 관리도 오프스크린 렌더링
+    function ptRenderRChart() {
+        if (!rChart) return null;
+
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width  = rChart.canvas.width;
+        offCanvas.height = rChart.canvas.height;
+
+        const datasets = rChart.data.datasets.map(ds =>
+            Object.assign({}, ds, { data: ds.data.slice() })
+        );
+
+        const tempChart = new Chart(offCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels:   rChart.data.labels.slice(),
+                datasets: datasets
+            },
+            options: {
+                animation:           false,
+                responsive:          false,
+                maintainAspectRatio: false,
+                plugins: {
+                    title:      { display: false },
+                    legend:     rChart.options.plugins.legend,
+                    tooltip:    { enabled: false },
+                    annotation: rChart.options.plugins.annotation
+                },
+                scales: {
+                    x: {
+                        title: { display: false },
+                        ticks: Object.assign({}, rChart.options.scales.x.ticks)
+                    },
+                    y: { title: { display: false }, beginAtZero: true }
+                }
+            }
+        });
+        tempChart.draw();
+        tempChart.destroy();
+
+        return offCanvas;
+    }
+
     // 제목 영역 그리기 (파란 배경 + 흰 글씨)
     function ptDrawTitle(ctx, width, height) {
         ctx.fillStyle = '#1b4f72';
         ctx.fillRect(0, 0, width, height);
 
-        const pgSelect = document.getElementById('product-group');
-        const pgName   = pgSelect.options[pgSelect.selectedIndex]?.text || '';
-        const cdType   = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+        const spec   = (currentSpcResult && currentSpcResult.spec) || {};
+        const target = (spec.target !== undefined && spec.target !== null)
+            ? Number(spec.target).toFixed(1)
+            : '';
+        const stepLabel = target ? `STEP ${target}㎛` : 'STEP';
+        const cdType    = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
 
         let dateRange = '';
         if (currentSpcResult && currentSpcResult.data && currentSpcResult.data.dates && currentSpcResult.data.dates.length > 0) {
@@ -2142,7 +2255,7 @@
         ctx.font         = 'bold 16px Arial';
         ctx.textAlign    = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`${pgName} ${cdType} CONTROL CHART${dateRange}`, width / 2, height / 2);
+        ctx.fillText(`${stepLabel} ${cdType} CONTROL CHART${dateRange}`, width / 2, height / 2);
     }
 
     // 정보 테이블 그리기 (헤더 + 데이터 행)
@@ -2151,13 +2264,15 @@
         const cl   = (currentSpcResult && currentSpcResult.control_limits)    || {};
         const cap  = (currentSpcResult && currentSpcResult.process_capability) || {};
 
-        const pgSelect = document.getElementById('product-group');
-        const pgName   = pgSelect.options[pgSelect.selectedIndex]?.text || '';
         const f2 = (v) => (v !== undefined && v !== null) ? Number(v).toFixed(2) : '-';
+        const targetVal = (spec.target !== undefined && spec.target !== null)
+            ? Number(spec.target).toFixed(1)
+            : '';
+        const stepLabel = targetVal ? `STEP ${targetVal}㎛` : 'STEP';
 
         // 열 정의: [헤더텍스트, 너비비율, Spec그룹여부, UCL/LCL강조여부, 데이터값]
         const cols = [
-            { lbl: 'PROCESS',             pct: 0.090, isSpec: false, hl: false, val: pgName             },
+            { lbl: 'PROCESS',             pct: 0.090, isSpec: false, hl: false, val: stepLabel           },
             { lbl: 'Machine NO.',          pct: 0.100, isSpec: false, hl: false, val: 'S-9200'           },
             { lbl: 'Control Item',         pct: 0.090, isSpec: false, hl: false, val: 'DI CD'            },
             { lbl: 'USL',                  pct: 0.045, isSpec: true,  hl: false, val: f2(spec.usl)       },
