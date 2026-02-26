@@ -2130,6 +2130,27 @@
         }
     }
 
+    // Chart.js 내부 메타데이터를 제외한 안전한 데이터셋 복사
+    function ptSafeCloneDataset(ds) {
+        const clone = {};
+        const safeKeys = [
+            'label', 'type', 'data', 'fill', 'hidden', 'order',
+            'borderColor', 'backgroundColor', 'borderWidth',
+            'borderDash', 'borderDashOffset',
+            'pointRadius', 'pointStyle', 'pointBackgroundColor',
+            'pointBorderColor', 'pointBorderWidth', 'pointHoverRadius',
+            'tension', 'spanGaps', 'showLine', 'stepped',
+            'xAxisID', 'yAxisID'
+        ];
+        safeKeys.forEach(key => {
+            if (ds[key] === undefined) return;
+            clone[key] = (key === 'data' || key === 'borderDash') && Array.isArray(ds[key])
+                ? ds[key].slice()
+                : ds[key];
+        });
+        return clone;
+    }
+
     // 공정팀 양식용 X-bar 관리도 오프스크린 렌더링
     // CL 제거 + UCL/LCL = Target ± 장기표준편차×3
     function ptRenderControlChart(newUCL, newLCL) {
@@ -2142,13 +2163,13 @@
         const datasets = controlChart.data.datasets
             .filter(ds => ds.label !== 'CL')
             .map(ds => {
-                const copy = Object.assign({}, ds, { data: ds.data.slice() });
+                const clone = ptSafeCloneDataset(ds);
                 if (ds.label === 'UCL' && newUCL !== null) {
-                    copy.data = Array(ds.data.length).fill(newUCL);
+                    clone.data = Array(ds.data.length).fill(newUCL);
                 } else if (ds.label === 'LCL' && newLCL !== null) {
-                    copy.data = Array(ds.data.length).fill(newLCL);
+                    clone.data = Array(ds.data.length).fill(newLCL);
                 }
-                return copy;
+                return clone;
             });
 
         const tempChart = new Chart(offCanvas.getContext('2d'), {
@@ -2163,14 +2184,14 @@
                 maintainAspectRatio: false,
                 plugins: {
                     title:      { display: false },
-                    legend:     controlChart.options.plugins.legend,
+                    legend:     { position: 'top' },
                     tooltip:    { enabled: false },
                     annotation: controlChart.options.plugins.annotation
                 },
                 scales: {
                     x: {
                         title: { display: false },
-                        ticks: Object.assign({}, controlChart.options.scales.x.ticks)
+                        ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 10 } }
                     },
                     y: { title: { display: false } }
                 }
@@ -2190,9 +2211,7 @@
         offCanvas.width  = rChart.canvas.width;
         offCanvas.height = rChart.canvas.height;
 
-        const datasets = rChart.data.datasets.map(ds =>
-            Object.assign({}, ds, { data: ds.data.slice() })
-        );
+        const datasets = rChart.data.datasets.map(ds => ptSafeCloneDataset(ds));
 
         const tempChart = new Chart(offCanvas.getContext('2d'), {
             type: 'line',
@@ -2206,14 +2225,14 @@
                 maintainAspectRatio: false,
                 plugins: {
                     title:      { display: false },
-                    legend:     rChart.options.plugins.legend,
+                    legend:     { position: 'top' },
                     tooltip:    { enabled: false },
                     annotation: rChart.options.plugins.annotation
                 },
                 scales: {
                     x: {
                         title: { display: false },
-                        ticks: Object.assign({}, rChart.options.scales.x.ticks)
+                        ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 10 } }
                     },
                     y: { title: { display: false }, beginAtZero: true }
                 }
