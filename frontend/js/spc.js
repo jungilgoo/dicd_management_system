@@ -2151,97 +2151,93 @@
         return clone;
     }
 
-    // 공정팀 양식용 X-bar 관리도 오프스크린 렌더링
+    // 공정팀 양식용 X-bar 관리도 오프스크린 렌더링 (Promise 방식)
     // CL 제거 + UCL/LCL = Target ± 장기표준편차×3
     function ptRenderControlChart(newUCL, newLCL) {
-        if (!controlChart) return null;
+        return new Promise(resolve => {
+            if (!controlChart) { resolve(null); return; }
 
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width  = controlChart.canvas.width;
-        offCanvas.height = controlChart.canvas.height;
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width  = controlChart.canvas.width;
+            offCanvas.height = controlChart.canvas.height;
 
-        const datasets = controlChart.data.datasets
-            .filter(ds => ds.label !== 'CL')
-            .map(ds => {
-                const clone = ptSafeCloneDataset(ds);
-                if (ds.label === 'UCL' && newUCL !== null) {
-                    clone.data = Array(ds.data.length).fill(newUCL);
-                } else if (ds.label === 'LCL' && newLCL !== null) {
-                    clone.data = Array(ds.data.length).fill(newLCL);
-                }
-                return clone;
-            });
+            const datasets = controlChart.data.datasets
+                .filter(ds => ds.label !== 'CL')
+                .map(ds => {
+                    const clone = ptSafeCloneDataset(ds);
+                    if (ds.label === 'UCL' && newUCL !== null) {
+                        clone.data = Array(ds.data.length).fill(newUCL);
+                    } else if (ds.label === 'LCL' && newLCL !== null) {
+                        clone.data = Array(ds.data.length).fill(newLCL);
+                    }
+                    return clone;
+                });
 
-        const tempChart = new Chart(offCanvas.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels:   controlChart.data.labels.slice(),
-                datasets: datasets
-            },
-            options: {
-                animation:           false,
-                responsive:          false,
-                maintainAspectRatio: false,
-                plugins: {
-                    title:      { display: false },
-                    legend:     { position: 'top' },
-                    tooltip:    { enabled: false },
-                    annotation: controlChart.options.plugins.annotation
+            new Chart(offCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels:   controlChart.data.labels.slice(),
+                    datasets: datasets
                 },
-                scales: {
-                    x: {
-                        title: { display: false },
-                        ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 10 } }
+                options: {
+                    animation: { duration: 0, onComplete: () => resolve(offCanvas) },
+                    responsive:          false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title:      { display: false },
+                        legend:     { position: 'top' },
+                        tooltip:    { enabled: false },
+                        annotation: controlChart.options.plugins.annotation
                     },
-                    y: { title: { display: false } }
+                    scales: {
+                        x: {
+                            title: { display: false },
+                            ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 10 } }
+                        },
+                        y: { title: { display: false } }
+                    }
                 }
-            }
+            });
         });
-        tempChart.draw();
-        tempChart.destroy();
-
-        return offCanvas;
     }
 
-    // 공정팀 양식용 R 관리도 오프스크린 렌더링
+    // 공정팀 양식용 R 관리도 오프스크린 렌더링 (Promise 방식)
     function ptRenderRChart() {
-        if (!rChart) return null;
+        return new Promise(resolve => {
+            if (!rChart) { resolve(null); return; }
 
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width  = rChart.canvas.width;
-        offCanvas.height = rChart.canvas.height;
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width  = rChart.canvas.width;
+            offCanvas.height = rChart.canvas.height;
 
-        const datasets = rChart.data.datasets.map(ds => ptSafeCloneDataset(ds));
+            const datasets = rChart.data.datasets.map(ds => ptSafeCloneDataset(ds));
 
-        const tempChart = new Chart(offCanvas.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels:   rChart.data.labels.slice(),
-                datasets: datasets
-            },
-            options: {
-                animation:           false,
-                responsive:          false,
-                maintainAspectRatio: false,
-                plugins: {
-                    title:      { display: false },
-                    legend:     { position: 'top' },
-                    tooltip:    { enabled: false },
-                    annotation: rChart.options.plugins.annotation
+            new Chart(offCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels:   rChart.data.labels.slice(),
+                    datasets: datasets
                 },
-                scales: {
-                    x: {
-                        title: { display: false },
-                        ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 10 } }
+                options: {
+                    animation: { duration: 0, onComplete: () => resolve(offCanvas) },
+                    responsive:          false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title:      { display: false },
+                        legend:     { position: 'top' },
+                        tooltip:    { enabled: false },
+                        annotation: rChart.options.plugins.annotation
                     },
-                    y: { title: { display: false }, beginAtZero: true }
+                    scales: {
+                        x: {
+                            title: { display: false },
+                            ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 10 } }
+                        },
+                        y: { title: { display: false }, beginAtZero: true }
+                    }
                 }
-            }
+            });
         });
-        tempChart.draw();
-        tempChart.destroy();
-
-        return offCanvas;
     }
 
     // 제목 영역 그리기 (파란 배경 + 흰 글씨)
