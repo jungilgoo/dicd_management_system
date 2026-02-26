@@ -36,6 +36,7 @@
     let currentMeasurements = null; // 추가: 현재 측정 데이터
     let currentChangePoints = null; // 변경점 데이터
     let showChangePoints = true; // 변경점 표시 여부
+    let currentSpcResult = null; // 공정팀 양식 다운로드용 SPC 분석 결과
     
     // 변경점 데이터 로드
     async function loadChangePoints(targetId, startDate = null, endDate = null) {
@@ -356,12 +357,14 @@
             
             // 에러 시 데이터 초기화
             currentMeasurements = null;
+            currentSpcResult = null;
             clearChartDataTable();
         }
     }
     
     // SPC 분석 결과 업데이트
     function updateSpcResults(result) {
+        currentSpcResult = result; // 공정팀 양식 다운로드용 저장
         // 패턴 정보 로깅 (디버깅용)
         console.log("SPC 분석 전체 결과:", result);
         console.log("감지된 SPC 패턴:", result.patterns);
@@ -2053,6 +2056,227 @@
         }
     }
 
+    // ─────────────────────────────────────────────
+    // 공정팀 양식 다운로드
+    // ─────────────────────────────────────────────
+    async function downloadProcessTeamChart() {
+        if (!controlChart && !rChart) {
+            alert('다운로드할 차트가 없습니다. 먼저 분석을 실행하세요.');
+            return;
+        }
+
+        try {
+            const controlCanvas = controlChart ? controlChart.canvas : null;
+            const rCanvas = rChart ? rChart.canvas : null;
+
+            const totalWidth = Math.max(
+                controlCanvas ? controlCanvas.width : 800,
+                rCanvas ? rCanvas.width : 800
+            );
+
+            const TITLE_H    = 44;
+            const TBL_HDR_H  = 54;
+            const TBL_DATA_H = 32;
+            const ctrlH = controlCanvas ? controlCanvas.height : 0;
+            const rH    = rCanvas ? rCanvas.height : 0;
+            const totalHeight = TITLE_H + TBL_HDR_H + TBL_DATA_H + ctrlH + rH;
+
+            const canvas = document.createElement('canvas');
+            canvas.width  = totalWidth;
+            canvas.height = totalHeight;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+            ptDrawTitle(ctx, totalWidth, TITLE_H);
+            ptDrawTable(ctx, totalWidth, TITLE_H, TBL_HDR_H, TBL_DATA_H);
+
+            let yOff = TITLE_H + TBL_HDR_H + TBL_DATA_H;
+            if (controlCanvas) {
+                ctx.drawImage(controlCanvas, 0, yOff);
+                yOff += ctrlH;
+            }
+            if (rCanvas) {
+                ctx.drawImage(rCanvas, 0, yOff);
+            }
+
+            const link = document.createElement('a');
+            link.download = generateSpcChartFileName('공정팀양식');
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showNotification('공정팀 양식이 다운로드되었습니다.');
+        } catch (error) {
+            console.error('공정팀 양식 다운로드 실패:', error);
+            showNotification('공정팀 양식 다운로드 중 오류가 발생했습니다.');
+        }
+    }
+
+    // 제목 영역 그리기 (파란 배경 + 흰 글씨)
+    function ptDrawTitle(ctx, width, height) {
+        ctx.fillStyle = '#1b4f72';
+        ctx.fillRect(0, 0, width, height);
+
+        const pgSelect = document.getElementById('product-group');
+        const pgName   = pgSelect.options[pgSelect.selectedIndex]?.text || '';
+        const cdType   = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+
+        let dateRange = '';
+        if (currentSpcResult && currentSpcResult.data && currentSpcResult.data.dates && currentSpcResult.data.dates.length > 0) {
+            const sorted = [...currentSpcResult.data.dates]
+                .map(d => new Date(d))
+                .sort((a, b) => a - b);
+            const fmt = (d) => {
+                const yy = String(d.getFullYear()).slice(2);
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return `${yy}년${mm}월${dd}일`;
+            };
+            dateRange = ` [${fmt(sorted[0])} ~ ${fmt(sorted[sorted.length - 1])}]`;
+        }
+
+        ctx.fillStyle    = '#ffffff';
+        ctx.font         = 'bold 16px Arial';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${pgName} ${cdType} CONTROL CHART${dateRange}`, width / 2, height / 2);
+    }
+
+    // 정보 테이블 그리기 (헤더 + 데이터 행)
+    function ptDrawTable(ctx, totalWidth, startY, hdrH, dataH) {
+        const spec = (currentSpcResult && currentSpcResult.spec)              || {};
+        const cl   = (currentSpcResult && currentSpcResult.control_limits)    || {};
+        const cap  = (currentSpcResult && currentSpcResult.process_capability) || {};
+
+        const pgSelect = document.getElementById('product-group');
+        const pgName   = pgSelect.options[pgSelect.selectedIndex]?.text || '';
+        const f2 = (v) => (v !== undefined && v !== null) ? Number(v).toFixed(2) : '-';
+
+        // 열 정의: [헤더텍스트, 너비비율, Spec그룹여부, UCL/LCL강조여부, 데이터값]
+        const cols = [
+            { lbl: 'PROCESS',             pct: 0.090, isSpec: false, hl: false, val: pgName             },
+            { lbl: 'Machine NO.',          pct: 0.100, isSpec: false, hl: false, val: 'S-9200'           },
+            { lbl: 'Control Item',         pct: 0.090, isSpec: false, hl: false, val: 'DI CD'            },
+            { lbl: 'USL',                  pct: 0.045, isSpec: true,  hl: false, val: f2(spec.usl)       },
+            { lbl: 'UCL',                  pct: 0.050, isSpec: true,  hl: true,  val: f2(cl.ucl)         },
+            { lbl: 'Target',               pct: 0.055, isSpec: true,  hl: false, val: f2(spec.target)    },
+            { lbl: 'LCL',                  pct: 0.050, isSpec: true,  hl: true,  val: f2(cl.lcl)         },
+            { lbl: 'LSL',                  pct: 0.045, isSpec: true,  hl: false, val: f2(spec.lsl)       },
+            { lbl: 'Cp',                   pct: 0.050, isSpec: false, hl: false, val: f2(cap.cp)         },
+            { lbl: 'Cpk',                  pct: 0.050, isSpec: false, hl: false, val: f2(cap.cpk)        },
+            { lbl: 'Pp',                   pct: 0.050, isSpec: false, hl: false, val: f2(cap.pp)         },
+            { lbl: 'Ppk',                  pct: 0.050, isSpec: false, hl: false, val: f2(cap.ppk)        },
+            { lbl: 'Measure\ncycle&Point', pct: 0.110, isSpec: false, hl: false, val: '5P/1W/1LOT'       },
+            { lbl: 'Record&Manager',       pct: 0.115, isSpec: false, hl: false, val: 'Worker\n&Process Eng\'r' },
+        ];
+
+        // 픽셀 좌표 계산
+        let xCursor = 0;
+        cols.forEach((col, i) => {
+            col.x = xCursor;
+            col.w = (i < cols.length - 1)
+                ? Math.floor(totalWidth * col.pct)
+                : totalWidth - xCursor;
+            xCursor += col.w;
+        });
+
+        const hdrY  = startY;
+        const dataY = startY + hdrH;
+        const halfH = hdrH / 2;
+
+        // ── 배경 ──
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, hdrY, totalWidth, hdrH + dataH);
+
+        // UCL / LCL 열 강조 (회색)
+        cols.filter(c => c.hl).forEach(col => {
+            ctx.fillStyle = '#cccccc';
+            ctx.fillRect(col.x, hdrY, col.w, hdrH + dataH);
+        });
+
+        // ── "Spec [μm]" 합쳐진 상단 레이블 ──
+        const specCols = cols.filter(c => c.isSpec);
+        if (specCols.length > 0) {
+            const specX = specCols[0].x;
+            const specW = specCols.reduce((s, c) => s + c.w, 0);
+
+            ctx.fillStyle    = '#000000';
+            ctx.font         = 'bold 10px Arial';
+            ctx.textAlign    = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Spec [μm]', specX + specW / 2, hdrY + halfH / 2);
+
+            // Spec 영역 내부 가로선
+            ctx.strokeStyle = '#999999';
+            ctx.lineWidth   = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(specX, hdrY + halfH);
+            ctx.lineTo(specX + specW, hdrY + halfH);
+            ctx.stroke();
+        }
+
+        // ── 헤더 텍스트 ──
+        ctx.font      = 'bold 9px Arial';
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        cols.forEach(col => {
+            const lines = col.lbl.split('\n');
+            if (col.isSpec) {
+                // Spec 열: 하단 절반 중앙
+                ctx.textBaseline = 'middle';
+                ctx.fillText(lines[0], col.x + col.w / 2, hdrY + halfH + halfH / 2);
+            } else {
+                // 일반 열: 전체 높이 중앙 (다중 줄 지원)
+                ctx.textBaseline = 'middle';
+                const lineH = 12;
+                const offsetY = hdrY + hdrH / 2 - ((lines.length - 1) * lineH) / 2;
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, col.x + col.w / 2, offsetY + i * lineH);
+                });
+            }
+        });
+
+        // ── 데이터 텍스트 ──
+        ctx.font      = '9px Arial';
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        cols.forEach(col => {
+            ctx.textBaseline = 'middle';
+            const lines  = (col.val || '-').split('\n');
+            const lineH  = 11;
+            const offsetY = dataY + dataH / 2 - ((lines.length - 1) * lineH) / 2;
+            lines.forEach((line, i) => {
+                ctx.fillText(line, col.x + col.w / 2, offsetY + i * lineH);
+            });
+        });
+
+        // ── 테두리 ──
+        ctx.strokeStyle = '#555555';
+        ctx.lineWidth   = 1;
+
+        // 전체 외곽
+        ctx.strokeRect(0, hdrY, totalWidth, hdrH + dataH);
+
+        // 헤더-데이터 구분선
+        ctx.beginPath();
+        ctx.moveTo(0, dataY);
+        ctx.lineTo(totalWidth, dataY);
+        ctx.stroke();
+
+        // 열 구분 세로선
+        cols.forEach(col => {
+            if (col.x > 0) {
+                ctx.beginPath();
+                ctx.moveTo(col.x, hdrY);
+                ctx.lineTo(col.x, dataY + dataH);
+                ctx.stroke();
+            }
+        });
+    }
+
     // SPC 차트 파일명 생성 함수
     function generateSpcChartFileName(chartType) {
         const productGroupSelect = document.getElementById('product-group');
@@ -2128,6 +2352,11 @@
         // SPC 차트 통합 다운로드 버튼 클릭 이벤트
         document.getElementById('download-spc-chart-btn').addEventListener('click', function() {
             downloadSpcChart();
+        });
+
+        // 공정팀 양식 다운로드 버튼 클릭 이벤트
+        document.getElementById('download-process-team-chart-btn').addEventListener('click', function() {
+            downloadProcessTeamChart();
         });
 
         // 차트 데이터 보기 버튼 이벤트
