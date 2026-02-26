@@ -2240,31 +2240,40 @@
         });
     }
 
-    // 공정팀 양식용 STEP 레이블 생성
-    // spec.target → (usl+lsl)/2 → 타겟 드롭다운 텍스트 순으로 fallback
+    // 공정팀 양식용 공정명+타겟 레이블 생성 (예: "PLY 7.5㎛")
+    // 공정명: 공정 드롭다운 선택 텍스트
+    // 타겟: spec.target → (usl+lsl)/2 → 타겟 드롭다운 텍스트 순으로 fallback
     function ptGetStepLabel() {
+        // 공정명 읽기
+        let processName = '';
+        const processEl = document.getElementById('process');
+        if (processEl && processEl.selectedIndex >= 0) {
+            const text = (processEl.options[processEl.selectedIndex].text || '').trim();
+            if (text && text !== '공정 선택') processName = text;
+        }
+
+        // 타겟 숫자 읽기
         const spec = (currentSpcResult && currentSpcResult.spec) || {};
-
+        let targetStr = '';
         if (spec.target != null) {
-            return `STEP ${Number(spec.target).toFixed(1)}㎛`;
-        }
-        if (spec.usl != null && spec.lsl != null) {
-            const computed = (Number(spec.usl) + Number(spec.lsl)) / 2;
-            return `STEP ${computed.toFixed(1)}㎛`;
-        }
-
-        // 드롭다운에서 선택된 타겟 텍스트 사용
-        const targetEl = document.getElementById('target');
-        if (targetEl && targetEl.selectedIndex >= 0) {
-            const text = (targetEl.options[targetEl.selectedIndex].text || '').trim();
-            if (text && text !== '타겟 선택') {
-                const match = text.match(/[\d.]+/);
-                if (match) return `STEP ${parseFloat(match[0]).toFixed(1)}㎛`;
-                return `STEP ${text}`;
+            targetStr = `${Number(spec.target).toFixed(1)}㎛`;
+        } else if (spec.usl != null && spec.lsl != null) {
+            targetStr = `${((Number(spec.usl) + Number(spec.lsl)) / 2).toFixed(1)}㎛`;
+        } else {
+            const targetEl = document.getElementById('target');
+            if (targetEl && targetEl.selectedIndex >= 0) {
+                const text = (targetEl.options[targetEl.selectedIndex].text || '').trim();
+                if (text && text !== '타겟 선택') {
+                    const match = text.match(/[\d.]+/);
+                    if (match) targetStr = `${parseFloat(match[0]).toFixed(1)}㎛`;
+                }
             }
         }
 
-        return 'STEP';
+        if (processName && targetStr) return `${processName} ${targetStr}`;
+        if (processName) return processName;
+        if (targetStr) return targetStr;
+        return '-';
     }
 
     // 제목 영역 그리기 (파란 배경 + 흰 글씨)
