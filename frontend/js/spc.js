@@ -2187,7 +2187,7 @@
                         title:      { display: false },
                         legend:     { position: 'top' },
                         tooltip:    { enabled: false },
-                        annotation: controlChart.options.plugins.annotation
+                        annotation: { annotations: {} }
                     },
                     scales: {
                         x: {
@@ -2226,7 +2226,7 @@
                         title:      { display: false },
                         legend:     { position: 'top' },
                         tooltip:    { enabled: false },
-                        annotation: rChart.options.plugins.annotation
+                        annotation: { annotations: {} }
                     },
                     scales: {
                         x: {
@@ -2240,16 +2240,39 @@
         });
     }
 
+    // 공정팀 양식용 STEP 레이블 생성
+    // spec.target → (usl+lsl)/2 → 타겟 드롭다운 텍스트 순으로 fallback
+    function ptGetStepLabel() {
+        const spec = (currentSpcResult && currentSpcResult.spec) || {};
+
+        if (spec.target != null) {
+            return `STEP ${Number(spec.target).toFixed(1)}㎛`;
+        }
+        if (spec.usl != null && spec.lsl != null) {
+            const computed = (Number(spec.usl) + Number(spec.lsl)) / 2;
+            return `STEP ${computed.toFixed(1)}㎛`;
+        }
+
+        // 드롭다운에서 선택된 타겟 텍스트 사용
+        const targetEl = document.getElementById('target');
+        if (targetEl && targetEl.selectedIndex >= 0) {
+            const text = (targetEl.options[targetEl.selectedIndex].text || '').trim();
+            if (text && text !== '타겟 선택') {
+                const match = text.match(/[\d.]+/);
+                if (match) return `STEP ${parseFloat(match[0]).toFixed(1)}㎛`;
+                return `STEP ${text}`;
+            }
+        }
+
+        return 'STEP';
+    }
+
     // 제목 영역 그리기 (파란 배경 + 흰 글씨)
     function ptDrawTitle(ctx, width, height) {
         ctx.fillStyle = '#1b4f72';
         ctx.fillRect(0, 0, width, height);
 
-        const spec   = (currentSpcResult && currentSpcResult.spec) || {};
-        const target = (spec.target !== undefined && spec.target !== null)
-            ? Number(spec.target).toFixed(1)
-            : '';
-        const stepLabel = target ? `STEP ${target}㎛` : 'STEP';
+        const stepLabel = ptGetStepLabel();
         const cdType    = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
 
         let dateRange = '';
@@ -2280,10 +2303,7 @@
         const cap  = (currentSpcResult && currentSpcResult.process_capability) || {};
 
         const f2 = (v) => (v !== undefined && v !== null) ? Number(v).toFixed(2) : '-';
-        const targetVal = (spec.target !== undefined && spec.target !== null)
-            ? Number(spec.target).toFixed(1)
-            : '';
-        const stepLabel = targetVal ? `STEP ${targetVal}㎛` : 'STEP';
+        const stepLabel = ptGetStepLabel();
 
         // 열 정의: [헤더텍스트, 너비비율, Spec그룹여부, UCL/LCL강조여부, 데이터값]
         const cols = [
