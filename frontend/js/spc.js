@@ -2105,7 +2105,7 @@
             ctx.fillRect(0, 0, totalWidth, totalHeight);
 
             ptDrawTitle(ctx, totalWidth, TITLE_H);
-            ptDrawTable(ctx, totalWidth, TITLE_H, TBL_HDR_H, TBL_DATA_H);
+            ptDrawTable(ctx, totalWidth, TITLE_H, TBL_HDR_H, TBL_DATA_H, newUCL, newLCL);
 
             let yOff = TITLE_H + TBL_HDR_H + TBL_DATA_H;
             if (ctrlOffCanvas) {
@@ -2306,7 +2306,7 @@
     }
 
     // 정보 테이블 그리기 (헤더 + 데이터 행)
-    function ptDrawTable(ctx, totalWidth, startY, hdrH, dataH) {
+    function ptDrawTable(ctx, totalWidth, startY, hdrH, dataH, newUCL, newLCL) {
         const spec = (currentSpcResult && currentSpcResult.spec)              || {};
         const cl   = (currentSpcResult && currentSpcResult.control_limits)    || {};
         const cap  = (currentSpcResult && currentSpcResult.process_capability) || {};
@@ -2314,15 +2314,19 @@
         const f2 = (v) => (v !== undefined && v !== null) ? Number(v).toFixed(2) : '-';
         const stepLabel = ptGetStepLabel();
 
+        // UCL/LCL: 차트에 그려진 값(장기표준편차 기반)을 우선 사용, 없으면 원래 관리한계
+        const uclVal = (newUCL !== null && newUCL !== undefined) ? newUCL : cl.ucl;
+        const lclVal = (newLCL !== null && newLCL !== undefined) ? newLCL : cl.lcl;
+
         // 열 정의: [헤더텍스트, 너비비율, Spec그룹여부, UCL/LCL강조여부, 데이터값]
         const cols = [
             { lbl: 'PROCESS',             pct: 0.090, isSpec: false, hl: false, val: stepLabel           },
             { lbl: 'Machine NO.',          pct: 0.100, isSpec: false, hl: false, val: 'S-9200'           },
             { lbl: 'Control Item',         pct: 0.090, isSpec: false, hl: false, val: 'DI CD'            },
             { lbl: 'USL',                  pct: 0.045, isSpec: true,  hl: false, val: f2(spec.usl)       },
-            { lbl: 'UCL',                  pct: 0.050, isSpec: true,  hl: true,  val: f2(cl.ucl)         },
+            { lbl: 'UCL',                  pct: 0.050, isSpec: true,  hl: true,  val: f2(uclVal)         },
             { lbl: 'Target',               pct: 0.055, isSpec: true,  hl: false, val: f2(spec.target)    },
-            { lbl: 'LCL',                  pct: 0.050, isSpec: true,  hl: true,  val: f2(cl.lcl)         },
+            { lbl: 'LCL',                  pct: 0.050, isSpec: true,  hl: true,  val: f2(lclVal)         },
             { lbl: 'LSL',                  pct: 0.045, isSpec: true,  hl: false, val: f2(spec.lsl)       },
             { lbl: 'Cp',                   pct: 0.050, isSpec: false, hl: false, val: f2(cap.cp)         },
             { lbl: 'Cpk',                  pct: 0.050, isSpec: false, hl: false, val: f2(cap.cpk)        },
