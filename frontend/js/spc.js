@@ -2084,12 +2084,12 @@
             // 고정 출력 크기: 24cm × 15cm (96dpi 기준 → 907 × 567px)
             const totalWidth  = 907;
             const totalHeight = 567;
-            const TITLE_H    = 48;
-            const TBL_HDR_H  = 60;
-            const TBL_DATA_H = 38;
-            const chartAreaH = totalHeight - TITLE_H - TBL_HDR_H - TBL_DATA_H; // 421px
-            const ctrlH = Math.round(chartAreaH * 2 / 3);                      // DICD 2/3 ≈ 281px
-            const rH    = chartAreaH - ctrlH;                                   // RANGE 1/3 ≈ 140px
+            const TITLE_H    = 42;
+            const TBL_HDR_H  = 46;
+            const TBL_DATA_H = 28;
+            const chartAreaH = totalHeight - TITLE_H - TBL_HDR_H - TBL_DATA_H; // 451px
+            const ctrlH = Math.round(chartAreaH * 2 / 3);                      // DICD 2/3 ≈ 301px
+            const rH    = chartAreaH - ctrlH;                                   // RANGE 1/3 ≈ 150px
 
             // 오프스크린 차트 렌더링 (기존 화면 차트에 영향 없음)
             const ctrlOffCanvas = await ptRenderControlChart(newUCL, newLCL, totalWidth, ctrlH);
