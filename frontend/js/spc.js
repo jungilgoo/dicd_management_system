@@ -2350,7 +2350,7 @@
         const cols = [
             { lbl: 'PROCESS',             pct: 0.090, isSpec: false, hl: false, val: stepLabel           },
             { lbl: 'Machine NO.',          pct: 0.100, isSpec: false, hl: false, val: 'S-9200'           },
-            { lbl: 'Control Item',         pct: 0.090, isSpec: false, hl: false, val: 'DI CD'            },
+            { lbl: 'Control Item',         pct: 0.090, isSpec: false, hl: false, val: window.PROCESS_TYPE === 'ETCH' ? 'FI CD' : 'DI CD' },
             { lbl: 'USL',                  pct: 0.045, isSpec: true,  hl: false, val: f2(spec.usl)       },
             { lbl: 'UCL',                  pct: 0.050, isSpec: true,  hl: true,  val: f2(uclVal)         },
             { lbl: 'Target',               pct: 0.055, isSpec: true,  hl: false, val: f2(spec.target)    },
@@ -2361,7 +2361,7 @@
             { lbl: 'Pp',                   pct: 0.050, isSpec: false, hl: false, val: f2(cap.pp)         },
             { lbl: 'Ppk',                  pct: 0.050, isSpec: false, hl: false, val: f2(cap.ppk)        },
             { lbl: 'Measure\ncycle&Point', pct: 0.110, isSpec: false, hl: false, val: '5P/1W/1LOT'       },
-            { lbl: 'Record&Manager',       pct: 0.115, isSpec: false, hl: false, val: 'Worker\n&Process Eng\'r' },
+            { lbl: 'Record&Manager',       pct: 0.115, isSpec: false, hl: false, val: 'Worker&Process Eng\'r' },
         ];
 
         // 픽셀 좌표 계산
@@ -2398,7 +2398,7 @@
             const specW = specCols.reduce((s, c) => s + c.w, 0);
 
             ctx.fillStyle    = '#000000';
-            ctx.font         = 'bold 10px Arial';
+            ctx.font         = 'bold 11px Arial';
             ctx.textAlign    = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('Spec [μm]', specX + specW / 2, hdrY + halfH / 2);
@@ -2413,7 +2413,7 @@
         }
 
         // ── 헤더 텍스트 ──
-        ctx.font      = 'bold 9px Arial';
+        ctx.font      = 'bold 11px Arial';
         ctx.fillStyle = '#000000';
         ctx.textAlign = 'center';
         cols.forEach(col => {
@@ -2425,7 +2425,7 @@
             } else {
                 // 일반 열: 전체 높이 중앙 (다중 줄 지원)
                 ctx.textBaseline = 'middle';
-                const lineH = 12;
+                const lineH = 13;
                 const offsetY = hdrY + hdrH / 2 - ((lines.length - 1) * lineH) / 2;
                 lines.forEach((line, i) => {
                     ctx.fillText(line, col.x + col.w / 2, offsetY + i * lineH);
@@ -2434,7 +2434,7 @@
         });
 
         // ── 데이터 텍스트 ──
-        ctx.font      = '9px Arial';
+        ctx.font      = '11px Arial';
         ctx.fillStyle = '#000000';
         ctx.textAlign = 'center';
         cols.forEach(col => {
