@@ -2119,9 +2119,19 @@
                 ctx.drawImage(rOffCanvas, 0, yOff, totalWidth, rH);
             }
 
+            // 2배 렌더링 캔버스를 원래 크기(907×567)로 고품질 다운스케일하여 저장
+            // → 붙여넣기 시 24×15cm 크기 유지, 선명도는 2배 렌더링 품질 적용
+            const outputCanvas = document.createElement('canvas');
+            outputCanvas.width  = totalWidth;
+            outputCanvas.height = totalHeight;
+            const outCtx = outputCanvas.getContext('2d');
+            outCtx.imageSmoothingEnabled = true;
+            outCtx.imageSmoothingQuality = 'high';
+            outCtx.drawImage(canvas, 0, 0, totalWidth, totalHeight);
+
             const link = document.createElement('a');
             link.download = generateSpcChartFileName('공정팀양식');
-            link.href = canvas.toDataURL('image/png');
+            link.href = outputCanvas.toDataURL('image/png');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
