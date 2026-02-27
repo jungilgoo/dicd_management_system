@@ -2444,10 +2444,15 @@
         ctx.stroke();
 
         // 열 구분 세로선
-        cols.forEach(col => {
+        // Spec 내부 열(이전 열도 Spec)은 상단 "Spec[μm]" 병합 영역을 침범하지 않도록
+        // hdrY+halfH 부터만 선을 그려 셀 병합 효과를 표현
+        cols.forEach((col, i) => {
             if (col.x > 0) {
+                const prevCol = cols[i - 1];
+                const isInternalSpec = col.isSpec && prevCol && prevCol.isSpec;
+                const lineStartY = isInternalSpec ? hdrY + halfH : hdrY;
                 ctx.beginPath();
-                ctx.moveTo(col.x, hdrY);
+                ctx.moveTo(col.x, lineStartY);
                 ctx.lineTo(col.x, dataY + dataH);
                 ctx.stroke();
             }
