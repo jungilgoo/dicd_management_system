@@ -2081,20 +2081,19 @@
                 newLCL = ptTarget - 3 * sigmaLong;
             }
 
-            // 오프스크린 차트 렌더링 (기존 화면 차트에 영향 없음)
-            const ctrlOffCanvas = await ptRenderControlChart(newUCL, newLCL);
-            const rOffCanvas    = await ptRenderRChart();
+            // 고정 출력 크기: 24cm × 15cm (96dpi 기준 → 907 × 567px)
+            const totalWidth  = 907;
+            const totalHeight = 567;
+            const TITLE_H    = 48;
+            const TBL_HDR_H  = 60;
+            const TBL_DATA_H = 38;
+            const chartAreaH = totalHeight - TITLE_H - TBL_HDR_H - TBL_DATA_H; // 421px
+            const ctrlH = Math.round(chartAreaH / 2);                           // 211px
+            const rH    = chartAreaH - ctrlH;                                   // 210px
 
-            const totalWidth = Math.max(
-                ctrlOffCanvas ? ctrlOffCanvas.width : 800,
-                rOffCanvas    ? rOffCanvas.width    : 800
-            );
-            const TITLE_H    = 44;
-            const TBL_HDR_H  = 54;
-            const TBL_DATA_H = 32;
-            const ctrlH = ctrlOffCanvas ? ctrlOffCanvas.height : 0;
-            const rH    = rOffCanvas    ? rOffCanvas.height    : 0;
-            const totalHeight = TITLE_H + TBL_HDR_H + TBL_DATA_H + ctrlH + rH;
+            // 오프스크린 차트 렌더링 (기존 화면 차트에 영향 없음)
+            const ctrlOffCanvas = await ptRenderControlChart(newUCL, newLCL, totalWidth, ctrlH);
+            const rOffCanvas    = await ptRenderRChart(totalWidth, rH);
 
             const canvas = document.createElement('canvas');
             canvas.width  = totalWidth;
@@ -2109,11 +2108,11 @@
 
             let yOff = TITLE_H + TBL_HDR_H + TBL_DATA_H;
             if (ctrlOffCanvas) {
-                ctx.drawImage(ctrlOffCanvas, 0, yOff);
+                ctx.drawImage(ctrlOffCanvas, 0, yOff, totalWidth, ctrlH);
                 yOff += ctrlH;
             }
             if (rOffCanvas) {
-                ctx.drawImage(rOffCanvas, 0, yOff);
+                ctx.drawImage(rOffCanvas, 0, yOff, totalWidth, rH);
             }
 
             const link = document.createElement('a');
@@ -2153,13 +2152,13 @@
 
     // 공정팀 양식용 X-bar 관리도 오프스크린 렌더링 (Promise 방식)
     // CL 제거 + UCL/LCL = Target ± 장기표준편차×3
-    function ptRenderControlChart(newUCL, newLCL) {
+    function ptRenderControlChart(newUCL, newLCL, width, height) {
         return new Promise(resolve => {
             if (!controlChart) { resolve(null); return; }
 
             const offCanvas = document.createElement('canvas');
-            offCanvas.width  = controlChart.canvas.width;
-            offCanvas.height = controlChart.canvas.height;
+            offCanvas.width  = width  || controlChart.canvas.width;
+            offCanvas.height = height || controlChart.canvas.height;
 
             const datasets = controlChart.data.datasets
                 .filter(ds => ds.label !== 'CL')
@@ -2202,13 +2201,13 @@
     }
 
     // 공정팀 양식용 R 관리도 오프스크린 렌더링 (Promise 방식)
-    function ptRenderRChart() {
+    function ptRenderRChart(width, height) {
         return new Promise(resolve => {
             if (!rChart) { resolve(null); return; }
 
             const offCanvas = document.createElement('canvas');
-            offCanvas.width  = rChart.canvas.width;
-            offCanvas.height = rChart.canvas.height;
+            offCanvas.width  = width  || rChart.canvas.width;
+            offCanvas.height = height || rChart.canvas.height;
 
             const datasets = rChart.data.datasets.map(ds => ptSafeCloneDataset(ds));
 
