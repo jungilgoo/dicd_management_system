@@ -5,6 +5,16 @@ from sqlalchemy.orm import Session
 from ..database import models
 from .spec_segments import build_spec_segments
 
+
+def _c4(n: int) -> float:
+    """
+    subgroup 크기 n에 대한 비편향 상수 c4
+    σ_short = S_bar / c4(n)
+    """
+    if n < 2:
+        return 1.0
+    return math.sqrt(2 / (n - 1)) * math.gamma(n / 2) / math.gamma((n - 1) / 2)
+
 def calculate_basic_statistics(values: List[float]) -> Dict[str, float]:
     """
     기본 통계값 계산 (평균, 표준편차, 최소값, 최대값, 범위)
@@ -32,9 +42,18 @@ def calculate_basic_statistics(values: List[float]) -> Dict[str, float]:
         "range": round(range_val, 3)
     }
 
-def calculate_process_capability(values: List[float], lsl: float, usl: float) -> Dict[str, float]:
+def calculate_process_capability(
+    values: List[float],
+    lsl: float,
+    usl: float,
+    subgroups: Optional[List[List[float]]] = None
+) -> Dict[str, float]:
     """
     공정능력지수 계산 (Cp, Cpk, Pp, Ppk)
+
+    subgroups: 각 측정 시점의 위치별 값 목록 (예: [[top, center, bottom, left, right], ...])
+               제공 시 subgroup 기반 단기 표준편차(S_bar / c4) 사용.
+               미제공 시 이동 범위(MR) 방법으로 fallback.
     """
     if not values or len(values) < 2:
         return {
@@ -43,27 +62,33 @@ def calculate_process_capability(values: List[float], lsl: float, usl: float) ->
             "pp": None,
             "ppk": None
         }
-    
+
     # 기본 통계값 계산
     avg = statistics.mean(values)
-    
+
     # 규격 폭
     spec_width = usl - lsl
-    
+
     # 장기(overall) 표준편차 - 전체 데이터에서 계산
     overall_std_dev = statistics.stdev(values)
-    
-    # 단기 표준편차 계산 - 이상적으로는 subgroup을 사용해야 하지만
-    # 여기서는 이동 범위(moving range)로 추정
-    if len(values) > 1:
+
+    # 단기 표준편차 계산
+    if subgroups:
+        # subgroup 기반: 각 subgroup의 표준편차 평균(S_bar)을 c4로 나눔
+        valid_sgs = [sg for sg in subgroups if len(sg) >= 2]
+        if valid_sgs:
+            s_values = [statistics.stdev(sg) for sg in valid_sgs]
+            s_bar = statistics.mean(s_values)
+            n_avg = round(sum(len(sg) for sg in valid_sgs) / len(valid_sgs))
+            short_term_std_dev = s_bar / _c4(n_avg) if _c4(n_avg) > 0 else overall_std_dev
+        else:
+            short_term_std_dev = overall_std_dev
+    else:
+        # fallback: 이동 범위(Moving Range) 방법
         moving_ranges = [abs(values[i] - values[i-1]) for i in range(1, len(values))]
         mr_bar = sum(moving_ranges) / len(moving_ranges)
-        # d2는 이동 범위에 대한 통계적 상수 (샘플 크기 2의 경우 1.128)
-        d2 = 1.128
+        d2 = 1.128  # 샘플 크기 2에 대한 통계적 상수
         short_term_std_dev = mr_bar / d2
-    else:
-        # 데이터가 충분하지 않은 경우 장기 표준편차 사용
-        short_term_std_dev = overall_std_dev
     
     # Cp: 단기 공정능력지수 (단기 표준편차 사용)
     cp = spec_width / (6 * short_term_std_dev) if short_term_std_dev > 0 else float('inf')
@@ -150,9 +175,15 @@ def get_process_statistics(db: Session, target_id: int, start_date=None, end_dat
             "usl": usl,
             "target": (lsl + usl) / 2
         }
-        result["process_capability"] = calculate_process_capability(all_values, lsl, usl)
-        
-        # 위치별 공정능력
+        # 각 측정의 5개 위치값을 subgroup으로 구성
+        subgroups = [
+            [m.value_top, m.value_center, m.value_bottom, m.value_left, m.value_right]
+            for m in measurements
+            if None not in (m.value_top, m.value_center, m.value_bottom, m.value_left, m.value_right)
+        ]
+        result["process_capability"] = calculate_process_capability(all_values, lsl, usl, subgroups)
+
+        # 위치별 공정능력 - 단일 위치는 subgroup 없이 MR 방법 유지
         result["position_capability"] = {}
         for position, values in position_values.items():
             result["position_capability"][position] = calculate_process_capability(values, lsl, usl)

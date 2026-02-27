@@ -287,9 +287,14 @@ def analyze_spc(db: Session, target_id: int, days: int = 30, start_date: Optiona
             "target": (active_spec.usl + active_spec.lsl) / 2  # 타겟 추가
         }
 
-        # 공정 능력 지수 계산 및 추가
+        # 공정 능력 지수 계산 및 추가 (subgroup = 각 측정의 5개 위치값)
+        subgroups = [
+            [m.value_top, m.value_center, m.value_bottom, m.value_left, m.value_right]
+            for m in measurements
+            if None not in (m.value_top, m.value_center, m.value_bottom, m.value_left, m.value_right)
+        ]
         result["process_capability"] = stats_service.calculate_process_capability(
-            values, active_spec.lsl, active_spec.usl
+            values, active_spec.lsl, active_spec.usl, subgroups
         )
 
     # SPEC 구간 정보 추가 (차트 구간 분리 표시용)
