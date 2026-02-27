@@ -2369,9 +2369,12 @@
         ctx.fillRect(0, hdrY, totalWidth, hdrH + dataH);
 
         // UCL / LCL 열 강조 (회색)
+        // isSpec 열은 Spec 병합 영역(상단 halfH)을 침범하지 않도록 halfH 아래부터만 음영 적용
         cols.filter(c => c.hl).forEach(col => {
             ctx.fillStyle = '#cccccc';
-            ctx.fillRect(col.x, hdrY, col.w, hdrH + dataH);
+            const shadingY = col.isSpec ? hdrY + halfH : hdrY;
+            const shadingH = col.isSpec ? hdrH - halfH + dataH : hdrH + dataH;
+            ctx.fillRect(col.x, shadingY, col.w, shadingH);
         });
 
         // ── "Spec [μm]" 합쳐진 상단 레이블 ──
