@@ -2081,7 +2081,9 @@
                 newLCL = ptTarget - 3 * sigmaLong;
             }
 
-            // 고정 출력 크기: 24cm × 15cm (96dpi 기준 → 907 × 567px)
+            // 논리 크기: 24cm × 15cm (96dpi 기준 → 907 × 567px)
+            // 2배 해상도로 렌더링하여 선명도 향상
+            const SCALE       = 2;
             const totalWidth  = 907;
             const totalHeight = 567;
             const TITLE_H    = 42;
@@ -2091,14 +2093,16 @@
             const ctrlH = Math.round(chartAreaH * 2 / 3);                      // DICD 2/3 ≈ 301px
             const rH    = chartAreaH - ctrlH;                                   // RANGE 1/3 ≈ 150px
 
-            // 오프스크린 차트 렌더링 (기존 화면 차트에 영향 없음)
-            const ctrlOffCanvas = await ptRenderControlChart(newUCL, newLCL, totalWidth, ctrlH);
-            const rOffCanvas    = await ptRenderRChart(totalWidth, rH);
+            // 오프스크린 차트는 2배 크기로 렌더링 (Chart.js는 독립 캔버스 사용)
+            const ctrlOffCanvas = await ptRenderControlChart(newUCL, newLCL, totalWidth * SCALE, ctrlH * SCALE);
+            const rOffCanvas    = await ptRenderRChart(totalWidth * SCALE, rH * SCALE);
 
+            // 최종 캔버스를 2배 크기로 생성 후 scale 적용
             const canvas = document.createElement('canvas');
-            canvas.width  = totalWidth;
-            canvas.height = totalHeight;
+            canvas.width  = totalWidth  * SCALE;
+            canvas.height = totalHeight * SCALE;
             const ctx = canvas.getContext('2d');
+            ctx.scale(SCALE, SCALE);
 
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, totalWidth, totalHeight);
@@ -2190,16 +2194,16 @@
                     maintainAspectRatio: false,
                     plugins: {
                         title:      { display: false },
-                        legend:     { position: 'top' },
+                        legend:     { position: 'top', labels: { font: { size: 22 } } },
                         tooltip:    { enabled: false },
                         annotation: { annotations: {} }
                     },
                     scales: {
                         x: {
                             title: { display: false },
-                            ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 10 } }
+                            ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 20 } }
                         },
-                        y: { title: { display: false } }
+                        y: { title: { display: false }, ticks: { font: { size: 20 } } }
                     }
                 }
             });
@@ -2238,16 +2242,16 @@
                     maintainAspectRatio: false,
                     plugins: {
                         title:      { display: false },
-                        legend:     { position: 'top' },
+                        legend:     { position: 'top', labels: { font: { size: 22 } } },
                         tooltip:    { enabled: false },
                         annotation: { annotations: {} }
                     },
                     scales: {
                         x: {
                             title: { display: false },
-                            ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 10 } }
+                            ticks: { maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 30, font: { size: 20 } }
                         },
-                        y: { title: { display: false }, beginAtZero: true }
+                        y: { title: { display: false }, beginAtZero: true, ticks: { font: { size: 20 } } }
                     }
                 }
             });
