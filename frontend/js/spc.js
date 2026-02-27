@@ -2215,7 +2215,7 @@
             offCanvas.width  = width  || rChart.canvas.width;
             offCanvas.height = height || rChart.canvas.height;
 
-            const rLimitLabels = ['UCL', 'LCL', 'CL', 'USL', 'LSL', '타겟'];
+            const rLimitLabels = ['UCL', 'LCL', 'CL', 'USL', 'LSL', '타겟', 'R-bar'];
             const datasets = rChart.data.datasets.map(ds => {
                 const clone = ptSafeCloneDataset(ds);
                 // 선 굵기 및 포인트 스타일 조정
