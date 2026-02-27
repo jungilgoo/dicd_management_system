@@ -2160,7 +2160,7 @@
             offCanvas.width  = width  || controlChart.canvas.width;
             offCanvas.height = height || controlChart.canvas.height;
 
-            const ptLimitLabels = ['UCL', 'LCL', 'CL'];
+            const ptLimitLabels = ['UCL', 'LCL', 'CL', 'USL', 'LSL', '타겟'];
             const datasets = controlChart.data.datasets
                 .filter(ds => ds.label !== 'CL')
                 .map(ds => {
@@ -2215,7 +2215,7 @@
             offCanvas.width  = width  || rChart.canvas.width;
             offCanvas.height = height || rChart.canvas.height;
 
-            const rLimitLabels = ['UCL', 'LCL', 'CL'];
+            const rLimitLabels = ['UCL', 'LCL', 'CL', 'USL', 'LSL', '타겟'];
             const datasets = rChart.data.datasets.map(ds => {
                 const clone = ptSafeCloneDataset(ds);
                 // 선 굵기 및 포인트 스타일 조정
