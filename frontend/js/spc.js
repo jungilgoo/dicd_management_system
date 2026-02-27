@@ -2088,8 +2088,8 @@
             const TBL_HDR_H  = 60;
             const TBL_DATA_H = 38;
             const chartAreaH = totalHeight - TITLE_H - TBL_HDR_H - TBL_DATA_H; // 421px
-            const ctrlH = Math.round(chartAreaH / 2);                           // 211px
-            const rH    = chartAreaH - ctrlH;                                   // 210px
+            const ctrlH = Math.round(chartAreaH * 2 / 3);                      // DICD 2/3 ≈ 281px
+            const rH    = chartAreaH - ctrlH;                                   // RANGE 1/3 ≈ 140px
 
             // 오프스크린 차트 렌더링 (기존 화면 차트에 영향 없음)
             const ctrlOffCanvas = await ptRenderControlChart(newUCL, newLCL, totalWidth, ctrlH);
@@ -2160,6 +2160,7 @@
             offCanvas.width  = width  || controlChart.canvas.width;
             offCanvas.height = height || controlChart.canvas.height;
 
+            const ptLimitLabels = ['UCL', 'LCL', 'CL'];
             const datasets = controlChart.data.datasets
                 .filter(ds => ds.label !== 'CL')
                 .map(ds => {
@@ -2169,6 +2170,11 @@
                     } else if (ds.label === 'LCL' && newLCL !== null) {
                         clone.data = Array(ds.data.length).fill(newLCL);
                     }
+                    // 선 굵기 및 포인트 스타일 조정
+                    clone.borderWidth      = 1;
+                    clone.pointRadius      = ptLimitLabels.includes(ds.label) ? 0 : 2;
+                    clone.pointHoverRadius = ptLimitLabels.includes(ds.label) ? 0 : 2;
+                    clone.pointStyle       = 'circle';
                     return clone;
                 });
 
@@ -2209,7 +2215,16 @@
             offCanvas.width  = width  || rChart.canvas.width;
             offCanvas.height = height || rChart.canvas.height;
 
-            const datasets = rChart.data.datasets.map(ds => ptSafeCloneDataset(ds));
+            const rLimitLabels = ['UCL', 'LCL', 'CL'];
+            const datasets = rChart.data.datasets.map(ds => {
+                const clone = ptSafeCloneDataset(ds);
+                // 선 굵기 및 포인트 스타일 조정
+                clone.borderWidth      = 1;
+                clone.pointRadius      = rLimitLabels.includes(ds.label) ? 0 : 2;
+                clone.pointHoverRadius = rLimitLabels.includes(ds.label) ? 0 : 2;
+                clone.pointStyle       = 'circle';
+                return clone;
+            });
 
             new Chart(offCanvas.getContext('2d'), {
                 type: 'line',
