@@ -2059,27 +2059,37 @@
     // ─────────────────────────────────────────────
     // 공정팀 양식 다운로드
     // ─────────────────────────────────────────────
-    async function downloadProcessTeamChart() {
+    function downloadProcessTeamChart() {
         if (!controlChart && !rChart) {
             alert('다운로드할 차트가 없습니다. 먼저 분석을 실행하세요.');
             return;
         }
 
-        try {
-            // 장기표준편차: σ_long = (USL - LSL) / (6 × Pp)
-            const spec = (currentSpcResult && currentSpcResult.spec)              || {};
-            const cap  = (currentSpcResult && currentSpcResult.process_capability) || {};
-            const ptTarget = (spec.target != null) ? Number(spec.target) : null;
-            const ptPp     = (cap.pp      != null && Number(cap.pp) > 0) ? Number(cap.pp) : null;
-            const ptUsl    = (spec.usl    != null) ? Number(spec.usl)    : null;
-            const ptLsl    = (spec.lsl    != null) ? Number(spec.lsl)    : null;
+        // 장기표준편차: σ_long = (USL - LSL) / (6 × Pp)
+        const spec = (currentSpcResult && currentSpcResult.spec)              || {};
+        const cap  = (currentSpcResult && currentSpcResult.process_capability) || {};
+        const ptTarget = (spec.target != null) ? Number(spec.target) : null;
+        const ptPp     = (cap.pp      != null && Number(cap.pp) > 0) ? Number(cap.pp) : null;
+        const ptUsl    = (spec.usl    != null) ? Number(spec.usl)    : null;
+        const ptLsl    = (spec.lsl    != null) ? Number(spec.lsl)    : null;
 
-            let newUCL = null, newLCL = null;
-            if (ptTarget !== null && ptPp !== null && ptUsl !== null && ptLsl !== null) {
-                const sigmaLong = (ptUsl - ptLsl) / (6 * ptPp);
-                newUCL = ptTarget + 3 * sigmaLong;
-                newLCL = ptTarget - 3 * sigmaLong;
-            }
+        let autoUCL = null, autoLCL = null;
+        if (ptTarget !== null && ptPp !== null && ptUsl !== null && ptLsl !== null) {
+            const sigmaLong = (ptUsl - ptLsl) / (6 * ptPp);
+            autoUCL = ptTarget + 3 * sigmaLong;
+            autoLCL = ptTarget - 3 * sigmaLong;
+        }
+
+        // 모달에 자동 계산 값 설정 후 표시
+        const uclInput = document.getElementById('modal-ucl-input');
+        const lclInput = document.getElementById('modal-lcl-input');
+        uclInput.value = autoUCL !== null ? autoUCL.toFixed(4) : '';
+        lclInput.value = autoLCL !== null ? autoLCL.toFixed(4) : '';
+        $('#uclLclModal').modal('show');
+    }
+
+    async function _executeProcessTeamDownload(newUCL, newLCL) {
+        try {
 
             // 논리 크기: 24cm × 15cm (96dpi 기준 → 907 × 567px)
             // 2배 해상도로 렌더링하여 선명도 향상
@@ -2553,9 +2563,19 @@
             downloadSpcChart();
         });
 
-        // 공정팀 양식 다운로드 버튼 클릭 이벤트
+        // 공정팀 양식 다운로드 버튼 클릭 이벤트 (모달로 UCL/LCL 확인)
         document.getElementById('download-process-team-chart-btn').addEventListener('click', function() {
             downloadProcessTeamChart();
+        });
+
+        // 모달 확인 버튼 클릭 이벤트
+        document.getElementById('modal-download-confirm-btn').addEventListener('click', function() {
+            const uclVal = parseFloat(document.getElementById('modal-ucl-input').value);
+            const lclVal = parseFloat(document.getElementById('modal-lcl-input').value);
+            const newUCL = isNaN(uclVal) ? null : uclVal;
+            const newLCL = isNaN(lclVal) ? null : lclVal;
+            $('#uclLclModal').modal('hide');
+            _executeProcessTeamDownload(newUCL, newLCL);
         });
 
         // 차트 데이터 보기 버튼 이벤트
