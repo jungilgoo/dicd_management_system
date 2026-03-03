@@ -2199,6 +2199,11 @@
                     clone.pointRadius      = ptLimitLabels.includes(ds.label) ? 0 : 2;
                     clone.pointHoverRadius = ptLimitLabels.includes(ds.label) ? 0 : 2;
                     clone.pointStyle       = 'circle';
+                    // 데이터 선(관리한계선 제외)은 진한 남색으로 변경
+                    if (!ptLimitLabels.includes(ds.label)) {
+                        clone.borderColor       = '#28009B';
+                        clone.backgroundColor   = 'rgba(40,0,155,0.1)';
+                    }
                     return clone;
                 });
 
@@ -2214,7 +2219,18 @@
                     maintainAspectRatio: false,
                     plugins: {
                         title:      { display: false },
-                        legend:     { position: 'top', labels: { font: { size: 22 } } },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { size: 22 },
+                                usePointStyle: true,
+                                generateLabels: function(chart) {
+                                    const items = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    items.forEach(item => { item.pointStyle = 'line'; });
+                                    return items;
+                                }
+                            }
+                        },
                         tooltip:    { enabled: false },
                         annotation: { annotations: {} }
                     },
@@ -2247,6 +2263,11 @@
                 clone.pointRadius      = rLimitLabels.includes(ds.label) ? 0 : 2;
                 clone.pointHoverRadius = rLimitLabels.includes(ds.label) ? 0 : 2;
                 clone.pointStyle       = 'circle';
+                // 데이터 선(관리한계선 제외)은 진한 남색으로 변경
+                if (!rLimitLabels.includes(ds.label)) {
+                    clone.borderColor       = '#28009B';
+                    clone.backgroundColor   = 'rgba(40,0,155,0.1)';
+                }
                 return clone;
             });
 
@@ -2262,7 +2283,18 @@
                     maintainAspectRatio: false,
                     plugins: {
                         title:      { display: false },
-                        legend:     { position: 'top', labels: { font: { size: 22 } } },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { size: 22 },
+                                usePointStyle: true,
+                                generateLabels: function(chart) {
+                                    const items = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    items.forEach(item => { item.pointStyle = 'line'; });
+                                    return items;
+                                }
+                            }
+                        },
                         tooltip:    { enabled: false },
                         annotation: { annotations: {} }
                     },
@@ -2316,7 +2348,7 @@
 
     // 제목 영역 그리기 (파란 배경 + 흰 글씨)
     function ptDrawTitle(ctx, width, height) {
-        ctx.fillStyle = '#1b4f72';
+        ctx.fillStyle = '#28009B';
         ctx.fillRect(0, 0, width, height);
 
         const stepLabel = ptGetStepLabel();
