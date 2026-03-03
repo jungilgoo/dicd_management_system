@@ -484,10 +484,10 @@
         // 데이터셋 준비
         const datasets = [
             {
-                label: `${cdType} 값`,
+                label: 'X Bar',
                 data: values,
-                borderColor: '#3c8dbc',
-                backgroundColor: 'rgba(60, 141, 188, 0.1)',
+                borderColor: '#0033CC',
+                backgroundColor: 'rgba(0, 51, 204, 0.1)',
                 fill: false,
                 tension: 0.4,
                 pointRadius: 4,
@@ -596,7 +596,7 @@
                     label: function(context) {
                         let label = context.dataset.label || '';
 
-                        if (label === `${cdType} 값`) {
+                        if (label === 'X Bar') {
                             const value = context.parsed.y;
                             let zoneInfo = '';
 
@@ -729,7 +729,7 @@
             datasets.push({
                 label: 'USL',
                 data: buildSegmentedArray(data.spec_segments, labels.length, 'usl'),
-                borderColor: '#3366ff',
+                borderColor: '#dc3545',
                 borderWidth: 1.5,
                 pointRadius: 0,
                 fill: false,
@@ -738,7 +738,7 @@
             datasets.push({
                 label: 'LSL',
                 data: buildSegmentedArray(data.spec_segments, labels.length, 'lsl'),
-                borderColor: '#3366ff',
+                borderColor: '#dc3545',
                 borderWidth: 1.5,
                 pointRadius: 0,
                 fill: false,
@@ -762,7 +762,7 @@
             datasets.push({
                 label: 'USL',
                 data: Array(labels.length).fill(usl),
-                borderColor: '#3366ff',
+                borderColor: '#dc3545',
                 borderWidth: 1.5,
                 pointRadius: 0,
                 fill: false
@@ -770,7 +770,7 @@
             datasets.push({
                 label: 'LSL',
                 data: Array(labels.length).fill(lsl),
-                borderColor: '#3366ff',
+                borderColor: '#dc3545',
                 borderWidth: 1.5,
                 pointRadius: 0,
                 fill: false
@@ -2199,10 +2199,10 @@
                     clone.pointRadius      = ptLimitLabels.includes(ds.label) ? 0 : 2;
                     clone.pointHoverRadius = ptLimitLabels.includes(ds.label) ? 0 : 2;
                     clone.pointStyle       = 'circle';
-                    // 데이터 선(관리한계선 제외)은 진한 남색으로 변경
+                    // 데이터 선(관리한계선 제외)은 진한 파란색으로 변경
                     if (!ptLimitLabels.includes(ds.label)) {
-                        clone.borderColor       = '#190082';
-                        clone.backgroundColor   = 'rgba(25,0,130,0.1)';
+                        clone.borderColor       = '#0033CC';
+                        clone.backgroundColor   = 'rgba(0,51,204,0.1)';
                     }
                     return clone;
                 });
@@ -2269,10 +2269,10 @@
                 clone.pointRadius      = rLimitLabels.includes(ds.label) ? 0 : 2;
                 clone.pointHoverRadius = rLimitLabels.includes(ds.label) ? 0 : 2;
                 clone.pointStyle       = 'circle';
-                // 데이터 선(관리한계선 제외)은 진한 남색으로 변경
+                // 데이터 선(관리한계선 제외)은 진한 파란색으로 변경
                 if (!rLimitLabels.includes(ds.label)) {
-                    clone.borderColor       = '#190082';
-                    clone.backgroundColor   = 'rgba(25,0,130,0.1)';
+                    clone.borderColor       = '#0033CC';
+                    clone.backgroundColor   = 'rgba(0,51,204,0.1)';
                 }
                 return clone;
             });
