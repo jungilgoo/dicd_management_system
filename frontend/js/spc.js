@@ -2201,8 +2201,8 @@
                     clone.pointStyle       = 'circle';
                     // 데이터 선(관리한계선 제외)은 진한 남색으로 변경
                     if (!ptLimitLabels.includes(ds.label)) {
-                        clone.borderColor       = '#28009B';
-                        clone.backgroundColor   = 'rgba(40,0,155,0.1)';
+                        clone.borderColor       = '#190082';
+                        clone.backgroundColor   = 'rgba(25,0,130,0.1)';
                     }
                     return clone;
                 });
@@ -2226,7 +2226,13 @@
                                 usePointStyle: true,
                                 generateLabels: function(chart) {
                                     const items = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                                    items.forEach(item => { item.pointStyle = 'line'; });
+                                    items.forEach((item, i) => {
+                                        item.pointStyle = 'line';
+                                        const ds = chart.data.datasets[i];
+                                        if (ds && ds.borderDash && ds.borderDash.length) {
+                                            item.lineDash = ds.borderDash;
+                                        }
+                                    });
                                     return items;
                                 }
                             }
@@ -2265,8 +2271,8 @@
                 clone.pointStyle       = 'circle';
                 // 데이터 선(관리한계선 제외)은 진한 남색으로 변경
                 if (!rLimitLabels.includes(ds.label)) {
-                    clone.borderColor       = '#28009B';
-                    clone.backgroundColor   = 'rgba(40,0,155,0.1)';
+                    clone.borderColor       = '#190082';
+                    clone.backgroundColor   = 'rgba(25,0,130,0.1)';
                 }
                 return clone;
             });
@@ -2290,7 +2296,13 @@
                                 usePointStyle: true,
                                 generateLabels: function(chart) {
                                     const items = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                                    items.forEach(item => { item.pointStyle = 'line'; });
+                                    items.forEach((item, i) => {
+                                        item.pointStyle = 'line';
+                                        const ds = chart.data.datasets[i];
+                                        if (ds && ds.borderDash && ds.borderDash.length) {
+                                            item.lineDash = ds.borderDash;
+                                        }
+                                    });
                                     return items;
                                 }
                             }
@@ -2348,7 +2360,7 @@
 
     // 제목 영역 그리기 (파란 배경 + 흰 글씨)
     function ptDrawTitle(ctx, width, height) {
-        ctx.fillStyle = '#28009B';
+        ctx.fillStyle = '#190082';
         ctx.fillRect(0, 0, width, height);
 
         const stepLabel = ptGetStepLabel();
