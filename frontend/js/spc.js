@@ -301,33 +301,11 @@
                 apiParams.end_date = endDate;
             }
 
-            // [DEBUG] 필터 조건 출력
-            console.group('[SPC] Cp 계산 - 필터 조건');
-            console.log('타겟 ID:', selectedTargetId);
-            console.log('분석 기간:', periodSelect.value === 'custom'
-                ? `${apiParams.start_date} ~ ${apiParams.end_date}`
-                : `최근 ${periodSelect.value}일`);
-            console.log('API 파라미터:', apiParams);
-            console.groupEnd();
-
             // SPC 분석 API 호출
             const result = await api.analyzeSpc(selectedTargetId, apiParams);
 
             // API 응답 로깅 (디버깅용)
             console.log(`타겟 ID ${selectedTargetId}에 대한 SPC 분석 API 응답:`, result);
-
-            // [DEBUG] Cp 계산 결과 출력
-            if (result.process_capability) {
-                const cap = result.process_capability;
-                const spec = result.spec || {};
-                console.group('[SPC] Cp 계산 결과');
-                console.log('USL:', spec.usl, '/ LSL:', spec.lsl, '/ 규격폭:', spec.usl != null && spec.lsl != null ? (spec.usl - spec.lsl).toFixed(4) : '-');
-                console.log('Cp  =', cap.cp,  '← (USL-LSL) / (6 × σ_단기)');
-                console.log('Cpk =', cap.cpk, '← min(CPU, CPL)  |  CPU:', cap.cpu, '/ CPL:', cap.cpl);
-                console.log('Pp  =', cap.pp,  '← (USL-LSL) / (6 × σ_장기)');
-                console.log('Ppk =', cap.ppk);
-                console.groupEnd();
-            }
             
             // 측정 데이터 API 호출 (차트 데이터 보기용)
             const measureParams = {

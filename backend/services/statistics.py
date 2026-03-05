@@ -62,39 +62,23 @@ def calculate_process_capability(
     # 규격 폭
     spec_width = usl - lsl
 
-    print(f"\n{'='*60}")
-    print(f"[Cp 계산] 데이터 수: {len(values)}개 | 평균: {avg:.4f}")
-    print(f"[Cp 계산] USL: {usl} | LSL: {lsl} | 규격폭: {spec_width:.4f}")
-
     # 단기 표준편차 계산
     if subgroups:
         # subgroup 기반: 합동 표준편차(Pooled Standard Deviation)
         # sqrt(sum((ni-1)*si^2) / sum(ni-1))
         valid_sgs = [sg for sg in subgroups if len(sg) >= 2]
-        print(f"[Cp 계산] Subgroup 수: {len(valid_sgs)}개 (유효)")
         if valid_sgs:
-            numerator = 0
-            denominator = 0
-            for i, sg in enumerate(valid_sgs):
-                ni = len(sg)
-                var_i = statistics.variance(sg)
-                contrib = (ni - 1) * var_i
-                numerator += contrib
-                denominator += (ni - 1)
-                print(f"  subgroup[{i+1:3d}]: n={ni}, var={var_i:.6f}, (n-1)*var={contrib:.6f}")
-            print(f"[Cp 계산] 분자(Σ(ni-1)*si²): {numerator:.6f}")
-            print(f"[Cp 계산] 분모(Σ(ni-1))    : {denominator}")
+            numerator = sum((len(sg) - 1) * statistics.variance(sg) for sg in valid_sgs)
+            denominator = sum(len(sg) - 1 for sg in valid_sgs)
             short_term_std_dev = math.sqrt(numerator / denominator) if denominator > 0 else statistics.stdev(values)
-            print(f"[Cp 계산] σ_단기 = sqrt({numerator:.6f}/{denominator}) = {short_term_std_dev:.6f}")
 
-            # 장기(overall) 표준편차 - 모든 개별 위치값으로 계산
+            # 장기(overall) 표준편차 및 평균 - 모든 개별 위치값으로 계산 (반올림 오차 제거)
             all_individual_values = [v for sg in valid_sgs for v in sg]
             overall_std_dev = statistics.stdev(all_individual_values)
-            print(f"[Cp 계산] σ_장기: stdev(개별 위치값 전체 {len(all_individual_values)}개) = {overall_std_dev:.6f}")
+            avg = statistics.mean(all_individual_values)
         else:
             overall_std_dev = statistics.stdev(values)
             short_term_std_dev = overall_std_dev
-            print(f"[Cp 계산] 유효 subgroup 없음 → σ_단기 = σ_장기 = {overall_std_dev:.6f}")
     else:
         # fallback: 이동 범위(Moving Range) 방법
         overall_std_dev = statistics.stdev(values)
@@ -102,21 +86,14 @@ def calculate_process_capability(
         mr_bar = sum(moving_ranges) / len(moving_ranges)
         d2 = 1.128  # 샘플 크기 2에 대한 통계적 상수
         short_term_std_dev = mr_bar / d2
-        print(f"[Cp 계산] MR 방법 | MR_bar={mr_bar:.6f} | σ_단기={short_term_std_dev:.6f}")
-        print(f"[Cp 계산] σ_장기: stdev(avg_value {len(values)}개) = {overall_std_dev:.6f}")
 
     # Cp: 단기 공정능력지수 (단기 표준편차 사용)
     cp = spec_width / (6 * short_term_std_dev) if short_term_std_dev > 0 else float('inf')
-    print(f"[Cp 계산] Cp  = {spec_width:.4f} / (6 × {short_term_std_dev:.6f}) = {cp:.4f}")
 
     # Cpk: 단기 공정능력지수 (편중 고려)
     cpu = (usl - avg) / (3 * short_term_std_dev) if short_term_std_dev > 0 else float('inf')
     cpl = (avg - lsl) / (3 * short_term_std_dev) if short_term_std_dev > 0 else float('inf')
     cpk = min(cpu, cpl)
-    print(f"[Cp 계산] CPU = ({usl} - {avg:.4f}) / (3 × {short_term_std_dev:.6f}) = {cpu:.4f}")
-    print(f"[Cp 계산] CPL = ({avg:.4f} - {lsl}) / (3 × {short_term_std_dev:.6f}) = {cpl:.4f}")
-    print(f"[Cp 계산] Cpk = min(CPU, CPL) = {cpk:.4f}")
-    print(f"{'='*60}\n")
     
     # Pp: 장기 공정능력지수 (장기 표준편차 사용)
     pp = spec_width / (6 * overall_std_dev) if overall_std_dev > 0 else float('inf')
