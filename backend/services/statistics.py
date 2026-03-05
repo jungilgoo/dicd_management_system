@@ -6,14 +6,6 @@ from ..database import models
 from .spec_segments import build_spec_segments
 
 
-def _c4(n: int) -> float:
-    """
-    subgroup 크기 n에 대한 비편향 상수 c4
-    σ_short = S_bar / c4(n)
-    """
-    if n < 2:
-        return 1.0
-    return math.sqrt(2 / (n - 1)) * math.gamma(n / 2) / math.gamma((n - 1) / 2)
 
 def calculate_basic_statistics(values: List[float]) -> Dict[str, float]:
     """
@@ -52,7 +44,7 @@ def calculate_process_capability(
     공정능력지수 계산 (Cp, Cpk, Pp, Ppk)
 
     subgroups: 각 측정 시점의 위치별 값 목록 (예: [[top, center, bottom, left, right], ...])
-               제공 시 subgroup 기반 단기 표준편차(S_bar / c4) 사용.
+               제공 시 합동 표준편차(Pooled Std Dev) 사용: sqrt(Σ(ni-1)si² / Σ(ni-1))
                미제공 시 이동 범위(MR) 방법으로 fallback.
     """
     if not values or len(values) < 2:
@@ -74,13 +66,13 @@ def calculate_process_capability(
 
     # 단기 표준편차 계산
     if subgroups:
-        # subgroup 기반: 각 subgroup의 표준편차 평균(S_bar)을 c4로 나눔
+        # subgroup 기반: 합동 표준편차(Pooled Standard Deviation)
+        # sqrt(sum((ni-1)*si^2) / sum(ni-1))
         valid_sgs = [sg for sg in subgroups if len(sg) >= 2]
         if valid_sgs:
-            s_values = [statistics.stdev(sg) for sg in valid_sgs]
-            s_bar = statistics.mean(s_values)
-            n_avg = round(sum(len(sg) for sg in valid_sgs) / len(valid_sgs))
-            short_term_std_dev = s_bar / _c4(n_avg) if _c4(n_avg) > 0 else overall_std_dev
+            numerator = sum((len(sg) - 1) * statistics.variance(sg) for sg in valid_sgs)
+            denominator = sum(len(sg) - 1 for sg in valid_sgs)
+            short_term_std_dev = math.sqrt(numerator / denominator) if denominator > 0 else overall_std_dev
         else:
             short_term_std_dev = overall_std_dev
     else:
