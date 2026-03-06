@@ -486,8 +486,8 @@
             {
                 label: 'X Bar',
                 data: values,
-                borderColor: '#0033CC',
-                backgroundColor: 'rgba(0, 51, 204, 0.1)',
+                borderColor: '#3c8dbc',
+                backgroundColor: 'rgba(60, 141, 188, 0.1)',
                 fill: false,
                 tension: 0.4,
                 pointRadius: 4,
@@ -506,7 +506,52 @@
                 },
                 tooltip: {
                     mode: 'index',
-                    intersect: false
+                    intersect: false,
+                    callbacks: {
+                        filter: function(tooltipItem) {
+                            const label = tooltipItem.dataset.label;
+                            return label !== 'CL' && label !== 'UCL' && label !== 'LCL' &&
+                                   label !== 'USL' && label !== 'LSL' && label !== '타겟';
+                        },
+                        label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.parsed.y;
+
+                            if (label === 'X Bar' && sigma !== null) {
+                                let zoneInfo = '';
+                                if (value > zone_a_upper || value < zone_a_lower) {
+                                    zoneInfo = ' (Zone A)';
+                                } else if (value > zone_b_upper || value < zone_b_lower) {
+                                    zoneInfo = ' (Zone B)';
+                                } else {
+                                    zoneInfo = ' (Zone C)';
+                                }
+                                return `${label}: ${value.toFixed(3)}${zoneInfo}`;
+                            }
+
+                            return `${label}: ${value.toFixed(3)}`;
+                        },
+                        footer: function(tooltipItems) {
+                            if (!tooltipItems || tooltipItems.length === 0) return '';
+                            if (!currentMeasurements || currentMeasurements.length === 0) return '';
+
+                            const dataIndex = tooltipItems[0].dataIndex;
+                            const measurement = currentMeasurements[dataIndex];
+
+                            if (!measurement) return '';
+
+                            const device = measurement.device || '-';
+                            const lotNo = measurement.lot_no || '-';
+                            const exposureTime = measurement.exposure_time || '-';
+
+                            return [
+                                '─────────────',
+                                `DEVICE: ${device}`,
+                                `LOT NO: ${lotNo}`,
+                                `Exposure Time: ${exposureTime}`
+                            ];
+                        }
+                    }
                 },
                 legend: {
                     position: 'top'
@@ -584,59 +629,8 @@
                 fill: false
             });
             
-            // 시그마 구간이 계산된 경우에만 툴팁 콜백과 시그마 구간 표시 추가
+            // 시그마 구간이 계산된 경우에만 시그마 구간 표시 추가
             if (sigma !== null) {
-                // 툴팁 콜백 추가
-                chartOptions.plugins.tooltip.callbacks = {
-                    // USL, LSL, Target 기준선 제외
-                    filter: function(tooltipItem) {
-                        const label = tooltipItem.dataset.label;
-                        return label !== 'USL' && label !== 'LSL' && label !== 'Target';
-                    },
-                    label: function(context) {
-                        let label = context.dataset.label || '';
-
-                        if (label === 'X Bar') {
-                            const value = context.parsed.y;
-                            let zoneInfo = '';
-
-                            // 시그마 구간 표시
-                            if (value > zone_a_upper || value < zone_a_lower) {
-                                zoneInfo = ' (Zone A)';
-                            } else if (value > zone_b_upper || value < zone_b_lower) {
-                                zoneInfo = ' (Zone B)';
-                            } else {
-                                zoneInfo = ' (Zone C)';
-                            }
-
-                            return `${label}: ${value.toFixed(3)}${zoneInfo}`;
-                        }
-
-                        return `${label}: ${context.parsed.y.toFixed(3)}`;
-                    },
-                    // 하단에 DEVICE, LOT NO, Exposure Time 정보 한 번만 표시
-                    footer: function(tooltipItems) {
-                        if (!tooltipItems || tooltipItems.length === 0) return '';
-                        if (!currentMeasurements || currentMeasurements.length === 0) return '';
-
-                        const dataIndex = tooltipItems[0].dataIndex;
-                        const measurement = currentMeasurements[dataIndex];
-
-                        if (!measurement) return '';
-
-                        const device = measurement.device || '-';
-                        const lotNo = measurement.lot_no || '-';
-                        const exposureTime = measurement.exposure_time || '-';
-
-                        return [
-                            '─────────────',
-                            `DEVICE: ${device}`,
-                            `LOT NO: ${lotNo}`,
-                            `Exposure Time: ${exposureTime}`
-                        ];
-                    }
-                };
-                
                 // 시그마 구간 애노테이션 추가
                 chartOptions.plugins.annotation = {
                     annotations: [
@@ -729,26 +723,28 @@
             datasets.push({
                 label: 'USL',
                 data: buildSegmentedArray(data.spec_segments, labels.length, 'usl'),
-                borderColor: '#dc3545',
-                borderWidth: 1.5,
+                borderColor: '#3366ff',
+                borderWidth: 1,
                 pointRadius: 0,
                 fill: false,
+                borderDash: [5, 5],
                 spanGaps: false
             });
             datasets.push({
                 label: 'LSL',
                 data: buildSegmentedArray(data.spec_segments, labels.length, 'lsl'),
-                borderColor: '#dc3545',
-                borderWidth: 1.5,
+                borderColor: '#3366ff',
+                borderWidth: 1,
                 pointRadius: 0,
                 fill: false,
+                borderDash: [5, 5],
                 spanGaps: false
             });
             datasets.push({
                 label: '타겟',
                 data: buildSegmentedArray(data.spec_segments, labels.length, 'target'),
-                borderColor: '#FF9900',
-                borderWidth: 1.5,
+                borderColor: '#ff9900',
+                borderWidth: 1,
                 pointRadius: 0,
                 fill: false,
                 spanGaps: false
@@ -762,24 +758,26 @@
             datasets.push({
                 label: 'USL',
                 data: Array(labels.length).fill(usl),
-                borderColor: '#dc3545',
-                borderWidth: 1.5,
+                borderColor: '#3366ff',
+                borderWidth: 1,
                 pointRadius: 0,
-                fill: false
+                fill: false,
+                borderDash: [5, 5]
             });
             datasets.push({
                 label: 'LSL',
                 data: Array(labels.length).fill(lsl),
-                borderColor: '#dc3545',
-                borderWidth: 1.5,
+                borderColor: '#3366ff',
+                borderWidth: 1,
                 pointRadius: 0,
-                fill: false
+                fill: false,
+                borderDash: [5, 5]
             });
             datasets.push({
                 label: '타겟',
                 data: Array(labels.length).fill(target),
-                borderColor: '#FF9900',
-                borderWidth: 1.5,
+                borderColor: '#ff9900',
+                borderWidth: 1,
                 pointRadius: 0,
                 fill: false
             });
