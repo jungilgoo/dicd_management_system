@@ -811,19 +811,6 @@
             }
         }
         
-        // Y축 범위를 1.5배로 확장
-        const allDataValues = datasets.flatMap(ds =>
-            Array.isArray(ds.data) ? ds.data.filter(v => v !== null && v !== undefined && !isNaN(v)) : []
-        );
-        if (allDataValues.length > 0) {
-            const yMin = Math.min(...allDataValues);
-            const yMax = Math.max(...allDataValues);
-            const yCenter = (yMin + yMax) / 2;
-            const yHalfRange = (yMax - yMin) / 2 * 1.5;
-            chartOptions.scales.y.min = yCenter - yHalfRange;
-            chartOptions.scales.y.max = yCenter + yHalfRange;
-        }
-
         // 변경점 annotations 생성
         const changePointAnnotations = {};
         if (currentChangePoints && currentChangePoints.length > 0 && showChangePoints) {
