@@ -2184,7 +2184,7 @@
 
             const ptLimitLabels = ['UCL', 'LCL', 'CL', 'USL', 'LSL', '타겟'];
             const datasets = controlChart.data.datasets
-                .filter(ds => ds.label !== 'CL')
+                .filter(ds => ds.label !== 'CL' && !ds.patternHighlight)
                 .map(ds => {
                     const clone = ptSafeCloneDataset(ds);
                     if (ds.label === 'UCL' && newUCL !== null) {
@@ -2193,9 +2193,9 @@
                         clone.data = Array(ds.data.length).fill(newLCL);
                     }
                     // 선 굵기 및 포인트 스타일 조정
-                    clone.borderWidth      = 1;
-                    clone.pointRadius      = ptLimitLabels.includes(ds.label) ? 0 : 2;
-                    clone.pointHoverRadius = ptLimitLabels.includes(ds.label) ? 0 : 2;
+                    clone.borderWidth      = 2;
+                    clone.pointRadius      = ptLimitLabels.includes(ds.label) ? 0 : 4;
+                    clone.pointHoverRadius = ptLimitLabels.includes(ds.label) ? 0 : 4;
                     clone.pointStyle       = 'circle';
                     // 데이터 선(관리한계선 제외)은 진한 파란색으로 변경
                     if (!ptLimitLabels.includes(ds.label)) {
@@ -2263,9 +2263,9 @@
             const datasets = rChart.data.datasets.map(ds => {
                 const clone = ptSafeCloneDataset(ds);
                 // 선 굵기 및 포인트 스타일 조정
-                clone.borderWidth      = 1;
-                clone.pointRadius      = rLimitLabels.includes(ds.label) ? 0 : 2;
-                clone.pointHoverRadius = rLimitLabels.includes(ds.label) ? 0 : 2;
+                clone.borderWidth      = 2;
+                clone.pointRadius      = 0;
+                clone.pointHoverRadius = 0;
                 clone.pointStyle       = 'circle';
                 // 데이터 선(관리한계선 제외)은 진한 파란색으로 변경
                 if (!rLimitLabels.includes(ds.label)) {
