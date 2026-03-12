@@ -233,7 +233,7 @@
                 author: document.getElementById('author').value
             };
 
-            const result = await api.createPRThicknessMeasurements(data);
+            const result = await api.createParticleMeasurements(data);
 
             showToast(`Particle 데이터가 성공적으로 저장되었습니다. (${result.length}건)`, 'success');
 
@@ -342,7 +342,7 @@
                 </tr>
             `;
 
-            const response = await api.getPRThicknessData({
+            const response = await api.getParticleData({
                 page: page,
                 limit: itemsPerPage,
                 equipment_number: currentEquipmentFilter !== 'all' ? parseInt(currentEquipmentFilter) : null
@@ -479,7 +479,7 @@
     // 통계 데이터 로드
     async function loadStatistics() {
         try {
-            const stats = await api.getPRThicknessStatistics();
+            const stats = await api.getParticleStatistics();
 
             const todayCountEl = document.getElementById('today-count');
             const weekCountEl = document.getElementById('week-count');
@@ -785,7 +785,7 @@
                 params.end_date = customEndDate.toISOString();
             }
 
-            const chartData = await api.getPRThicknessChartData(params);
+            const chartData = await api.getParticleChartData(params);
             return {
                 labels: chartData.labels || [],
                 data: chartData.data || []
@@ -836,7 +836,7 @@
     window.particleDeleteItem = async function(id) {
         if (confirm('정말 삭제하시겠습니까?')) {
             try {
-                await api.deletePRThicknessMeasurement(id);
+                await api.deleteParticleMeasurement(id);
                 showToast('데이터가 삭제되었습니다.', 'success');
 
                 if (api.cache) {
@@ -855,7 +855,7 @@
     // 수정 모달 열기
     async function openEditModal(measurementId) {
         try {
-            const measurement = await api.getPRThicknessMeasurement(measurementId);
+            const measurement = await api.getParticleMeasurement(measurementId);
 
             document.getElementById('edit-measurement-id').value = measurement.id;
             document.getElementById('edit-equipment-name').value = measurement.equipment_name || '';
@@ -961,7 +961,7 @@
                 return;
             }
 
-            await api.updatePRThicknessMeasurement(measurementId, data);
+            await api.updateParticleMeasurement(measurementId, data);
 
             showToast('데이터가 성공적으로 수정되었습니다.', 'success');
 
@@ -994,7 +994,7 @@
     // 장비 설정 관리 함수들
     async function loadEquipmentSettings() {
         try {
-            const equipmentList = await api.getPRThicknessEquipments();
+            const equipmentList = await api.getParticleEquipments();
 
             if (equipmentList && equipmentList.length > 0) {
                 equipmentSettings = {};
@@ -1104,7 +1104,7 @@
                     ])
                 )
             };
-            await api.bulkUpsertPRThicknessEquipments(settingsForServer);
+            await api.bulkUpsertParticleEquipments(settingsForServer);
 
             localStorage.setItem('particleEquipmentSettings', JSON.stringify(equipmentSettings));
 

@@ -29,6 +29,8 @@ const API_CONFIG = {
         BOXPLOT: '/statistics/boxplot',
         // PR Thickness 관련 엔드포인트 추가
         PR_THICKNESS: '/pr-thickness',
+        // Particle 관련 엔드포인트 추가
+        PARTICLE: '/particle',
         // 변경점 관련 엔드포인트 추가
         CHANGE_POINTS: '/change-points',
         // 작성자 관련 엔드포인트 추가

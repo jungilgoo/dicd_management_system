@@ -454,6 +454,63 @@ class API {
     async getPRThicknessStatistics() {
         return this.get(`${this.endpoints.PR_THICKNESS}/statistics`);
     }
+
+    // Particle 관련 메서드
+    // 장비 설정 관련
+    async getParticleEquipments() {
+        return this.get(`${this.endpoints.PARTICLE}/equipments`);
+    }
+
+    async createParticleEquipment(data) {
+        return this.post(`${this.endpoints.PARTICLE}/equipments`, data);
+    }
+
+    async updateParticleEquipment(equipmentId, data) {
+        return this.put(`${this.endpoints.PARTICLE}/equipments/${equipmentId}`, data);
+    }
+
+    async deleteParticleEquipment(equipmentId) {
+        return this.delete(`${this.endpoints.PARTICLE}/equipments/${equipmentId}`);
+    }
+
+    async bulkUpsertParticleEquipments(settings) {
+        return this.post(`${this.endpoints.PARTICLE}/equipments/bulk`, settings);
+    }
+
+    async initializeParticleEquipments() {
+        return this.post(`${this.endpoints.PARTICLE}/initialize`, {});
+    }
+
+    // 측정 데이터 관련
+    async createParticleMeasurements(data) {
+        return this.post(`${this.endpoints.PARTICLE}/measurements`, data);
+    }
+
+    async getParticleData(params = {}) {
+        return this.get(`${this.endpoints.PARTICLE}/measurements`, params);
+    }
+
+    async getParticleMeasurement(measurementId) {
+        return this.get(`${this.endpoints.PARTICLE}/measurements/${measurementId}`);
+    }
+
+    async updateParticleMeasurement(measurementId, data) {
+        return this.put(`${this.endpoints.PARTICLE}/measurements/${measurementId}`, data);
+    }
+
+    async deleteParticleMeasurement(measurementId) {
+        return this.delete(`${this.endpoints.PARTICLE}/measurements/${measurementId}`);
+    }
+
+    // 차트 데이터 관련
+    async getParticleChartData(params = {}) {
+        return this.get(`${this.endpoints.PARTICLE}/chart-data`, params);
+    }
+
+    // 통계 데이터 관련
+    async getParticleStatistics() {
+        return this.get(`${this.endpoints.PARTICLE}/statistics`);
+    }
 }
 
 // API 인스턴스 생성

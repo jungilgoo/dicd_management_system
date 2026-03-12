@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models
-from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness, change_point, author
+from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness, change_point, author, particle
 from ..services.statistics import calculate_basic_statistics
 from datetime import datetime, timedelta
 
@@ -901,6 +901,319 @@ def bulk_create_pr_thickness_measurements(db: Session, bulk_data: pr_thickness.P
         
         return created_measurements
         
+    except Exception as e:
+        db.rollback()
+        raise e
+
+
+# ===== Particle CRUD 함수들 =====
+
+# Particle Equipment CRUD
+def create_particle_equipment(db: Session, equipment: particle.ParticleEquipmentCreate):
+    """Particle 장비 생성"""
+    db_equipment = models.ParticleEquipment(
+        equipment_number=equipment.equipment_number,
+        name=equipment.name,
+        target_thickness=equipment.target_thickness,
+        spec_min=equipment.spec_min,
+        spec_max=equipment.spec_max,
+        wafer_count=equipment.wafer_count
+    )
+    db.add(db_equipment)
+    db.commit()
+    db.refresh(db_equipment)
+    return db_equipment
+
+
+def get_particle_equipments(db: Session):
+    """모든 Particle 장비 조회"""
+    return db.query(models.ParticleEquipment).filter(
+        models.ParticleEquipment.is_active == True
+    ).order_by(models.ParticleEquipment.equipment_number).all()
+
+
+def get_particle_equipment(db: Session, equipment_id: int):
+    """특정 Particle 장비 조회"""
+    return db.query(models.ParticleEquipment).filter(
+        models.ParticleEquipment.id == equipment_id,
+        models.ParticleEquipment.is_active == True
+    ).first()
+
+
+def get_particle_equipment_by_number(db: Session, equipment_number: int):
+    """장비 번호로 Particle 장비 조회"""
+    return db.query(models.ParticleEquipment).filter(
+        models.ParticleEquipment.equipment_number == equipment_number,
+        models.ParticleEquipment.is_active == True
+    ).first()
+
+
+def update_particle_equipment(db: Session, equipment_id: int, equipment: particle.ParticleEquipmentUpdate):
+    """Particle 장비 업데이트"""
+    db_equipment = get_particle_equipment(db, equipment_id)
+    if db_equipment:
+        for field, value in equipment.dict(exclude_unset=True).items():
+            setattr(db_equipment, field, value)
+        db.commit()
+        db.refresh(db_equipment)
+    return db_equipment
+
+
+def delete_particle_equipment(db: Session, equipment_id: int):
+    """Particle 장비 삭제 (소프트 삭제)"""
+    db_equipment = get_particle_equipment(db, equipment_id)
+    if db_equipment:
+        db_equipment.is_active = False
+        db.commit()
+        return True
+    return False
+
+
+def upsert_particle_equipment(db: Session, equipment: particle.ParticleEquipmentCreate):
+    """Particle 장비 생성 또는 업데이트"""
+    existing = get_particle_equipment_by_number(db, equipment.equipment_number)
+    if existing:
+        # 업데이트
+        for field, value in equipment.dict().items():
+            setattr(existing, field, value)
+        db.commit()
+        db.refresh(existing)
+        return existing
+    else:
+        # 새로 생성
+        return create_particle_equipment(db, equipment)
+
+
+# Particle Measurement CRUD
+def create_particle_measurement(db: Session, measurement: particle.ParticleMeasurementCreate):
+    """Particle 측정 데이터 생성"""
+    values = []
+    for value in [measurement.value_top, measurement.value_center, measurement.value_bottom,
+                  measurement.value_left, measurement.value_right]:
+        if value is not None:
+            values.append(value)
+
+    avg_value = None
+    range_value = None
+    if values:
+        avg_value = int(sum(values) / len(values))
+        if len(values) > 1:
+            range_value = max(values) - min(values)
+        else:
+            range_value = 0
+
+    db_measurement = models.ParticleMeasurement(
+        equipment_id=measurement.equipment_id,
+        target_thickness=measurement.target_thickness,
+        value_top=measurement.value_top,
+        value_center=measurement.value_center,
+        value_bottom=measurement.value_bottom,
+        value_left=measurement.value_left,
+        value_right=measurement.value_right,
+        avg_value=avg_value,
+        range_value=range_value,
+        author=measurement.author
+    )
+    db.add(db_measurement)
+    db.commit()
+    db.refresh(db_measurement)
+    return db_measurement
+
+
+def get_particle_measurements(
+    db: Session,
+    equipment_id: int = None,
+    equipment_number: int = None,
+    author: str = None,
+    start_date: datetime = None,
+    end_date: datetime = None,
+    page: int = 1,
+    limit: int = 50
+):
+    """Particle 측정 데이터 조회 (필터링 및 페이지네이션)"""
+    query = db.query(models.ParticleMeasurement).join(models.ParticleEquipment)
+
+    if equipment_id:
+        query = query.filter(models.ParticleMeasurement.equipment_id == equipment_id)
+
+    if equipment_number:
+        query = query.filter(models.ParticleEquipment.equipment_number == equipment_number)
+
+    if author:
+        query = query.filter(models.ParticleMeasurement.author.like(f"%{author}%"))
+
+    if start_date:
+        query = query.filter(models.ParticleMeasurement.created_at >= start_date)
+
+    if end_date:
+        query = query.filter(models.ParticleMeasurement.created_at <= end_date)
+
+    query = query.order_by(models.ParticleMeasurement.created_at.desc())
+
+    total = query.count()
+
+    offset = (page - 1) * limit
+    measurements = query.offset(offset).limit(limit).all()
+
+    return measurements, total
+
+
+def get_particle_measurement(db: Session, measurement_id: int):
+    """특정 Particle 측정 데이터 조회"""
+    return db.query(models.ParticleMeasurement).filter(
+        models.ParticleMeasurement.id == measurement_id
+    ).first()
+
+
+def update_particle_measurement(
+    db: Session,
+    measurement_id: int,
+    measurement: particle.ParticleMeasurementUpdate
+):
+    """Particle 측정 데이터 업데이트"""
+    db_measurement = get_particle_measurement(db, measurement_id)
+    if not db_measurement:
+        return None
+
+    update_data = measurement.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_measurement, key, value)
+
+    values = []
+    for position in ['value_top', 'value_center', 'value_bottom', 'value_left', 'value_right']:
+        value = getattr(db_measurement, position)
+        if value is not None and value > 0:
+            values.append(value)
+
+    if len(values) >= 3:
+        db_measurement.avg_value = int(sum(values) / len(values))
+        db_measurement.range_value = max(values) - min(values)
+    else:
+        db_measurement.avg_value = None
+        db_measurement.range_value = None
+
+    db_measurement.updated_at = datetime.now()
+
+    db.commit()
+    db.refresh(db_measurement)
+    return db_measurement
+
+
+def delete_particle_measurement(db: Session, measurement_id: int):
+    """Particle 측정 데이터 삭제"""
+    db_measurement = get_particle_measurement(db, measurement_id)
+    if db_measurement:
+        db.delete(db_measurement)
+        db.commit()
+        return True
+    return False
+
+
+def get_particle_chart_data(
+    db: Session,
+    equipment_id: int = None,
+    equipment_number: int = None,
+    start_date: datetime = None,
+    end_date: datetime = None
+):
+    """Particle 차트용 데이터 조회"""
+    query = db.query(models.ParticleMeasurement).join(models.ParticleEquipment)
+
+    if equipment_id:
+        query = query.filter(models.ParticleMeasurement.equipment_id == equipment_id)
+
+    if equipment_number:
+        query = query.filter(models.ParticleEquipment.equipment_number == equipment_number)
+
+    if start_date:
+        query = query.filter(models.ParticleMeasurement.created_at >= start_date)
+
+    if end_date:
+        query = query.filter(models.ParticleMeasurement.created_at <= end_date)
+
+    measurements = query.order_by(models.ParticleMeasurement.created_at.asc()).all()
+
+    return measurements
+
+
+def get_particle_statistics(db: Session):
+    """Particle 통계 데이터 조회"""
+    now = datetime.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=now.weekday())
+
+    today_count = db.query(models.ParticleMeasurement).filter(
+        models.ParticleMeasurement.created_at >= today_start
+    ).count()
+
+    week_count = db.query(models.ParticleMeasurement).filter(
+        models.ParticleMeasurement.created_at >= week_start
+    ).count()
+
+    month_ago = now - timedelta(days=30)
+    recent_measurements = db.query(models.ParticleMeasurement).filter(
+        models.ParticleMeasurement.created_at >= month_ago,
+        models.ParticleMeasurement.avg_value.isnot(None)
+    ).all()
+
+    avg_thickness = 0.0
+    avg_uniformity = 0.0
+
+    if recent_measurements:
+        avg_thickness = sum(m.avg_value for m in recent_measurements) / len(recent_measurements) / 1000.0
+
+        uniformities = []
+        for m in recent_measurements:
+            if m.avg_value and m.range_value is not None:
+                uniformity = max(0, 100 - (m.range_value / m.avg_value * 10))
+                uniformities.append(uniformity)
+
+        if uniformities:
+            avg_uniformity = sum(uniformities) / len(uniformities)
+
+    return {
+        "today_count": today_count,
+        "week_count": week_count,
+        "avg_thickness": round(avg_thickness, 2),
+        "avg_uniformity": round(avg_uniformity, 1)
+    }
+
+
+def bulk_create_particle_measurements(db: Session, bulk_data: particle.ParticleBulkCreate):
+    """Particle 측정 데이터 일괄 생성"""
+    created_measurements = []
+
+    try:
+        for equipment_data in bulk_data.equipment_data:
+            equipment = get_particle_equipment(db, equipment_data.equipment_id)
+            if not equipment:
+                continue
+
+            for measurements in equipment_data.measurements:
+                has_any_measurement = any([
+                    measurements.top, measurements.center, measurements.bottom,
+                    measurements.left, measurements.right
+                ])
+
+                if not has_any_measurement:
+                    continue
+
+                measurement_create = particle.ParticleMeasurementCreate(
+                    equipment_id=equipment_data.equipment_id,
+                    target_thickness=equipment_data.target_thickness,
+                    value_top=measurements.top,
+                    value_center=measurements.center,
+                    value_bottom=measurements.bottom,
+                    value_left=measurements.left,
+                    value_right=measurements.right,
+                    author=bulk_data.author
+                )
+
+                measurement = create_particle_measurement(db, measurement_create)
+                created_measurements.append(measurement)
+
+        return created_measurements
+
     except Exception as e:
         db.rollback()
         raise e

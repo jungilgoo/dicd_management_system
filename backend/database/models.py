@@ -238,6 +238,54 @@ class PRThicknessMeasurement(Base):
     equipment = relationship("PRThicknessEquipment", back_populates="measurements")
 
 
+# ===== Particle 전용 모델들 =====
+
+# Particle 장비 설정 테이블
+class ParticleEquipment(Base):
+    __tablename__ = "particle_equipments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    equipment_number = Column(Integer, unique=True, nullable=False, index=True)  # 1-10
+    name = Column(String(100), nullable=False)  # "장비1", "장비2" 등
+    target_thickness = Column(Integer, nullable=False)  # 목표 두께 (Å)
+    spec_min = Column(Integer, nullable=False)  # SPEC 최소값 (Å)
+    spec_max = Column(Integer, nullable=False)  # SPEC 최대값 (Å)
+    wafer_count = Column(Integer, nullable=False, default=1)  # 측정할 웨이퍼 수 (1-10)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # 관계 설정
+    particle_measurements = relationship("ParticleMeasurement", back_populates="equipment", cascade="all, delete-orphan")
+
+
+# Particle 측정 데이터 테이블
+class ParticleMeasurement(Base):
+    __tablename__ = "particle_measurements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    equipment_id = Column(Integer, ForeignKey("particle_equipments.id"), nullable=False)
+    target_thickness = Column(Integer, nullable=False)  # 목표 두께 (Å)
+
+    # 5개 위치별 측정값 (Å)
+    value_top = Column(Integer, nullable=True)
+    value_center = Column(Integer, nullable=True)
+    value_bottom = Column(Integer, nullable=True)
+    value_left = Column(Integer, nullable=True)
+    value_right = Column(Integer, nullable=True)
+
+    # 자동 계산된 값들
+    avg_value = Column(Integer, nullable=True)  # 평균값
+    range_value = Column(Integer, nullable=True)  # 범위 (최대값 - 최소값)
+
+    author = Column(String(100), nullable=False)  # 작성자
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # 관계 설정
+    equipment = relationship("ParticleEquipment", back_populates="particle_measurements")
+
+
 # 작성자 테이블
 class Author(Base):
     __tablename__ = "authors"
