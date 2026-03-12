@@ -97,6 +97,12 @@ window.TabManager = (function() {
             getUrl: () => 'pages/pr_thickness.html',  // PR Thickness는 PHOTO 전용
             closable: true
         },
+        'particle': {
+            title: 'Particle 관리',
+            icon: 'fas fa-dot-circle',
+            getUrl: () => 'pages/particle.html',  // Particle은 PHOTO 전용
+            closable: true
+        },
         'change_points': {
             title: '변경점 관리',
             icon: 'fas fa-exchange-alt',
@@ -205,6 +211,12 @@ window.TabManager = (function() {
         $('a[href="pages/pr_thickness.html"]').on('click', function(e) {
             e.preventDefault();
             openTab('pr_thickness');
+        });
+
+        // Particle 관리 (PHOTO 전용)
+        $('a[href="pages/particle.html"]').on('click', function(e) {
+            e.preventDefault();
+            openTab('particle');
         });
 
         // 변경점 관리
