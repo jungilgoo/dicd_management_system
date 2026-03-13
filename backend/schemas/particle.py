@@ -161,6 +161,9 @@ class ParticleChartData(BaseModel):
     """차트 데이터"""
     labels: List[str]
     data: List[Optional[int]]
+    data_y: List[Optional[int]]
+    data_o: List[Optional[int]]
+    data_b: List[Optional[int]]
     spec_max_line: List[int]
     equipment_name: str
 

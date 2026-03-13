@@ -266,6 +266,9 @@ def get_chart_data(
 
         labels = []
         data = []
+        data_y = []
+        data_o = []
+        data_b = []
         spec_max_line = []
 
         measurements_sorted = sorted(measurements, key=lambda x: x.created_at)
@@ -275,11 +278,17 @@ def get_chart_data(
                 date_label = m.created_at.strftime("%m/%d")
                 labels.append(date_label)
                 data.append(int(m.value))
+                data_y.append(int(m.final_y) if m.final_y is not None else 0)
+                data_o.append(int(m.final_o) if m.final_o is not None else 0)
+                data_b.append(int(m.final_b) if m.final_b is not None else 0)
                 spec_max_line.append(equipment.spec_max)
 
         return particle.ParticleChartData(
             labels=labels,
             data=data,
+            data_y=data_y,
+            data_o=data_o,
+            data_b=data_b,
             spec_max_line=spec_max_line,
             equipment_name=equipment.name
         )

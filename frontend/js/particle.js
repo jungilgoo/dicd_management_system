@@ -437,8 +437,10 @@
                 const specMax = equipmentSetting ? equipmentSetting.specMax : 20;
 
                 particleChart.data.labels = chartData.labels;
-                particleChart.data.datasets[0].data = chartData.data;
-                particleChart.data.datasets[1].data = Array(chartData.labels.length).fill(specMax);
+                particleChart.data.datasets[0].data = chartData.data_y;
+                particleChart.data.datasets[1].data = chartData.data_o;
+                particleChart.data.datasets[2].data = chartData.data_b;
+                particleChart.data.datasets[3].data = Array(chartData.labels.length).fill(specMax);
 
                 const margin = Math.max(1, Math.round(specMax * 0.1));
                 particleChart.options.scales.y.min = 0;
@@ -500,30 +502,41 @@
             const margin = Math.max(1, Math.round(specMax * 0.1));
 
             particleChart = new Chart(ctx, {
-                type: 'line',
+                type: 'bar',
                 data: {
                     labels: chartData.labels,
                     datasets: [{
-                        label: 'Particle (개)',
-                        data: chartData.data,
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'transparent',
-                        tension: 0.1,
-                        fill: false,
-                        pointBackgroundColor: 'rgb(75, 192, 192)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        borderWidth: 2
+                        label: 'Y (0.3~1.0㎛)',
+                        data: chartData.data_y,
+                        backgroundColor: 'rgba(255, 220, 0, 0.85)',
+                        borderColor: 'rgba(255, 200, 0, 1)',
+                        borderWidth: 1,
+                        stack: 'particle'
+                    }, {
+                        label: 'O (1.0~2.5㎛)',
+                        data: chartData.data_o,
+                        backgroundColor: 'rgba(255, 140, 0, 0.85)',
+                        borderColor: 'rgba(230, 110, 0, 1)',
+                        borderWidth: 1,
+                        stack: 'particle'
+                    }, {
+                        label: 'B (2.5~5.1㎛)',
+                        data: chartData.data_b,
+                        backgroundColor: 'rgba(54, 130, 220, 0.85)',
+                        borderColor: 'rgba(30, 100, 200, 1)',
+                        borderWidth: 1,
+                        stack: 'particle'
                     }, {
                         label: 'SPEC 최대값',
                         data: Array(chartData.labels.length).fill(specMax),
+                        type: 'line',
                         borderColor: 'rgb(220, 53, 69)',
                         backgroundColor: 'transparent',
                         borderDash: [5, 5],
                         fill: false,
                         pointRadius: 0,
-                        borderWidth: 1
+                        borderWidth: 2,
+                        order: -1
                     }]
                 },
                 options: {
@@ -534,12 +547,14 @@
                             beginAtZero: true,
                             min: 0,
                             max: specMax + margin,
+                            stacked: true,
                             title: {
                                 display: true,
                                 text: '파티클 개수 (개)'
                             }
                         },
                         x: {
+                            stacked: true,
                             title: {
                                 display: true,
                                 text: '측정 시간'
@@ -587,11 +602,14 @@
             const chartData = await api.getParticleChartData(params);
             return {
                 labels: chartData.labels || [],
-                data: chartData.data || []
+                data: chartData.data || [],
+                data_y: chartData.data_y || [],
+                data_o: chartData.data_o || [],
+                data_b: chartData.data_b || []
             };
         } catch (error) {
             console.error('차트 데이터 로드 실패:', error);
-            return { labels: [], data: [] };
+            return { labels: [], data: [], data_y: [], data_o: [], data_b: [] };
         }
     }
 
