@@ -151,14 +151,16 @@ def get_measurements(
                 id=m.id,
                 equipment_id=m.equipment_id,
                 equipment_name=m.equipment.name,
-                target_thickness=m.target_thickness,
-                top=m.value_top,
-                center=m.value_center,
-                bottom=m.value_bottom,
-                left=m.value_left,
-                right=m.value_right,
-                avg_value=m.avg_value,
-                range_value=m.range_value,
+                before_y=m.before_y,
+                before_o=m.before_o,
+                before_b=m.before_b,
+                after_y=m.after_y,
+                after_o=m.after_o,
+                after_b=m.after_b,
+                final_y=m.final_y,
+                final_o=m.final_o,
+                final_b=m.final_b,
+                value=m.value,
                 author=m.author,
                 created_at=m.created_at
             ))
@@ -264,30 +266,26 @@ def get_chart_data(
 
         labels = []
         data = []
-        target_line = []
-        spec_min_line = []
         spec_max_line = []
 
         measurements_sorted = sorted(measurements, key=lambda x: x.created_at)
 
         for m in measurements_sorted:
-            if m.avg_value is not None:
+            if m.value is not None:
                 date_label = m.created_at.strftime("%m/%d")
                 labels.append(date_label)
-                data.append(int(m.avg_value))
-                target_line.append(equipment.target_thickness)
-                spec_min_line.append(equipment.spec_min)
+                data.append(int(m.value))
                 spec_max_line.append(equipment.spec_max)
 
         return particle.ParticleChartData(
             labels=labels,
             data=data,
-            target_line=target_line,
-            spec_min_line=spec_min_line,
             spec_max_line=spec_max_line,
             equipment_name=equipment.name
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"차트 데이터 조회 실패: {str(e)}")
 
@@ -315,9 +313,9 @@ def initialize_equipments(db: Session = Depends(database.get_db)):
             return existing_equipments
 
         default_equipments = [
-            {"equipment_number": 1, "name": "장비1", "target": 25000, "spec_min": 24000, "spec_max": 26000},
-            {"equipment_number": 2, "name": "장비2", "target": 24500, "spec_min": 23500, "spec_max": 25500},
-            {"equipment_number": 3, "name": "장비3", "target": 25500, "spec_min": 24500, "spec_max": 26500},
+            {"equipment_number": 1, "name": "장비1", "spec_max": 20},
+            {"equipment_number": 2, "name": "장비2", "spec_max": 20},
+            {"equipment_number": 3, "name": "장비3", "spec_max": 20},
         ]
 
         results = []
@@ -325,8 +323,6 @@ def initialize_equipments(db: Session = Depends(database.get_db)):
             equipment_create = particle.ParticleEquipmentCreate(
                 equipment_number=equipment_data["equipment_number"],
                 name=equipment_data["name"],
-                target_thickness=equipment_data["target"],
-                spec_min=equipment_data["spec_min"],
                 spec_max=equipment_data["spec_max"]
             )
             equipment = crud.upsert_particle_equipment(db, equipment_create)

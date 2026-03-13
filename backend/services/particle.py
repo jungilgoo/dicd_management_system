@@ -17,51 +17,23 @@ class ParticleService:
 
     def validate_measurement_data(self, measurement_data: particle.ParticleMeasurementCreate) -> bool:
         """측정 데이터 유효성 검증"""
-        equipment = crud.get_particle_equipment(self.db, measurement_data.equipment_id)
+        equipment = crud.get_particle_equipment_by_number(self.db, measurement_data.equipment_id)
         if not equipment:
-            raise ValueError(f"장비 ID {measurement_data.equipment_id}를 찾을 수 없습니다")
+            raise ValueError(f"장비 번호 {measurement_data.equipment_id}를 찾을 수 없습니다")
 
-        measurement_values = [
-            measurement_data.value_top,
-            measurement_data.value_center,
-            measurement_data.value_bottom,
-            measurement_data.value_left,
-            measurement_data.value_right
-        ]
-
-        if not any(value is not None for value in measurement_values):
-            raise ValueError("최소 하나의 측정값은 입력되어야 합니다")
+        has_data = any([
+            measurement_data.before_y, measurement_data.before_o, measurement_data.before_b,
+            measurement_data.after_y, measurement_data.after_o, measurement_data.after_b
+        ])
+        if not has_data:
+            raise ValueError("코팅 전/후 측정값을 최소 하나 이상 입력해야 합니다")
 
         return True
 
-    def calculate_measurement_stats(self, values: List[Optional[int]]) -> Dict[str, Optional[int]]:
-        """측정값들로부터 통계값 계산"""
-        valid_values = [v for v in values if v is not None]
-
-        if not valid_values:
-            return {"avg_value": None, "range_value": None, "min_value": None, "max_value": None}
-
-        min_value = min(valid_values)
-        max_value = max(valid_values)
-        avg_value = int(sum(valid_values) / len(valid_values))
-        range_value = max_value - min_value if len(valid_values) > 1 else 0
-
-        return {
-            "avg_value": avg_value,
-            "range_value": range_value,
-            "min_value": min_value,
-            "max_value": max_value
-        }
-
     def validate_equipment_settings(self, equipment_data: particle.ParticleEquipmentCreate) -> bool:
         """장비 설정 유효성 검증"""
-        if equipment_data.spec_min >= equipment_data.spec_max:
-            raise ValueError(f"SPEC 최소값({equipment_data.spec_min})은 최대값({equipment_data.spec_max})보다 작아야 합니다")
-
-        if not (equipment_data.spec_min <= equipment_data.target_thickness <= equipment_data.spec_max):
-            raise ValueError(
-                f"목표 두께({equipment_data.target_thickness})는 SPEC 범위({equipment_data.spec_min}-{equipment_data.spec_max}) 내에 있어야 합니다"
-            )
+        if equipment_data.spec_max <= 0:
+            raise ValueError(f"SPEC 최대값({equipment_data.spec_max})은 0보다 커야 합니다")
 
         return True
 
@@ -93,17 +65,14 @@ class ParticleService:
             }
 
         equipment_stats = {}
-        all_measurements = []
+        all_values = []
 
         for measurement in measurements:
             equipment_name = measurement.equipment.name
             if equipment_name not in equipment_stats:
                 equipment_stats[equipment_name] = {
                     "count": 0,
-                    "avg_values": [],
-                    "range_values": [],
-                    "target": measurement.equipment.target_thickness,
-                    "spec_min": measurement.equipment.spec_min,
+                    "values": [],
                     "spec_max": measurement.equipment.spec_max,
                     "out_of_spec_count": 0
                 }
@@ -111,37 +80,31 @@ class ParticleService:
             stats = equipment_stats[equipment_name]
             stats["count"] += 1
 
-            if measurement.avg_value is not None:
-                stats["avg_values"].append(measurement.avg_value)
-                all_measurements.append(measurement.avg_value)
+            if measurement.value is not None:
+                stats["values"].append(measurement.value)
+                all_values.append(measurement.value)
 
-                if not (stats["spec_min"] <= measurement.avg_value <= stats["spec_max"]):
+                if measurement.value > stats["spec_max"]:
                     stats["out_of_spec_count"] += 1
-
-            if measurement.range_value is not None:
-                stats["range_values"].append(measurement.range_value)
 
         equipment_summary = {}
         for equipment_name, stats in equipment_stats.items():
-            avg_values = stats["avg_values"]
-            range_values = stats["range_values"]
+            values = stats["values"]
 
             equipment_summary[equipment_name] = {
                 "총 측정 횟수": stats["count"],
-                "평균 두께": round(sum(avg_values) / len(avg_values)) if avg_values else 0,
-                "평균 범위": round(sum(range_values) / len(range_values)) if range_values else 0,
+                "평균 파티클 개수": round(sum(values) / len(values)) if values else 0,
                 "SPEC 위반 횟수": stats["out_of_spec_count"],
                 "SPEC 준수율": round((stats["count"] - stats["out_of_spec_count"]) / stats["count"] * 100, 1) if stats["count"] > 0 else 0,
-                "목표값": stats["target"],
-                "SPEC 범위": f"{stats['spec_min']} ~ {stats['spec_max']}"
+                "SPEC 최대값": stats["spec_max"]
             }
 
         quality_metrics = {}
-        if all_measurements:
+        if all_values:
             quality_metrics = {
-                "전체 평균 두께": round(sum(all_measurements) / len(all_measurements)),
-                "전체 표준편차": round(self._calculate_std_dev(all_measurements)),
-                "측정값 분포": self._calculate_distribution(all_measurements),
+                "전체 평균 파티클 개수": round(sum(all_values) / len(all_values)),
+                "전체 표준편차": round(self._calculate_std_dev(all_values)),
+                "측정값 분포": self._calculate_distribution(all_values),
                 "품질 트렌드": self._analyze_quality_trend(measurements)
             }
 
@@ -192,14 +155,18 @@ class ParticleService:
 
     def _analyze_quality_trend(self, measurements: List[models.ParticleMeasurement]) -> str:
         """품질 트렌드 분석"""
-        if len(measurements) < 5:
+        valid = [m for m in measurements if m.value is not None]
+        if len(valid) < 5:
             return "데이터 부족"
 
-        recent_measurements = measurements[-5:]
-        previous_measurements = measurements[-10:-5] if len(measurements) >= 10 else measurements[:-5]
+        recent = valid[-5:]
+        previous = valid[-10:-5] if len(valid) >= 10 else valid[:-5]
 
-        recent_avg = sum(m.avg_value for m in recent_measurements if m.avg_value) / len([m for m in recent_measurements if m.avg_value])
-        previous_avg = sum(m.avg_value for m in previous_measurements if m.avg_value) / len([m for m in previous_measurements if m.avg_value])
+        if not previous:
+            return "데이터 부족"
+
+        recent_avg = sum(m.value for m in recent) / len(recent)
+        previous_avg = sum(m.value for m in previous) / len(previous)
 
         if recent_avg > previous_avg * 1.02:
             return "상승 추세"
@@ -212,24 +179,14 @@ class ParticleService:
         """알림 조건 확인"""
         alerts = []
 
-        if not measurement.avg_value or not measurement.equipment:
+        if measurement.value is None or not measurement.equipment:
             return alerts
 
         equipment = measurement.equipment
-        avg_value = measurement.avg_value
+        value = measurement.value
 
-        if avg_value < equipment.spec_min:
-            alerts.append(f"SPEC 하한 위반: {avg_value} < {equipment.spec_min}")
-        elif avg_value > equipment.spec_max:
-            alerts.append(f"SPEC 상한 위반: {avg_value} > {equipment.spec_max}")
-
-        target = equipment.target_thickness
-        deviation_percent = abs(avg_value - target) / target * 100
-        if deviation_percent > 5:
-            alerts.append(f"목표값 편차 큼: {deviation_percent:.1f}% (±5% 초과)")
-
-        if measurement.range_value and measurement.range_value > target * 0.1:
-            alerts.append(f"측정값 범위 큼: {measurement.range_value} (목표값의 10% 초과)")
+        if value > equipment.spec_max:
+            alerts.append(f"SPEC 초과: {value} > {equipment.spec_max}")
 
         return alerts
 

@@ -50,17 +50,18 @@ def recreate_particle_tables():
         logger.info("✓ Particle 테이블 재생성 완료 (새 스키마 적용)")
 
         # 5. 생성된 컬럼 확인
-        verify_query = text("""
-            SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
-            FROM INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'particle_equipments'
-            ORDER BY ORDINAL_POSITION
-        """)
-        columns = db.execute(verify_query).fetchall()
-        logger.info("\nparticle_equipments 테이블 컬럼:")
-        for col in columns:
-            logger.info(f"  - {col[0]}: {col[1]} (NULL: {col[1]}, DEFAULT: {col[3]})")
+        for table_name in ['particle_equipments', 'particle_measurements']:  # spec_max만 남긴 단순 스키마
+            verify_query = text(f"""
+                SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = '{table_name}'
+                ORDER BY ORDINAL_POSITION
+            """)
+            columns = db.execute(verify_query).fetchall()
+            logger.info(f"\n{table_name} 테이블 컬럼:")
+            for col in columns:
+                logger.info(f"  - {col[0]}: {col[1]} (NULL: {col[2]}, DEFAULT: {col[3]})")
 
         logger.info("\n✅ Particle 테이블 재생성 완료!")
 

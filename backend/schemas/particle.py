@@ -8,23 +8,7 @@ from datetime import datetime
 class ParticleEquipmentBase(BaseModel):
     equipment_number: int = Field(..., ge=1, description="장비 번호")
     name: str = Field(..., min_length=1, max_length=100, description="장비명")
-    target_thickness: int = Field(..., ge=1, le=99999, description="목표 두께 (Å)")
-    spec_min: int = Field(..., ge=1, le=99999, description="SPEC 최소값 (Å)")
-    spec_max: int = Field(..., ge=1, le=99999, description="SPEC 최대값 (Å)")
-    wafer_count: int = Field(1, ge=1, le=10, description="측정할 웨이퍼 수 (1-10)")
-
-    @validator('spec_max')
-    def validate_spec_range(cls, v, values):
-        if 'spec_min' in values and v <= values['spec_min']:
-            raise ValueError('SPEC 최대값은 최소값보다 커야 합니다')
-        return v
-
-    @validator('target_thickness')
-    def validate_target_in_spec(cls, v, values):
-        if 'spec_min' in values and 'spec_max' in values:
-            if not (values['spec_min'] <= v <= values['spec_max']):
-                raise ValueError('목표 두께는 SPEC 범위 내에 있어야 합니다')
-        return v
+    spec_max: int = Field(..., ge=1, le=99999, description="SPEC 최대값 (개) - 최대 허용 파티클 개수")
 
 
 class ParticleEquipmentCreate(ParticleEquipmentBase):
@@ -33,10 +17,7 @@ class ParticleEquipmentCreate(ParticleEquipmentBase):
 
 class ParticleEquipmentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    target_thickness: Optional[int] = Field(None, ge=1, le=99999)
-    spec_min: Optional[int] = Field(None, ge=1, le=99999)
     spec_max: Optional[int] = Field(None, ge=1, le=99999)
-    wafer_count: Optional[int] = Field(None, ge=1, le=10)
 
 
 class ParticleEquipment(ParticleEquipmentBase):
@@ -51,30 +32,25 @@ class ParticleEquipment(ParticleEquipmentBase):
 
 # ===== Particle Measurement 스키마 =====
 
-class ParticleMeasurementValues(BaseModel):
-    """5개 위치의 측정값"""
-    top: Optional[int] = Field(None, ge=1, le=99999, description="상단 측정값 (Å)")
-    center: Optional[int] = Field(None, ge=1, le=99999, description="중앙 측정값 (Å)")
-    bottom: Optional[int] = Field(None, ge=1, le=99999, description="하단 측정값 (Å)")
-    left: Optional[int] = Field(None, ge=1, le=99999, description="좌측 측정값 (Å)")
-    right: Optional[int] = Field(None, ge=1, le=99999, description="우측 측정값 (Å)")
-
-    @validator('*', pre=True)
-    def empty_string_to_none(cls, v):
-        if v == '' or v is None:
-            return None
-        return v
+def _none_if_empty(v):
+    if v == '' or v is None:
+        return None
+    return v
 
 
 class ParticleMeasurementBase(BaseModel):
     equipment_id: int = Field(..., description="장비 ID")
-    target_thickness: int = Field(..., ge=1, le=99999, description="목표 두께 (Å)")
-    value_top: Optional[int] = Field(None, ge=1, le=99999)
-    value_center: Optional[int] = Field(None, ge=1, le=99999)
-    value_bottom: Optional[int] = Field(None, ge=1, le=99999)
-    value_left: Optional[int] = Field(None, ge=1, le=99999)
-    value_right: Optional[int] = Field(None, ge=1, le=99999)
+    before_y: Optional[int] = Field(None, ge=0, le=99999, description="코팅 전 Yellow (0.3~1.0㎛)")
+    before_o: Optional[int] = Field(None, ge=0, le=99999, description="코팅 전 Orange (1.0~2.5㎛)")
+    before_b: Optional[int] = Field(None, ge=0, le=99999, description="코팅 전 Blue (2.5~5.1㎛)")
+    after_y: Optional[int] = Field(None, ge=0, le=99999, description="코팅 후 Yellow")
+    after_o: Optional[int] = Field(None, ge=0, le=99999, description="코팅 후 Orange")
+    after_b: Optional[int] = Field(None, ge=0, le=99999, description="코팅 후 Blue")
     author: str = Field(..., min_length=1, max_length=100, description="작성자")
+
+    @validator('before_y', 'before_o', 'before_b', 'after_y', 'after_o', 'after_b', pre=True)
+    def empty_string_to_none(cls, v):
+        return _none_if_empty(v)
 
 
 class ParticleMeasurementCreate(ParticleMeasurementBase):
@@ -82,19 +58,25 @@ class ParticleMeasurementCreate(ParticleMeasurementBase):
 
 
 class ParticleMeasurementUpdate(BaseModel):
-    target_thickness: Optional[int] = Field(None, ge=1, le=99999)
-    value_top: Optional[int] = Field(None, ge=1, le=99999)
-    value_center: Optional[int] = Field(None, ge=1, le=99999)
-    value_bottom: Optional[int] = Field(None, ge=1, le=99999)
-    value_left: Optional[int] = Field(None, ge=1, le=99999)
-    value_right: Optional[int] = Field(None, ge=1, le=99999)
+    before_y: Optional[int] = Field(None, ge=0, le=99999)
+    before_o: Optional[int] = Field(None, ge=0, le=99999)
+    before_b: Optional[int] = Field(None, ge=0, le=99999)
+    after_y: Optional[int] = Field(None, ge=0, le=99999)
+    after_o: Optional[int] = Field(None, ge=0, le=99999)
+    after_b: Optional[int] = Field(None, ge=0, le=99999)
     author: Optional[str] = Field(None, min_length=1, max_length=100)
+
+    @validator('before_y', 'before_o', 'before_b', 'after_y', 'after_o', 'after_b', pre=True)
+    def empty_string_to_none(cls, v):
+        return _none_if_empty(v)
 
 
 class ParticleMeasurement(ParticleMeasurementBase):
     id: int
-    avg_value: Optional[int]
-    range_value: Optional[int]
+    final_y: Optional[int] = None
+    final_o: Optional[int] = None
+    final_b: Optional[int] = None
+    value: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime]
     equipment: Optional[ParticleEquipment] = None
@@ -107,10 +89,18 @@ class ParticleMeasurement(ParticleMeasurementBase):
 
 class ParticleEquipmentMeasurementData(BaseModel):
     """장비별 측정 데이터"""
-    equipment_id: int = Field(..., description="장비 번호 (1-10, 실제로는 equipment_number)")
+    equipment_id: int = Field(..., description="장비 번호 (실제로는 equipment_number)")
     equipment_name: str = Field(..., description="장비명")
-    target_thickness: int = Field(..., ge=1, le=99999, description="목표 두께 (Å)")
-    measurements: List[ParticleMeasurementValues] = Field(..., description="웨이퍼별 측정값들")
+    before_y: Optional[int] = Field(None, ge=0, le=99999, description="코팅 전 Yellow")
+    before_o: Optional[int] = Field(None, ge=0, le=99999, description="코팅 전 Orange")
+    before_b: Optional[int] = Field(None, ge=0, le=99999, description="코팅 전 Blue")
+    after_y: Optional[int] = Field(None, ge=0, le=99999, description="코팅 후 Yellow")
+    after_o: Optional[int] = Field(None, ge=0, le=99999, description="코팅 후 Orange")
+    after_b: Optional[int] = Field(None, ge=0, le=99999, description="코팅 후 Blue")
+
+    @validator('before_y', 'before_o', 'before_b', 'after_y', 'after_o', 'after_b', pre=True)
+    def empty_string_to_none(cls, v):
+        return _none_if_empty(v)
 
 
 class ParticleBulkCreate(BaseModel):
@@ -132,14 +122,16 @@ class ParticleMeasurementWithEquipment(BaseModel):
     id: int
     equipment_id: int
     equipment_name: str
-    target_thickness: int
-    top: Optional[int] = None
-    center: Optional[int] = None
-    bottom: Optional[int] = None
-    left: Optional[int] = None
-    right: Optional[int] = None
-    avg_value: Optional[int]
-    range_value: Optional[int]
+    before_y: Optional[int] = None
+    before_o: Optional[int] = None
+    before_b: Optional[int] = None
+    after_y: Optional[int] = None
+    after_o: Optional[int] = None
+    after_b: Optional[int] = None
+    final_y: Optional[int] = None
+    final_o: Optional[int] = None
+    final_b: Optional[int] = None
+    value: Optional[int] = None
     author: str
     created_at: datetime
 
@@ -162,8 +154,6 @@ class ParticleChartDataPoint(BaseModel):
     """차트 데이터 포인트"""
     date: str
     value: Optional[int]
-    target: int
-    spec_min: int
     spec_max: int
 
 
@@ -171,8 +161,6 @@ class ParticleChartData(BaseModel):
     """차트 데이터"""
     labels: List[str]
     data: List[Optional[int]]
-    target_line: List[int]
-    spec_min_line: List[int]
     spec_max_line: List[int]
     equipment_name: str
 
@@ -183,8 +171,7 @@ class ParticleStatistics(BaseModel):
     """Particle 통계 데이터"""
     today_count: int = Field(0, description="오늘 측정 건수")
     week_count: int = Field(0, description="이번 주 측정 건수")
-    avg_thickness: float = Field(0.0, description="평균 두께")
-    avg_uniformity: float = Field(0.0, description="평균 균일도")
+    avg_particle_count: float = Field(0.0, description="평균 파티클 개수")
 
 
 # ===== 필터 스키마 =====

@@ -914,10 +914,7 @@ def create_particle_equipment(db: Session, equipment: particle.ParticleEquipment
     db_equipment = models.ParticleEquipment(
         equipment_number=equipment.equipment_number,
         name=equipment.name,
-        target_thickness=equipment.target_thickness,
-        spec_min=equipment.spec_min,
-        spec_max=equipment.spec_max,
-        wafer_count=equipment.wafer_count
+        spec_max=equipment.spec_max
     )
     db.add(db_equipment)
     db.commit()
@@ -979,39 +976,53 @@ def upsert_particle_equipment(db: Session, equipment: particle.ParticleEquipment
         db.commit()
         db.refresh(existing)
         return existing
-    else:
-        # 새로 생성
-        return create_particle_equipment(db, equipment)
+
+    # 소프트 삭제된 장비 번호 확인 (unique constraint 충돌 방지)
+    deleted = db.query(models.ParticleEquipment).filter(
+        models.ParticleEquipment.equipment_number == equipment.equipment_number,
+        models.ParticleEquipment.is_active == False
+    ).first()
+    if deleted:
+        # 재활성화 및 업데이트
+        for field, value in equipment.dict().items():
+            setattr(deleted, field, value)
+        deleted.is_active = True
+        db.commit()
+        db.refresh(deleted)
+        return deleted
+
+    # 새로 생성
+    return create_particle_equipment(db, equipment)
 
 
 # Particle Measurement CRUD
+def _calc_particle_finals(before_y, before_o, before_b, after_y, after_o, after_b):
+    """최종값(코팅 후 - 코팅 전) 및 합계 계산"""
+    final_y = (after_y or 0) - (before_y or 0)
+    final_o = (after_o or 0) - (before_o or 0)
+    final_b = (after_b or 0) - (before_b or 0)
+    value = final_y + final_o + final_b
+    return final_y, final_o, final_b, value
+
+
 def create_particle_measurement(db: Session, measurement: particle.ParticleMeasurementCreate):
     """Particle 측정 데이터 생성"""
-    values = []
-    for value in [measurement.value_top, measurement.value_center, measurement.value_bottom,
-                  measurement.value_left, measurement.value_right]:
-        if value is not None:
-            values.append(value)
-
-    avg_value = None
-    range_value = None
-    if values:
-        avg_value = int(sum(values) / len(values))
-        if len(values) > 1:
-            range_value = max(values) - min(values)
-        else:
-            range_value = 0
-
+    final_y, final_o, final_b, value = _calc_particle_finals(
+        measurement.before_y, measurement.before_o, measurement.before_b,
+        measurement.after_y, measurement.after_o, measurement.after_b
+    )
     db_measurement = models.ParticleMeasurement(
         equipment_id=measurement.equipment_id,
-        target_thickness=measurement.target_thickness,
-        value_top=measurement.value_top,
-        value_center=measurement.value_center,
-        value_bottom=measurement.value_bottom,
-        value_left=measurement.value_left,
-        value_right=measurement.value_right,
-        avg_value=avg_value,
-        range_value=range_value,
+        before_y=measurement.before_y,
+        before_o=measurement.before_o,
+        before_b=measurement.before_b,
+        after_y=measurement.after_y,
+        after_o=measurement.after_o,
+        after_b=measurement.after_b,
+        final_y=final_y,
+        final_o=final_o,
+        final_b=final_b,
+        value=value,
         author=measurement.author
     )
     db.add(db_measurement)
@@ -1076,22 +1087,18 @@ def update_particle_measurement(
         return None
 
     update_data = measurement.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_measurement, key, value)
+    for key, val in update_data.items():
+        setattr(db_measurement, key, val)
 
-    values = []
-    for position in ['value_top', 'value_center', 'value_bottom', 'value_left', 'value_right']:
-        value = getattr(db_measurement, position)
-        if value is not None and value > 0:
-            values.append(value)
-
-    if len(values) >= 3:
-        db_measurement.avg_value = int(sum(values) / len(values))
-        db_measurement.range_value = max(values) - min(values)
-    else:
-        db_measurement.avg_value = None
-        db_measurement.range_value = None
-
+    # before/after가 변경된 경우 final/value 재계산
+    final_y, final_o, final_b, value = _calc_particle_finals(
+        db_measurement.before_y, db_measurement.before_o, db_measurement.before_b,
+        db_measurement.after_y, db_measurement.after_o, db_measurement.after_b
+    )
+    db_measurement.final_y = final_y
+    db_measurement.final_o = final_o
+    db_measurement.final_b = final_b
+    db_measurement.value = value
     db_measurement.updated_at = datetime.now()
 
     db.commit()
@@ -1153,29 +1160,18 @@ def get_particle_statistics(db: Session):
     month_ago = now - timedelta(days=30)
     recent_measurements = db.query(models.ParticleMeasurement).filter(
         models.ParticleMeasurement.created_at >= month_ago,
-        models.ParticleMeasurement.avg_value.isnot(None)
+        models.ParticleMeasurement.value.isnot(None)
     ).all()
 
-    avg_thickness = 0.0
-    avg_uniformity = 0.0
+    avg_particle_count = 0.0
 
     if recent_measurements:
-        avg_thickness = sum(m.avg_value for m in recent_measurements) / len(recent_measurements) / 1000.0
-
-        uniformities = []
-        for m in recent_measurements:
-            if m.avg_value and m.range_value is not None:
-                uniformity = max(0, 100 - (m.range_value / m.avg_value * 10))
-                uniformities.append(uniformity)
-
-        if uniformities:
-            avg_uniformity = sum(uniformities) / len(uniformities)
+        avg_particle_count = sum(m.value for m in recent_measurements) / len(recent_measurements)
 
     return {
         "today_count": today_count,
         "week_count": week_count,
-        "avg_thickness": round(avg_thickness, 2),
-        "avg_uniformity": round(avg_uniformity, 1)
+        "avg_particle_count": round(avg_particle_count, 1)
     }
 
 
@@ -1185,32 +1181,32 @@ def bulk_create_particle_measurements(db: Session, bulk_data: particle.ParticleB
 
     try:
         for equipment_data in bulk_data.equipment_data:
-            equipment = get_particle_equipment(db, equipment_data.equipment_id)
+            # equipment_id 필드는 실제로 equipment_number 값을 담고 있음
+            equipment = get_particle_equipment_by_number(db, equipment_data.equipment_id)
             if not equipment:
                 continue
 
-            for measurements in equipment_data.measurements:
-                has_any_measurement = any([
-                    measurements.top, measurements.center, measurements.bottom,
-                    measurements.left, measurements.right
-                ])
+            # 코팅 전/후 값이 모두 없으면 스킵
+            has_data = any([
+                equipment_data.before_y, equipment_data.before_o, equipment_data.before_b,
+                equipment_data.after_y, equipment_data.after_o, equipment_data.after_b
+            ])
+            if not has_data:
+                continue
 
-                if not has_any_measurement:
-                    continue
+            measurement_create = particle.ParticleMeasurementCreate(
+                equipment_id=equipment.id,  # equipment_number가 아닌 실제 DB id 사용
+                before_y=equipment_data.before_y,
+                before_o=equipment_data.before_o,
+                before_b=equipment_data.before_b,
+                after_y=equipment_data.after_y,
+                after_o=equipment_data.after_o,
+                after_b=equipment_data.after_b,
+                author=bulk_data.author
+            )
 
-                measurement_create = particle.ParticleMeasurementCreate(
-                    equipment_id=equipment_data.equipment_id,
-                    target_thickness=equipment_data.target_thickness,
-                    value_top=measurements.top,
-                    value_center=measurements.center,
-                    value_bottom=measurements.bottom,
-                    value_left=measurements.left,
-                    value_right=measurements.right,
-                    author=bulk_data.author
-                )
-
-                measurement = create_particle_measurement(db, measurement_create)
-                created_measurements.append(measurement)
+            measurement = create_particle_measurement(db, measurement_create)
+            created_measurements.append(measurement)
 
         return created_measurements
 

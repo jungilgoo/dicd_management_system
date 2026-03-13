@@ -173,29 +173,14 @@
                                     <form id="particle-form">
                                         <!-- 헤더 행 -->
                                         <div class="row align-items-center mb-3 bg-light p-2 rounded">
-                                            <div class="col-md-2">
-                                                <strong>장비명</strong>
+                                            <div class="col-md-5">
+                                                <strong>코팅 전 Y (0.3~1.0㎛) / O (1.0~2.5㎛) / B (2.5~5.1㎛)</strong>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <strong>코팅 후 Y / O / B</strong>
                                             </div>
                                             <div class="col-md-2">
-                                                <strong>목표 두께 (Å)</strong>
-                                            </div>
-                                            <div class="col-md-1 text-center">
-                                                <strong>상</strong>
-                                            </div>
-                                            <div class="col-md-1 text-center">
-                                                <strong>중</strong>
-                                            </div>
-                                            <div class="col-md-1 text-center">
-                                                <strong>하</strong>
-                                            </div>
-                                            <div class="col-md-1 text-center">
-                                                <strong>좌</strong>
-                                            </div>
-                                            <div class="col-md-1 text-center">
-                                                <strong>우</strong>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <strong>측정값 (Å)</strong>
+                                                <strong>합계 (자동)</strong>
                                             </div>
                                         </div>
 
@@ -330,21 +315,17 @@
                                                 <tr>
                                                     <th>측정일시</th>
                                                     <th>장비명</th>
-                                                    <th>목표 두께 (Å)</th>
-                                                    <th>상 (Å)</th>
-                                                    <th>중 (Å)</th>
-                                                    <th>하 (Å)</th>
-                                                    <th>좌 (Å)</th>
-                                                    <th>우 (Å)</th>
-                                                    <th>평균값 (Å)</th>
-                                                    <th>범위 (Å)</th>
+                                                    <th>코팅 전 (Y/O/B)</th>
+                                                    <th>코팅 후 (Y/O/B)</th>
+                                                    <th>최종 (Y/O/B)</th>
+                                                    <th>합계 (개)</th>
                                                     <th>작성자</th>
                                                     <th>동작</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="particle-table-body">
                                                 <tr>
-                                                    <td colspan="12" class="text-center py-4">
+                                                    <td colspan="8" class="text-center py-4">
                                                         <div class="spinner-border text-primary" role="status">
                                                             <span class="sr-only">로딩 중...</span>
                                                         </div>
@@ -379,7 +360,7 @@
                                     <div class="row">
                                         <div class="col-md-12">
                                             <h5><i class="fas fa-cog mr-2"></i>장비 설정 관리</h5>
-                                            <p class="text-muted">각 장비의 이름, 목표 두께, SPEC 범위를 설정합니다.</p>
+                                            <p class="text-muted">각 장비의 이름과 SPEC 최대값(최대 허용 파티클 개수)을 설정합니다.</p>
 
                                             <form id="equipment-settings-form">
                                                 <!-- 상단 컨트롤 버튼들 -->
@@ -393,25 +374,16 @@
 
                                                 <!-- 헤더 행 -->
                                                 <div class="row align-items-center mb-3 bg-light p-2 rounded">
-                                                    <div class="col-md-1 text-center">
+                                                    <div class="col-md-2 text-center">
                                                         <strong>장비번호</strong>
                                                     </div>
-                                                    <div class="col-md-2 text-center">
+                                                    <div class="col-md-5 text-center">
                                                         <strong>장비명</strong>
                                                     </div>
-                                                    <div class="col-md-2 text-center">
-                                                        <strong>목표 두께 (Å)</strong>
+                                                    <div class="col-md-3 text-center">
+                                                        <strong>SPEC 최대값 (개)</strong>
                                                     </div>
                                                     <div class="col-md-2 text-center">
-                                                        <strong>SPEC 최소값 (Å)</strong>
-                                                    </div>
-                                                    <div class="col-md-2 text-center">
-                                                        <strong>SPEC 최대값 (Å)</strong>
-                                                    </div>
-                                                    <div class="col-md-2 text-center">
-                                                        <strong>웨이퍼 수 (매)</strong>
-                                                    </div>
-                                                    <div class="col-md-1 text-center">
                                                         <strong>삭제</strong>
                                                     </div>
                                                 </div>
@@ -472,57 +444,93 @@
                                 <input type="text" class="form-control" id="edit-equipment-name" readonly>
                             </div>
                             <div class="col-md-6">
-                                <label for="edit-target-thickness" class="form-label">목표 두께 (Å)</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="edit-target-thickness" min="1" max="99999" step="1" readonly>
-                                    <div class="input-group-append">
-                                        <span class="input-group-text">Å</span>
+                                <label for="edit-author" class="form-label">작성자</label>
+                                <input type="text" class="form-control" id="edit-author" maxlength="50">
+                            </div>
+                        </div>
+
+                        <!-- 코팅 전 -->
+                        <div class="card mb-3">
+                            <div class="card-header py-2 bg-light"><strong>코팅 전</strong></div>
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Y <small class="text-muted">(0.3~1.0㎛)</small></label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" id="edit-before-y" min="0" max="99999" step="1">
+                                            <div class="input-group-append"><span class="input-group-text">개</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">O <small class="text-muted">(1.0~2.5㎛)</small></label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" id="edit-before-o" min="0" max="99999" step="1">
+                                            <div class="input-group-append"><span class="input-group-text">개</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">B <small class="text-muted">(2.5~5.1㎛)</small></label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" id="edit-before-b" min="0" max="99999" step="1">
+                                            <div class="input-group-append"><span class="input-group-text">개</span></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-12">
-                                <label class="form-label font-weight-bold">측정값 (Å)</label>
+                        <!-- 코팅 후 -->
+                        <div class="card mb-3">
+                            <div class="card-header py-2 bg-light"><strong>코팅 후</strong></div>
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Y</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" id="edit-after-y" min="0" max="99999" step="1">
+                                            <div class="input-group-append"><span class="input-group-text">개</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">O</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" id="edit-after-o" min="0" max="99999" step="1">
+                                            <div class="input-group-append"><span class="input-group-text">개</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">B</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" id="edit-after-b" min="0" max="99999" step="1">
+                                            <div class="input-group-append"><span class="input-group-text">개</span></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-2">
-                                <label for="edit-value-top" class="form-label">상</label>
-                                <input type="number" class="form-control edit-measurement-value" id="edit-value-top" min="1" max="99999" step="1">
-                            </div>
-                            <div class="col-md-2">
-                                <label for="edit-value-center" class="form-label">중</label>
-                                <input type="number" class="form-control edit-measurement-value" id="edit-value-center" min="1" max="99999" step="1">
-                            </div>
-                            <div class="col-md-2">
-                                <label for="edit-value-bottom" class="form-label">하</label>
-                                <input type="number" class="form-control edit-measurement-value" id="edit-value-bottom" min="1" max="99999" step="1">
-                            </div>
-                            <div class="col-md-2">
-                                <label for="edit-value-left" class="form-label">좌</label>
-                                <input type="number" class="form-control edit-measurement-value" id="edit-value-left" min="1" max="99999" step="1">
-                            </div>
-                            <div class="col-md-2">
-                                <label for="edit-value-right" class="form-label">우</label>
-                                <input type="number" class="form-control edit-measurement-value" id="edit-value-right" min="1" max="99999" step="1">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">평균</label>
-                                <div class="form-control-plaintext font-weight-bold" id="edit-avg-display">-</div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="edit-author" class="form-label">작성자</label>
-                                <input type="text" class="form-control" id="edit-author" maxlength="50">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">범위</label>
-                                <div class="form-control-plaintext font-weight-bold" id="edit-range-display">-</div>
+                        <!-- 최종 (자동 계산) -->
+                        <div class="card">
+                            <div class="card-header py-2 bg-secondary text-white"><strong>최종 (자동 계산)</strong></div>
+                            <div class="card-body py-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Y</label>
+                                        <input type="number" class="form-control form-control-sm" id="edit-final-y" readonly style="background:#f8f9fa;">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">O</label>
+                                        <input type="number" class="form-control form-control-sm" id="edit-final-o" readonly style="background:#f8f9fa;">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">B</label>
+                                        <input type="number" class="form-control form-control-sm" id="edit-final-b" readonly style="background:#f8f9fa;">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label font-weight-bold">합계 (개)</label>
+                                        <input type="number" class="form-control form-control-sm font-weight-bold" id="edit-total-value" readonly style="background:#e8f5e9;">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>

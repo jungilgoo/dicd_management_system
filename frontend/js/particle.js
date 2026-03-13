@@ -18,81 +18,29 @@
 
     // 페이지 초기화
     async function initParticlePage() {
-        // 이벤트 리스너 설정
         setupEventListeners();
-
-        // 초기 탭 설정 확인
         console.log('Particle 페이지 초기화 완료');
-
-        // 첫 번째 탭(입력 탭)이 기본 활성화
-        // 다른 탭의 초기화는 탭 클릭 시 수행
     }
 
     // 이벤트 리스너 설정
     function setupEventListeners() {
-        // 탭 전환 이벤트
         setupTabEventListeners();
 
-        // 폼 제출 이벤트
         const form = document.getElementById('particle-form');
         if (form) {
             form.addEventListener('submit', handleFormSubmit);
         }
 
-        // 측정값 입력 시 실시간 계산
-        const measurementInputs = document.querySelectorAll('.measurement-value');
-        measurementInputs.forEach(input => {
-            input.addEventListener('input', () => {
-                const equipmentId = input.dataset.equipment;
-                calculateEquipmentValues(equipmentId);
-            });
-        });
-
-        // 장비 설정 관련 버튼 이벤트
         const saveSettingsBtn = document.getElementById('save-equipment-settings-btn');
         if (saveSettingsBtn) {
             saveSettingsBtn.addEventListener('click', saveEquipmentSettings);
         }
 
-        // 장비 필터 버튼 이벤트 (데이터 조회 탭)
-        const equipmentFilterBtns = document.querySelectorAll('.equipment-filter-btn');
-        equipmentFilterBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                equipmentFilterBtns.forEach(b => {
-                    b.classList.remove('active', 'btn-primary');
-                    b.classList.add('btn-outline-secondary');
-                });
-                this.classList.remove('btn-outline-secondary');
-                this.classList.add('active', 'btn-primary');
-                currentEquipmentFilter = this.dataset.equipment;
-                loadRecentData(1);
-            });
-        });
-
-        // 차트 장비 필터 버튼 이벤트 (차트 탭)
-        const chartEquipmentFilterBtns = document.querySelectorAll('.chart-equipment-filter-btn');
-        chartEquipmentFilterBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                chartEquipmentFilterBtns.forEach(b => {
-                    b.classList.remove('active', 'btn-primary');
-                    b.classList.add('btn-outline-secondary');
-                });
-                this.classList.remove('btn-outline-secondary');
-                this.classList.add('active', 'btn-primary');
-                currentChartEquipmentFilter = this.dataset.equipment;
-                const equipmentSetting = equipmentSettings[currentChartEquipmentFilter];
-                document.getElementById('current-chart-equipment').textContent = equipmentSetting.name;
-                updateChart();
-            });
-        });
-
-        // 차트 관련 버튼들
         const refreshChartBtn = document.getElementById('refresh-chart-btn');
         if (refreshChartBtn) {
             refreshChartBtn.addEventListener('click', async () => await refreshChart());
         }
 
-        // 차트 기간 선택 버튼들
         const chart7dBtn = document.getElementById('chart-7d');
         const chart30dBtn = document.getElementById('chart-30d');
         const chart90dBtn = document.getElementById('chart-90d');
@@ -103,7 +51,6 @@
         if (chart90dBtn) chart90dBtn.addEventListener('click', async () => await changeChartPeriod('90d'));
         if (chartCustomBtn) chartCustomBtn.addEventListener('click', () => showCustomDateRange());
 
-        // 사용자 지정 날짜 관련 버튼들
         const applyCustomDateBtn = document.getElementById('apply-custom-date');
         const cancelCustomDateBtn = document.getElementById('cancel-custom-date');
         const quickLastWeekBtn = document.getElementById('quick-last-week');
@@ -114,11 +61,9 @@
         if (quickLastWeekBtn) quickLastWeekBtn.addEventListener('click', () => setQuickDateRange('week'));
         if (quickLastMonthBtn) quickLastMonthBtn.addEventListener('click', () => setQuickDateRange('month'));
 
-        // 장비 추가/삭제 버튼 이벤트
         const addEquipmentBtn = document.getElementById('add-equipment-btn');
         if (addEquipmentBtn) addEquipmentBtn.addEventListener('click', addNewEquipment);
 
-        // 수정 모달 관련 이벤트
         const saveEditBtn = document.getElementById('save-edit-btn');
         if (saveEditBtn) saveEditBtn.addEventListener('click', saveEditedData);
     }
@@ -149,21 +94,15 @@
                 }
 
                 switch(targetId) {
-                    case 'input':
-                        console.log('데이터 입력 탭 활성화');
-                        break;
                     case 'chart':
-                        console.log('차트 탭 활성화');
                         setTimeout(async () => {
                             await initChartTab();
                         }, 100);
                         break;
                     case 'data':
-                        console.log('데이터 조회 탭 활성화');
                         loadRecentData();
                         break;
                     case 'settings':
-                        console.log('장비 설정 탭 활성화');
                         setTimeout(() => {
                             loadEquipmentSettings();
                         }, 100);
@@ -187,40 +126,29 @@
 
             Object.keys(equipmentSettings).forEach(equipmentNumber => {
                 const equipmentSetting = equipmentSettings[equipmentNumber];
-                const waferCount = equipmentSetting.waferCount || 1;
-                const waferMeasurements = [];
+                const getVal = (id) => {
+                    const el = document.getElementById(id);
+                    if (!el || el.value === '') return null;
+                    const v = parseInt(el.value);
+                    return isNaN(v) ? null : v;
+                };
 
-                for (let waferIndex = 1; waferIndex <= waferCount; waferIndex++) {
-                    const inputId = waferCount > 1 ? `${equipmentNumber}-${waferIndex}` : equipmentNumber;
-                    const targetInput = document.getElementById(`target-${inputId}`);
+                const before_y = getVal(`before-y-${equipmentNumber}`);
+                const before_o = getVal(`before-o-${equipmentNumber}`);
+                const before_b = getVal(`before-b-${equipmentNumber}`);
+                const after_y  = getVal(`after-y-${equipmentNumber}`);
+                const after_o  = getVal(`after-o-${equipmentNumber}`);
+                const after_b  = getVal(`after-b-${equipmentNumber}`);
 
-                    if (!targetInput) continue;
+                const hasData = [before_y, before_o, before_b, after_y, after_o, after_b].some(v => v !== null);
+                if (!hasData) return;
 
-                    const targetThickness = parseFloat(targetInput.value);
-                    const measurements = {};
-
-                    const positions = ['top', 'center', 'bottom', 'left', 'right'];
-                    positions.forEach(position => {
-                        const input = document.querySelector(`input[data-equipment="${equipmentNumber}"][data-wafer="${waferIndex}"][data-position="${position}"]`);
-                        if (input) {
-                            measurements[position] = input.value ? parseFloat(input.value) : null;
-                        }
-                    });
-
-                    const validMeasurements = Object.values(measurements).filter(val => val !== null);
-                    if (validMeasurements.length === 5) {
-                        waferMeasurements.push(measurements);
-                    }
-                }
-
-                if (waferMeasurements.length > 0) {
-                    equipmentData.push({
-                        equipment_id: parseInt(equipmentNumber),
-                        equipment_name: equipmentSetting.name,
-                        target_thickness: equipmentSetting.target,
-                        measurements: waferMeasurements
-                    });
-                }
+                equipmentData.push({
+                    equipment_id: parseInt(equipmentNumber),
+                    equipment_name: equipmentSetting.name,
+                    before_y, before_o, before_b,
+                    after_y, after_o, after_b
+                });
             });
 
             if (equipmentData.length === 0) {
@@ -240,7 +168,6 @@
             resetMeasurementValues();
 
             await loadRecentData();
-            await loadStatistics();
             await refreshChart();
 
         } catch (error) {
@@ -252,79 +179,13 @@
         }
     }
 
-    // 특정 장비+웨이퍼의 측정값 계산
-    function calculateEquipmentValues(equipmentId, waferIndex = null) {
-        const positions = ['top', 'center', 'bottom', 'left', 'right'];
-        const values = [];
-
-        positions.forEach(position => {
-            let input;
-            if (waferIndex !== null) {
-                input = document.querySelector(`input[data-equipment="${equipmentId}"][data-wafer="${waferIndex}"][data-position="${position}"]`);
-            } else {
-                input = document.querySelector(`input[data-equipment="${equipmentId}"][data-position="${position}"]`);
-            }
-
-            if (input) {
-                const value = parseFloat(input.value);
-                if (!isNaN(value) && value > 0) {
-                    values.push(value);
-                }
-            }
-        });
-
-        const equipmentSetting = equipmentSettings[equipmentId];
-        const waferCount = equipmentSetting ? (equipmentSetting.waferCount || 1) : 1;
-        const displayId = (waferIndex !== null && waferCount > 1) ? `${equipmentId}-${waferIndex}` : equipmentId;
-        const avgSpan = document.getElementById(`avg-${displayId}`);
-        const rangeSpan = document.getElementById(`range-${displayId}`);
-
-        if (avgSpan && rangeSpan) {
-            if (values.length === 5) {
-                const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-                const max = Math.max(...values);
-                const min = Math.min(...values);
-                const range = max - min;
-
-                const setting = equipmentSettings[equipmentId];
-                let isOutOfSpec = false;
-                if (setting) {
-                    isOutOfSpec = avg < setting.specMin || avg > setting.specMax;
-                }
-
-                if (isOutOfSpec) {
-                    avgSpan.innerHTML = `<span style="color: red; font-weight: bold;">${avg.toFixed(0)}Å</span>`;
-                } else {
-                    avgSpan.textContent = avg.toFixed(0) + 'Å';
-                }
-
-                rangeSpan.textContent = range.toFixed(0) + 'Å';
-            } else {
-                avgSpan.textContent = '-';
-                rangeSpan.textContent = '-';
-            }
-        }
-    }
-
-    // 측정값만 초기화
+    // 측정값 초기화
     function resetMeasurementValues() {
-        const measurementInputs = document.querySelectorAll('.measurement-value');
-        measurementInputs.forEach(input => {
+        document.querySelectorAll('.particle-input').forEach(input => {
             input.value = '';
         });
-
-        Object.keys(equipmentSettings).forEach(equipmentNumber => {
-            const equipmentSetting = equipmentSettings[equipmentNumber];
-            const waferCount = equipmentSetting.waferCount || 1;
-
-            for (let waferIndex = 1; waferIndex <= waferCount; waferIndex++) {
-                const inputId = waferCount > 1 ? `${equipmentNumber}-${waferIndex}` : equipmentNumber;
-                const avgSpan = document.getElementById(`avg-${inputId}`);
-                const rangeSpan = document.getElementById(`range-${inputId}`);
-
-                if (avgSpan) avgSpan.textContent = '-';
-                if (rangeSpan) rangeSpan.textContent = '-';
-            }
+        document.querySelectorAll('.particle-final, .particle-total').forEach(input => {
+            input.value = '';
         });
     }
 
@@ -334,7 +195,7 @@
             const tbody = document.getElementById('particle-table-body');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="text-center">
+                    <td colspan="8" class="text-center">
                         <div class="spinner-border text-primary" role="status">
                             <span class="sr-only">로딩 중...</span>
                         </div>
@@ -361,7 +222,7 @@
             const tbody = document.getElementById('particle-table-body');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="text-center text-danger">
+                    <td colspan="8" class="text-center text-danger">
                         데이터를 불러오는 중 오류가 발생했습니다.
                     </td>
                 </tr>
@@ -376,7 +237,7 @@
         if (!data || data.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="text-center text-muted">
+                    <td colspan="8" class="text-center text-muted">
                         데이터가 없습니다.
                     </td>
                 </tr>
@@ -384,37 +245,35 @@
             return;
         }
 
+        const fmt = (v) => (v !== null && v !== undefined) ? v : '-';
+        const fmtYOB = (y, o, b) => `${fmt(y)} / ${fmt(o)} / ${fmt(b)}`;
+
         let html = '';
         data.forEach(item => {
-            let avgValueDisplay = '-';
-            if (item.avg_value !== null && item.avg_value !== undefined) {
-                let isOutOfSpec = false;
-                for (const [equipmentNumber, setting] of Object.entries(equipmentSettings)) {
+            let isOutOfSpec = false;
+            if (item.value !== null && item.value !== undefined) {
+                for (const [, setting] of Object.entries(equipmentSettings)) {
                     if (setting.name === item.equipment_name) {
-                        isOutOfSpec = item.avg_value < setting.specMin || item.avg_value > setting.specMax;
+                        isOutOfSpec = item.value > setting.specMax;
                         break;
                     }
                 }
-
-                if (isOutOfSpec) {
-                    avgValueDisplay = `<span style="color: red; font-weight: bold;">${item.avg_value}Å</span>`;
-                } else {
-                    avgValueDisplay = item.avg_value + 'Å';
-                }
             }
+
+            const valueDisplay = item.value !== null && item.value !== undefined
+                ? (isOutOfSpec
+                    ? `<span style="color:red;font-weight:bold;">${item.value}개 ⚠</span>`
+                    : `${item.value}개`)
+                : '-';
 
             html += `
                 <tr>
                     <td>${formatDateTime(item.created_at)}</td>
                     <td>${item.equipment_name}</td>
-                    <td>${item.target_thickness !== null && item.target_thickness !== undefined ? item.target_thickness + 'Å' : '-'}</td>
-                    <td>${item.top !== null && item.top !== undefined ? item.top + 'Å' : '-'}</td>
-                    <td>${item.center !== null && item.center !== undefined ? item.center + 'Å' : '-'}</td>
-                    <td>${item.bottom !== null && item.bottom !== undefined ? item.bottom + 'Å' : '-'}</td>
-                    <td>${item.left !== null && item.left !== undefined ? item.left + 'Å' : '-'}</td>
-                    <td>${item.right !== null && item.right !== undefined ? item.right + 'Å' : '-'}</td>
-                    <td>${avgValueDisplay}</td>
-                    <td>${item.range_value !== null && item.range_value !== undefined ? item.range_value + 'Å' : '-'}</td>
+                    <td><small>${fmtYOB(item.before_y, item.before_o, item.before_b)}</small></td>
+                    <td><small>${fmtYOB(item.after_y, item.after_o, item.after_b)}</small></td>
+                    <td><small>${fmtYOB(item.final_y, item.final_o, item.final_b)}</small></td>
+                    <td>${valueDisplay}</td>
                     <td>${item.author}</td>
                     <td>
                         <button class="btn btn-sm btn-primary mr-1" onclick="particleEditItem(${item.id})">
@@ -474,26 +333,6 @@
 
         document.getElementById('table-info').textContent =
             `${totalItems}개 중 ${startItem} - ${endItem}개 표시`;
-    }
-
-    // 통계 데이터 로드
-    async function loadStatistics() {
-        try {
-            const stats = await api.getParticleStatistics();
-
-            const todayCountEl = document.getElementById('today-count');
-            const weekCountEl = document.getElementById('week-count');
-            const avgThicknessEl = document.getElementById('avg-thickness');
-            const avgUniformityEl = document.getElementById('avg-uniformity');
-
-            if (todayCountEl) todayCountEl.textContent = stats.today_count;
-            if (weekCountEl) weekCountEl.textContent = stats.week_count;
-            if (avgThicknessEl) avgThicknessEl.textContent = stats.avg_thickness.toFixed(2);
-            if (avgUniformityEl) avgUniformityEl.textContent = stats.avg_uniformity.toFixed(1) + '%';
-
-        } catch (error) {
-            console.error('통계 데이터 로드 실패:', error);
-        }
     }
 
     // 차트 기간 변경
@@ -588,30 +427,22 @@
         showToast(`${startDateStr} ~ ${endDateStr} 기간으로 차트를 업데이트했습니다.`, 'success');
     }
 
-    // 차트 업데이트 (공통 함수)
+    // 차트 업데이트
     async function updateChart() {
         if (particleChart) {
             try {
                 const chartData = await generateChartData(currentChartPeriod, currentChartEquipmentFilter);
                 const equipmentSetting = equipmentSettings[currentChartEquipmentFilter];
 
-                const targetThickness = equipmentSetting ? equipmentSetting.target : 25000;
-                const specMin = equipmentSetting ? equipmentSetting.specMin : 24000;
-                const specMax = equipmentSetting ? equipmentSetting.specMax : 26000;
+                const specMax = equipmentSetting ? equipmentSetting.specMax : 20;
 
                 particleChart.data.labels = chartData.labels;
                 particleChart.data.datasets[0].data = chartData.data;
-                particleChart.data.datasets[1].data = Array(chartData.labels.length).fill(targetThickness);
-                particleChart.data.datasets[2].data = Array(chartData.labels.length).fill(specMin);
-                particleChart.data.datasets[3].data = Array(chartData.labels.length).fill(specMax);
+                particleChart.data.datasets[1].data = Array(chartData.labels.length).fill(specMax);
 
-                let margin = 1000;
-                if (equipmentSetting) {
-                    const specRange = equipmentSetting.specMax - equipmentSetting.specMin;
-                    margin = Math.max(200, Math.min(1000, Math.round(specRange * 0.1)));
-                }
-                particleChart.options.scales.y.min = equipmentSetting ? equipmentSetting.specMin - margin : 23000;
-                particleChart.options.scales.y.max = equipmentSetting ? equipmentSetting.specMax + margin : 27000;
+                const margin = Math.max(1, Math.round(specMax * 0.1));
+                particleChart.options.scales.y.min = 0;
+                particleChart.options.scales.y.max = specMax + margin;
 
                 particleChart.update();
             } catch (error) {
@@ -662,19 +493,18 @@
             }
 
             const ctx = canvas.getContext('2d');
-            const chartData = await generateChartData('30d', currentChartEquipmentFilter);
+            const chartData = await generateChartData(currentChartPeriod, currentChartEquipmentFilter);
             const equipmentSetting = equipmentSettings[currentChartEquipmentFilter];
 
-            const targetThickness = equipmentSetting ? equipmentSetting.target : 25000;
-            const specMin = equipmentSetting ? equipmentSetting.specMin : 24000;
-            const specMax = equipmentSetting ? equipmentSetting.specMax : 26000;
+            const specMax = equipmentSetting ? equipmentSetting.specMax : 20;
+            const margin = Math.max(1, Math.round(specMax * 0.1));
 
             particleChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: chartData.labels,
                     datasets: [{
-                        label: 'Particle (Å)',
+                        label: 'Particle (개)',
                         data: chartData.data,
                         borderColor: 'rgb(75, 192, 192)',
                         backgroundColor: 'transparent',
@@ -685,23 +515,6 @@
                         pointBorderWidth: 2,
                         pointRadius: 4,
                         borderWidth: 2
-                    }, {
-                        label: '목표값',
-                        data: Array(chartData.labels.length).fill(targetThickness),
-                        borderColor: 'rgb(34, 139, 34)',
-                        backgroundColor: 'transparent',
-                        fill: false,
-                        pointRadius: 0,
-                        borderWidth: 1
-                    }, {
-                        label: 'SPEC 최소값',
-                        data: Array(chartData.labels.length).fill(specMin),
-                        borderColor: 'rgb(220, 53, 69)',
-                        backgroundColor: 'transparent',
-                        borderDash: [5, 5],
-                        fill: false,
-                        pointRadius: 0,
-                        borderWidth: 1
                     }, {
                         label: 'SPEC 최대값',
                         data: Array(chartData.labels.length).fill(specMax),
@@ -718,26 +531,12 @@
                     maintainAspectRatio: false,
                     scales: {
                         y: {
-                            beginAtZero: false,
-                            min: function() {
-                                if (equipmentSetting) {
-                                    const specRange = equipmentSetting.specMax - equipmentSetting.specMin;
-                                    const margin = Math.max(200, Math.min(1000, Math.round(specRange * 0.1)));
-                                    return equipmentSetting.specMin - margin;
-                                }
-                                return 23000;
-                            }(),
-                            max: function() {
-                                if (equipmentSetting) {
-                                    const specRange = equipmentSetting.specMax - equipmentSetting.specMin;
-                                    const margin = Math.max(200, Math.min(1000, Math.round(specRange * 0.1)));
-                                    return equipmentSetting.specMax + margin;
-                                }
-                                return 27000;
-                            }(),
+                            beginAtZero: true,
+                            min: 0,
+                            max: specMax + margin,
                             title: {
                                 display: true,
-                                text: 'Thickness (Å)'
+                                text: '파티클 개수 (개)'
                             }
                         },
                         x: {
@@ -821,7 +620,7 @@
             </div>
         `);
 
-        $('.content-header .container-fluid').prepend(toast);
+        $('.content > .container-fluid').prepend(toast);
 
         setTimeout(() => {
             toast.alert('close');
@@ -830,6 +629,18 @@
 
     // 전역 함수들 (HTML에서 호출)
     window.particleLoadRecentData = loadRecentData;
+    window.particleCalcFinal = function(equipmentNumber) {
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el && el.value !== '' ? (parseInt(el.value) || 0) : 0;
+        };
+        const finalY = getVal(`after-y-${equipmentNumber}`) - getVal(`before-y-${equipmentNumber}`);
+        const finalO = getVal(`after-o-${equipmentNumber}`) - getVal(`before-o-${equipmentNumber}`);
+        const finalB = getVal(`after-b-${equipmentNumber}`) - getVal(`before-b-${equipmentNumber}`);
+        const total = finalY + finalO + finalB;
+        const totalEl = document.getElementById(`total-${equipmentNumber}`);
+        if (totalEl) totalEl.value = total;
+    };
     window.particleEditItem = async function(id) {
         await openEditModal(id);
     };
@@ -852,6 +663,21 @@
         }
     };
 
+    // 모달 내 최종값 자동 계산
+    function calcEditFinal() {
+        const getNum = (id) => {
+            const el = document.getElementById(id);
+            return el && el.value !== '' ? (parseInt(el.value) || 0) : 0;
+        };
+        const fy = getNum('edit-after-y') - getNum('edit-before-y');
+        const fo = getNum('edit-after-o') - getNum('edit-before-o');
+        const fb = getNum('edit-after-b') - getNum('edit-before-b');
+        document.getElementById('edit-final-y').value = fy;
+        document.getElementById('edit-final-o').value = fo;
+        document.getElementById('edit-final-b').value = fb;
+        document.getElementById('edit-total-value').value = fy + fo + fb;
+    }
+
     // 수정 모달 열기
     async function openEditModal(measurementId) {
         try {
@@ -859,20 +685,21 @@
 
             document.getElementById('edit-measurement-id').value = measurement.id;
             document.getElementById('edit-equipment-name').value = measurement.equipment_name || '';
-            document.getElementById('edit-target-thickness').value = measurement.target_thickness || '';
-            document.getElementById('edit-value-top').value = measurement.value_top || '';
-            document.getElementById('edit-value-center').value = measurement.value_center || '';
-            document.getElementById('edit-value-bottom').value = measurement.value_bottom || '';
-            document.getElementById('edit-value-left').value = measurement.value_left || '';
-            document.getElementById('edit-value-right').value = measurement.value_right || '';
             document.getElementById('edit-author').value = measurement.author || '';
 
-            calculateEditedValues();
+            const setVal = (id, v) => { document.getElementById(id).value = (v !== null && v !== undefined) ? v : ''; };
+            setVal('edit-before-y', measurement.before_y);
+            setVal('edit-before-o', measurement.before_o);
+            setVal('edit-before-b', measurement.before_b);
+            setVal('edit-after-y', measurement.after_y);
+            setVal('edit-after-o', measurement.after_o);
+            setVal('edit-after-b', measurement.after_b);
 
-            const editMeasurementInputs = document.querySelectorAll('.edit-measurement-value');
-            editMeasurementInputs.forEach(input => {
-                input.removeEventListener('input', calculateEditedValues);
-                input.addEventListener('input', calculateEditedValues);
+            calcEditFinal();
+
+            // before/after 변경 시 자동 재계산
+            ['edit-before-y','edit-before-o','edit-before-b','edit-after-y','edit-after-o','edit-after-b'].forEach(id => {
+                document.getElementById(id).oninput = calcEditFinal;
             });
 
             $('#editParticleModal').modal('show');
@@ -880,53 +707,6 @@
         } catch (error) {
             console.error('측정 데이터 조회 실패:', error);
             showToast('데이터를 불러오는 중 오류가 발생했습니다.', 'error');
-        }
-    }
-
-    // 수정 모달 측정값 계산
-    function calculateEditedValues() {
-        const values = [];
-        const positions = ['top', 'center', 'bottom', 'left', 'right'];
-
-        positions.forEach(position => {
-            const input = document.getElementById(`edit-value-${position}`);
-            if (input) {
-                const value = parseFloat(input.value);
-                if (!isNaN(value) && value > 0) {
-                    values.push(value);
-                }
-            }
-        });
-
-        const avgDisplay = document.getElementById('edit-avg-display');
-        const rangeDisplay = document.getElementById('edit-range-display');
-
-        if (values.length === 5) {
-            const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-            const max = Math.max(...values);
-            const min = Math.min(...values);
-            const range = max - min;
-
-            const equipmentName = document.getElementById('edit-equipment-name').value;
-            let isOutOfSpec = false;
-
-            for (const [equipmentNumber, setting] of Object.entries(equipmentSettings)) {
-                if (setting.name === equipmentName) {
-                    isOutOfSpec = avg < setting.specMin || avg > setting.specMax;
-                    break;
-                }
-            }
-
-            if (isOutOfSpec) {
-                avgDisplay.innerHTML = `<span style="color: red; font-weight: bold;">${avg.toFixed(0)}Å</span>`;
-            } else {
-                avgDisplay.textContent = avg.toFixed(0) + 'Å';
-            }
-
-            rangeDisplay.textContent = range.toFixed(0) + 'Å';
-        } else {
-            avgDisplay.textContent = '-';
-            rangeDisplay.textContent = '-';
         }
     }
 
@@ -939,27 +719,27 @@
 
         try {
             const measurementId = document.getElementById('edit-measurement-id').value;
+            const author = document.getElementById('edit-author').value;
 
-            const data = {
-                value_top: document.getElementById('edit-value-top').value ? parseInt(document.getElementById('edit-value-top').value) : null,
-                value_center: document.getElementById('edit-value-center').value ? parseInt(document.getElementById('edit-value-center').value) : null,
-                value_bottom: document.getElementById('edit-value-bottom').value ? parseInt(document.getElementById('edit-value-bottom').value) : null,
-                value_left: document.getElementById('edit-value-left').value ? parseInt(document.getElementById('edit-value-left').value) : null,
-                value_right: document.getElementById('edit-value-right').value ? parseInt(document.getElementById('edit-value-right').value) : null,
-                author: document.getElementById('edit-author').value
-            };
-
-            if (!data.author) {
+            if (!author) {
                 showToast('작성자를 입력해주세요.', 'error');
                 return;
             }
 
-            const measurementValues = [data.value_top, data.value_center, data.value_bottom, data.value_left, data.value_right];
-            const validValues = measurementValues.filter(val => val !== null);
-            if (validValues.length < 5) {
-                showToast('모든 측정값(상/중/하/좌/우)을 입력해주세요.', 'error');
-                return;
-            }
+            const getNum = (id) => {
+                const el = document.getElementById(id);
+                return el && el.value !== '' ? parseInt(el.value) : null;
+            };
+
+            const data = {
+                before_y: getNum('edit-before-y'),
+                before_o: getNum('edit-before-o'),
+                before_b: getNum('edit-before-b'),
+                after_y:  getNum('edit-after-y'),
+                after_o:  getNum('edit-after-o'),
+                after_b:  getNum('edit-after-b'),
+                author: author
+            };
 
             await api.updateParticleMeasurement(measurementId, data);
 
@@ -986,8 +766,8 @@
     // 기본 장비 설정 생성 함수
     function createDefaultEquipmentSettings() {
         return {
-            1: { name: '장비1', target: 25000, specMin: 24000, specMax: 26000, waferCount: 1 },
-            2: { name: '장비2', target: 25000, specMin: 24000, specMax: 26000, waferCount: 1 }
+            1: { name: '장비1', specMax: 20 },
+            2: { name: '장비2', specMax: 20 }
         };
     }
 
@@ -1000,11 +780,9 @@
                 equipmentSettings = {};
                 equipmentList.forEach(equipment => {
                     equipmentSettings[equipment.equipment_number] = {
+                        id: equipment.id,
                         name: equipment.name,
-                        target: equipment.target_thickness,
-                        specMin: equipment.spec_min,
-                        specMax: equipment.spec_max,
-                        waferCount: equipment.wafer_count || 1
+                        specMax: equipment.spec_max
                     };
                 });
 
@@ -1057,33 +835,19 @@
             equipmentRows.forEach(row => {
                 const equipmentNumber = row.dataset.equipmentRow;
                 const name = document.getElementById(`equipment-name-${equipmentNumber}`).value;
-                const target = parseInt(document.getElementById(`equipment-target-${equipmentNumber}`).value);
-                const specMin = parseInt(document.getElementById(`equipment-spec-min-${equipmentNumber}`).value);
                 const specMax = parseInt(document.getElementById(`equipment-spec-max-${equipmentNumber}`).value);
-                const waferCount = parseInt(document.getElementById(`equipment-wafer-count-${equipmentNumber}`).value);
 
-                if (!name || !target || !specMin || !specMax || !waferCount) {
+                if (!name || isNaN(specMax)) {
                     throw new Error(`장비${equipmentNumber}의 모든 필드를 입력해주세요.`);
                 }
 
-                if (specMin >= specMax) {
-                    throw new Error(`장비${equipmentNumber}의 SPEC 최소값이 최대값보다 크거나 같습니다.`);
-                }
-
-                if (target < specMin || target > specMax) {
-                    throw new Error(`장비${equipmentNumber}의 목표 두께가 SPEC 범위를 벗어났습니다.`);
-                }
-
-                if (waferCount < 1 || waferCount > 10) {
-                    throw new Error(`장비${equipmentNumber}의 웨이퍼 수는 1-10 범위 내에 있어야 합니다.`);
+                if (specMax <= 0) {
+                    throw new Error(`장비${equipmentNumber}의 SPEC 최대값은 0보다 커야 합니다.`);
                 }
 
                 newSettings[equipmentNumber] = {
                     name: name,
-                    target: target,
-                    specMin: specMin,
-                    specMax: specMax,
-                    waferCount: waferCount
+                    specMax: specMax
                 };
             });
 
@@ -1096,10 +860,7 @@
                         {
                             equipment_number: parseInt(equipmentNumber),
                             name: setting.name,
-                            target_thickness: setting.target,
-                            spec_min: setting.specMin,
-                            spec_max: setting.specMax,
-                            wafer_count: setting.waferCount || 1
+                            spec_max: setting.specMax
                         }
                     ])
                 )
@@ -1128,10 +889,7 @@
 
         equipmentSettings[equipmentNumber] = {
             name: `장비${equipmentNumber}`,
-            target: 25000,
-            specMin: 24000,
-            specMax: 26000,
-            waferCount: 1
+            specMax: 20
         };
 
         renderEquipmentSettings();
@@ -1140,14 +898,24 @@
         showToast(`장비${equipmentNumber}가 추가되었습니다.`, 'success');
     }
 
-    function deleteEquipment(equipmentNumber) {
+    async function deleteEquipment(equipmentNumber) {
         if (confirm(`장비${equipmentNumber}를 삭제하시겠습니까?\n관련된 모든 측정 데이터도 함께 삭제됩니다.`)) {
-            delete equipmentSettings[equipmentNumber];
+            try {
+                const setting = equipmentSettings[equipmentNumber];
+                if (setting && setting.id) {
+                    await api.deleteParticleEquipment(setting.id);
+                }
 
-            renderEquipmentSettings();
-            regenerateAllTabs();
+                delete equipmentSettings[equipmentNumber];
 
-            showToast(`장비${equipmentNumber}가 삭제되었습니다.`, 'success');
+                renderEquipmentSettings();
+                regenerateAllTabs();
+
+                showToast(`장비${equipmentNumber}가 삭제되었습니다.`, 'success');
+            } catch (error) {
+                console.error('장비 삭제 실패:', error);
+                showToast('장비 삭제 중 오류가 발생했습니다.', 'error');
+            }
         }
     }
 
@@ -1165,59 +933,29 @@
             const setting = equipmentSettings[equipmentNumber];
             html += `
                 <div class="row align-items-center mb-2" data-equipment-row="${equipmentNumber}">
-                    <div class="col-md-1">
+                    <div class="col-md-2">
                         <input type="number" class="form-control form-control-sm text-center"
                                value="${equipmentNumber}" min="1"
                                id="equipment-number-${equipmentNumber}" readonly
                                style="background-color: #f8f9fa;">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-5">
                         <input type="text" class="form-control form-control-sm"
                                value="${setting.name}"
                                id="equipment-name-${equipmentNumber}"
                                maxlength="100">
                     </div>
-                    <div class="col-md-2">
-                        <div class="input-group input-group-sm">
-                            <input type="number" class="form-control text-center"
-                                   value="${setting.target}" min="1" max="99999" step="1"
-                                   id="equipment-target-${equipmentNumber}">
-                            <div class="input-group-append">
-                                <span class="input-group-text">Å</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="input-group input-group-sm">
-                            <input type="number" class="form-control text-center"
-                                   value="${setting.specMin}" min="1" max="99999" step="1"
-                                   id="equipment-spec-min-${equipmentNumber}">
-                            <div class="input-group-append">
-                                <span class="input-group-text">Å</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <div class="input-group input-group-sm">
                             <input type="number" class="form-control text-center"
                                    value="${setting.specMax}" min="1" max="99999" step="1"
                                    id="equipment-spec-max-${equipmentNumber}">
                             <div class="input-group-append">
-                                <span class="input-group-text">Å</span>
+                                <span class="input-group-text">개</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <div class="input-group input-group-sm">
-                            <input type="number" class="form-control text-center"
-                                   value="${setting.waferCount || 1}" min="1" max="10" step="1"
-                                   id="equipment-wafer-count-${equipmentNumber}">
-                            <div class="input-group-append">
-                                <span class="input-group-text">매</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-1 text-center">
+                    <div class="col-md-2 text-center">
                         <button type="button" class="btn btn-danger btn-sm"
                                 onclick="particleDeleteEquipment(${equipmentNumber})"
                                 title="장비 삭제">
@@ -1259,58 +997,79 @@
 
         sortedEquipments.forEach(equipmentNumber => {
             const setting = equipmentSettings[equipmentNumber];
-            const waferCount = setting.waferCount || 1;
 
-            for (let waferIndex = 1; waferIndex <= waferCount; waferIndex++) {
-                const waferLabel = waferCount > 1 ? ` (${waferIndex}/${waferCount})` : '';
-                const inputId = waferCount > 1 ? `${equipmentNumber}-${waferIndex}` : equipmentNumber;
-
-                html += `
-                    <div class="row align-items-center mb-2">
-                        <div class="col-md-2">
-                            <label class="form-label font-weight-bold mb-0">${setting.name}${waferLabel}</label>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="input-group input-group-sm">
-                                <input type="number" class="form-control text-center"
-                                       value="${setting.target}" min="1" max="99999" step="1"
-                                       id="target-${inputId}" readonly tabindex="-1">
-                                <div class="input-group-append">
-                                    <span class="input-group-text">Å</span>
+            html += `
+                <div class="card mb-3">
+                    <div class="card-header py-2 bg-primary text-white">
+                        <strong><i class="fas fa-cog mr-1"></i>${setting.name}</strong>
+                        <span class="float-right text-white-50 small">SPEC 최대: ${setting.specMax}개</span>
+                    </div>
+                    <div class="card-body py-2">
+                        <div class="row">
+                            <!-- 코팅 전 -->
+                            <div class="col-md-5">
+                                <p class="mb-1 font-weight-bold text-muted small">코팅 전</p>
+                                <div class="row">
+                                    <div class="col-4">
+                                        <label class="form-label mb-0 small">Y</label>
+                                        <input type="number" class="form-control form-control-sm text-center particle-input"
+                                               placeholder="0" min="0" max="99999"
+                                               id="before-y-${equipmentNumber}"
+                                               oninput="particleCalcFinal(${equipmentNumber})">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label mb-0 small">O</label>
+                                        <input type="number" class="form-control form-control-sm text-center particle-input"
+                                               placeholder="0" min="0" max="99999"
+                                               id="before-o-${equipmentNumber}"
+                                               oninput="particleCalcFinal(${equipmentNumber})">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label mb-0 small">B</label>
+                                        <input type="number" class="form-control form-control-sm text-center particle-input"
+                                               placeholder="0" min="0" max="99999"
+                                               id="before-b-${equipmentNumber}"
+                                               oninput="particleCalcFinal(${equipmentNumber})">
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-1">
-                            <input type="number" class="form-control form-control-sm text-center measurement-value"
-                                   placeholder="상" min="1" max="99999" step="1"
-                                   data-equipment="${equipmentNumber}" data-wafer="${waferIndex}" data-position="top">
-                        </div>
-                        <div class="col-md-1">
-                            <input type="number" class="form-control form-control-sm text-center measurement-value"
-                                   placeholder="중" min="1" max="99999" step="1"
-                                   data-equipment="${equipmentNumber}" data-wafer="${waferIndex}" data-position="center">
-                        </div>
-                        <div class="col-md-1">
-                            <input type="number" class="form-control form-control-sm text-center measurement-value"
-                                   placeholder="하" min="1" max="99999" step="1"
-                                   data-equipment="${equipmentNumber}" data-wafer="${waferIndex}" data-position="bottom">
-                        </div>
-                        <div class="col-md-1">
-                            <input type="number" class="form-control form-control-sm text-center measurement-value"
-                                   placeholder="좌" min="1" max="99999" step="1"
-                                   data-equipment="${equipmentNumber}" data-wafer="${waferIndex}" data-position="left">
-                        </div>
-                        <div class="col-md-1">
-                            <input type="number" class="form-control form-control-sm text-center measurement-value"
-                                   placeholder="우" min="1" max="99999" step="1"
-                                   data-equipment="${equipmentNumber}" data-wafer="${waferIndex}" data-position="right">
-                        </div>
-                        <div class="col-md-3">
-                            <small class="text-muted">평균: <span id="avg-${inputId}">-</span> | 범위: <span id="range-${inputId}">-</span></small>
+                            <!-- 코팅 후 -->
+                            <div class="col-md-5">
+                                <p class="mb-1 font-weight-bold text-muted small">코팅 후</p>
+                                <div class="row">
+                                    <div class="col-4">
+                                        <label class="form-label mb-0 small">Y</label>
+                                        <input type="number" class="form-control form-control-sm text-center particle-input"
+                                               placeholder="0" min="0" max="99999"
+                                               id="after-y-${equipmentNumber}"
+                                               oninput="particleCalcFinal(${equipmentNumber})">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label mb-0 small">O</label>
+                                        <input type="number" class="form-control form-control-sm text-center particle-input"
+                                               placeholder="0" min="0" max="99999"
+                                               id="after-o-${equipmentNumber}"
+                                               oninput="particleCalcFinal(${equipmentNumber})">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label mb-0 small">B</label>
+                                        <input type="number" class="form-control form-control-sm text-center particle-input"
+                                               placeholder="0" min="0" max="99999"
+                                               id="after-b-${equipmentNumber}"
+                                               oninput="particleCalcFinal(${equipmentNumber})">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 합계 -->
+                            <div class="col-md-2">
+                                <p class="mb-1 font-weight-bold small">합계 (자동)</p>
+                                <input type="number" class="form-control form-control-sm text-center font-weight-bold particle-total"
+                                       id="total-${equipmentNumber}" readonly style="background:#e8f5e9;">
+                            </div>
                         </div>
                     </div>
-                `;
-            }
+                </div>
+            `;
         });
 
         if (sortedEquipments.length === 0) {
@@ -1325,23 +1084,6 @@
         }
 
         container.innerHTML = html;
-        setupMeasurementInputListeners();
-    }
-
-    function setupMeasurementInputListeners() {
-        const measurementInputs = document.querySelectorAll('.measurement-value');
-
-        measurementInputs.forEach(input => {
-            input.removeEventListener('input', handleMeasurementInput);
-            input.addEventListener('input', handleMeasurementInput);
-        });
-    }
-
-    function handleMeasurementInput(event) {
-        const input = event.target;
-        const equipmentId = input.dataset.equipment;
-        const waferIndex = input.dataset.wafer ? parseInt(input.dataset.wafer) : null;
-        calculateEquipmentValues(equipmentId, waferIndex);
     }
 
     function regenerateChartFilters() {

@@ -247,10 +247,7 @@ class ParticleEquipment(Base):
     id = Column(Integer, primary_key=True, index=True)
     equipment_number = Column(Integer, unique=True, nullable=False, index=True)  # 1-10
     name = Column(String(100), nullable=False)  # "장비1", "장비2" 등
-    target_thickness = Column(Integer, nullable=False)  # 목표 두께 (Å)
-    spec_min = Column(Integer, nullable=False)  # SPEC 최소값 (Å)
-    spec_max = Column(Integer, nullable=False)  # SPEC 최대값 (Å)
-    wafer_count = Column(Integer, nullable=False, default=1)  # 측정할 웨이퍼 수 (1-10)
+    spec_max = Column(Integer, nullable=False)  # SPEC 최대값 (개) - 최대 허용 파티클 개수
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -265,18 +262,24 @@ class ParticleMeasurement(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     equipment_id = Column(Integer, ForeignKey("particle_equipments.id"), nullable=False)
-    target_thickness = Column(Integer, nullable=False)  # 목표 두께 (Å)
 
-    # 5개 위치별 측정값 (Å)
-    value_top = Column(Integer, nullable=True)
-    value_center = Column(Integer, nullable=True)
-    value_bottom = Column(Integer, nullable=True)
-    value_left = Column(Integer, nullable=True)
-    value_right = Column(Integer, nullable=True)
+    # 코팅 전 측정값
+    before_y = Column(Integer, nullable=True)  # Yellow (0.3~1.0㎛)
+    before_o = Column(Integer, nullable=True)  # Orange (1.0~2.5㎛)
+    before_b = Column(Integer, nullable=True)  # Blue (2.5~5.1㎛)
 
-    # 자동 계산된 값들
-    avg_value = Column(Integer, nullable=True)  # 평균값
-    range_value = Column(Integer, nullable=True)  # 범위 (최대값 - 최소값)
+    # 코팅 후 측정값
+    after_y = Column(Integer, nullable=True)   # Yellow
+    after_o = Column(Integer, nullable=True)   # Orange
+    after_b = Column(Integer, nullable=True)   # Blue
+
+    # 최종 (코팅 후 - 코팅 전)
+    final_y = Column(Integer, nullable=True)
+    final_o = Column(Integer, nullable=True)
+    final_b = Column(Integer, nullable=True)
+
+    # 총 파티클 개수 (final_y + final_o + final_b)
+    value = Column(Integer, nullable=True)
 
     author = Column(String(100), nullable=False)  # 작성자
     created_at = Column(DateTime(timezone=True), server_default=func.now())
