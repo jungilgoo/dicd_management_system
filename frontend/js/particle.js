@@ -445,6 +445,8 @@
                 const margin = Math.max(1, Math.round(specMax * 0.1));
                 particleChart.options.scales.y.min = 0;
                 particleChart.options.scales.y.max = specMax + margin;
+                particleChart.options.scales.ySpec.min = 0;
+                particleChart.options.scales.ySpec.max = specMax + margin;
 
                 particleChart.update();
             } catch (error) {
@@ -511,21 +513,24 @@
                         backgroundColor: 'rgba(255, 220, 0, 0.85)',
                         borderColor: 'rgba(255, 200, 0, 1)',
                         borderWidth: 1,
-                        stack: 'particle'
+                        stack: 'particle',
+                        yAxisID: 'y'
                     }, {
                         label: 'O (1.0~2.5㎛)',
                         data: chartData.data_o,
                         backgroundColor: 'rgba(255, 140, 0, 0.85)',
                         borderColor: 'rgba(230, 110, 0, 1)',
                         borderWidth: 1,
-                        stack: 'particle'
+                        stack: 'particle',
+                        yAxisID: 'y'
                     }, {
                         label: 'B (2.5~5.1㎛)',
                         data: chartData.data_b,
                         backgroundColor: 'rgba(54, 130, 220, 0.85)',
                         borderColor: 'rgba(30, 100, 200, 1)',
                         borderWidth: 1,
-                        stack: 'particle'
+                        stack: 'particle',
+                        yAxisID: 'y'
                     }, {
                         label: 'SPEC 최대값',
                         data: Array(chartData.labels.length).fill(specMax),
@@ -536,7 +541,7 @@
                         fill: false,
                         pointRadius: 0,
                         borderWidth: 2,
-                        order: -1
+                        yAxisID: 'ySpec'
                     }]
                 },
                 options: {
@@ -552,6 +557,11 @@
                                 display: true,
                                 text: '파티클 개수 (개)'
                             }
+                        },
+                        ySpec: {
+                            display: false,
+                            min: 0,
+                            max: specMax + margin
                         },
                         x: {
                             stacked: true,
