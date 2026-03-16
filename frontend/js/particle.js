@@ -501,7 +501,15 @@
             const equipmentSetting = equipmentSettings[currentChartEquipmentFilter];
 
             const specMax = equipmentSetting ? equipmentSetting.specMax : 20;
-            const margin = Math.max(1, Math.round(specMax * 0.1));
+
+            // 실제 누적 최대값 계산 (Y+O+B 합산)
+            const stackedMax = chartData.labels.length > 0
+                ? Math.max(...chartData.labels.map((_, i) =>
+                    (chartData.data_y[i] || 0) + (chartData.data_o[i] || 0) + (chartData.data_b[i] || 0)
+                  ))
+                : 0;
+            const yAxisMax = Math.max(specMax, stackedMax);
+            const margin = Math.max(1, Math.round(yAxisMax * 0.1));
 
             particleChart = new Chart(ctx, {
                 type: 'bar',
@@ -551,7 +559,7 @@
                         y: {
                             beginAtZero: true,
                             min: 0,
-                            max: specMax + margin,
+                            max: yAxisMax + margin,
                             stacked: true,
                             title: {
                                 display: true,
@@ -561,7 +569,7 @@
                         ySpec: {
                             display: false,
                             min: 0,
-                            max: specMax + margin
+                            max: yAxisMax + margin
                         },
                         x: {
                             stacked: true,
