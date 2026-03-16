@@ -105,7 +105,8 @@ def parse_datetime(value):
     for fmt in formats:
         try:
             return datetime.strptime(str(value).strip(), fmt), None
-    # for-else: 모든 형식 실패
+        except ValueError:
+            continue
     return None, f"날짜 파싱 실패: {value}"
 
 
