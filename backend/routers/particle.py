@@ -278,9 +278,13 @@ def get_chart_data(
                 date_label = m.created_at.strftime("%m/%d")
                 labels.append(date_label)
                 data.append(int(m.value))
-                data_y.append(int(m.final_y) if m.final_y is not None else 0)
-                data_o.append(int(m.final_o) if m.final_o is not None else 0)
-                data_b.append(int(m.final_b) if m.final_b is not None else 0)
+                # final_y/o/b가 없는 경우 after-before로 계산
+                y_val = m.final_y if m.final_y is not None else ((m.after_y or 0) - (m.before_y or 0))
+                o_val = m.final_o if m.final_o is not None else ((m.after_o or 0) - (m.before_o or 0))
+                b_val = m.final_b if m.final_b is not None else ((m.after_b or 0) - (m.before_b or 0))
+                data_y.append(max(0, int(y_val)))
+                data_o.append(max(0, int(o_val)))
+                data_b.append(max(0, int(b_val)))
                 spec_max_line.append(equipment.spec_max)
 
         return particle.ParticleChartData(
