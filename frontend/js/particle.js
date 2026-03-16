@@ -442,11 +442,17 @@
                 particleChart.data.datasets[2].data = chartData.data_b;
                 particleChart.data.datasets[3].data = Array(chartData.labels.length).fill(specMax);
 
-                const margin = Math.max(1, Math.round(specMax * 0.1));
+                const stackedMax = chartData.labels.length > 0
+                    ? Math.max(...chartData.labels.map((_, i) =>
+                        (chartData.data_y[i] || 0) + (chartData.data_o[i] || 0) + (chartData.data_b[i] || 0)
+                      ))
+                    : 0;
+                const yAxisMax = Math.max(specMax, stackedMax);
+                const margin = Math.max(1, Math.round(yAxisMax * 0.1));
                 particleChart.options.scales.y.min = 0;
-                particleChart.options.scales.y.max = specMax + margin;
+                particleChart.options.scales.y.max = yAxisMax + margin;
                 particleChart.options.scales.ySpec.min = 0;
-                particleChart.options.scales.ySpec.max = specMax + margin;
+                particleChart.options.scales.ySpec.max = yAxisMax + margin;
 
                 particleChart.update();
             } catch (error) {
