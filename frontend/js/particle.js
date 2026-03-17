@@ -1083,16 +1083,15 @@
         container.innerHTML = `
             <div class="d-flex" style="font-size:0.85rem;">
                 <!-- 장비명 테이블 (내용 폭 자동) -->
-                <table class="table table-bordered table-sm mb-0 flex-shrink-0" style="width:auto;">
+                <table class="table table-bordered table-sm mb-0 flex-shrink-0 name-table" style="width:auto;">
                     <thead class="thead-light">
-                        <tr><th rowspan="2" class="align-middle text-nowrap px-3">장비명</th></tr>
-                        <tr><th style="visibility:hidden;border:none;padding:0;">Y</th></tr>
+                        <tr><th class="align-middle text-nowrap px-3 name-header">장비명</th></tr>
                     </thead>
                     <tbody>${nameRows}</tbody>
                 </table>
                 <!-- 데이터 테이블 (균등 컬럼) -->
                 <div class="flex-grow-1 overflow-auto">
-                    <table class="table table-bordered table-sm text-center mb-0" style="width:100%;table-layout:fixed;">
+                    <table class="table table-bordered table-sm text-center mb-0 data-table" style="width:100%;table-layout:fixed;">
                         <thead class="thead-light">
                             <tr>
                                 <th colspan="3" class="text-primary">코팅 전</th>
@@ -1110,6 +1109,15 @@
                     </table>
                 </div>
             </div>`;
+
+        // 장비명 헤더 높이를 데이터 테이블 thead 높이에 맞춤
+        requestAnimationFrame(() => {
+            const nameHeader = container.querySelector('.name-header');
+            const dataThead = container.querySelector('.data-table thead');
+            if (nameHeader && dataThead) {
+                nameHeader.style.height = dataThead.offsetHeight + 'px';
+            }
+        });
     }
 
     function regenerateChartFilters() {
