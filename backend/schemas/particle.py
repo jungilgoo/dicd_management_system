@@ -65,6 +65,7 @@ class ParticleMeasurementUpdate(BaseModel):
     after_o: Optional[int] = Field(None, ge=0, le=99999)
     after_b: Optional[int] = Field(None, ge=0, le=99999)
     author: Optional[str] = Field(None, min_length=1, max_length=100)
+    action_note: Optional[str] = Field(None, max_length=500, description="장비 조치 사항")
 
     @validator('before_y', 'before_o', 'before_b', 'after_y', 'after_o', 'after_b', pre=True)
     def empty_string_to_none(cls, v):
@@ -133,6 +134,7 @@ class ParticleMeasurementWithEquipment(BaseModel):
     final_b: Optional[int] = None
     value: Optional[int] = None
     author: str
+    action_note: Optional[str] = None
     created_at: datetime
 
     class Config:

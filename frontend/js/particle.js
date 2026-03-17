@@ -237,7 +237,7 @@
         if (!data || data.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="14" class="text-center text-muted">
+                    <td colspan="15" class="text-center text-muted">
                         데이터가 없습니다.
                     </td>
                 </tr>
@@ -280,6 +280,7 @@
                     <td class="text-center" id="inline-final-b-${item.id}">${fmt(item.final_b)}</td>
                     <td class="text-center" id="inline-total-${item.id}">${valueDisplay}</td>
                     <td>${item.author}</td>
+                    <td style="max-width:200px;white-space:pre-wrap;word-break:break-all;">${item.action_note || ''}</td>
                     <td style="white-space:nowrap;">
                         <button class="btn btn-xs btn-primary mr-1" onclick="particleStartInlineEdit(${item.id})" title="수정">
                             <i class="fas fa-edit"></i>
@@ -684,7 +685,7 @@
         tr.classList.add('table-warning');
 
         const cells = tr.querySelectorAll('td');
-        // cells 순서: 0=날짜, 1=장비명, 2=before_y, 3=before_o, 4=before_b, 5=after_y, 6=after_o, 7=after_b, 8=final_y, 9=final_o, 10=final_b, 11=합계, 12=author, 13=동작
+        // cells 순서: 0=날짜, 1=장비명, 2=before_y, 3=before_o, 4=before_b, 5=after_y, 6=after_o, 7=after_b, 8=final_y, 9=final_o, 10=final_b, 11=합계, 12=author, 13=장비조치사항, 14=동작
 
         const makeNumInput = (fieldName, val, eqId) => {
             const v = (val === '-' || val === '') ? '' : val;
@@ -721,7 +722,12 @@
             style="width:80px;padding:2px 4px;"
             value="${author}">`;
 
-        cells[13].innerHTML = `
+        const actionNote = cells[13].textContent.trim();
+        cells[13].innerHTML = `<textarea class="form-control form-control-sm" data-field="action_note"
+            maxlength="500" rows="2"
+            style="width:160px;padding:2px 4px;resize:vertical;">${actionNote}</textarea>`;
+
+        cells[14].innerHTML = `
             <button class="btn btn-xs btn-success mr-1" onclick="particleSaveInlineEdit(${id})" title="저장">
                 <i class="fas fa-save"></i>
             </button>
@@ -799,7 +805,8 @@
                 after_y:  getNum('after_y'),
                 after_o:  getNum('after_o'),
                 after_b:  getNum('after_b'),
-                author: author
+                author: author,
+                action_note: getStr('action_note') || null
             };
 
             await api.updateParticleMeasurement(id, data);

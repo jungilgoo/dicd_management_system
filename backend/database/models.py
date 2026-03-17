@@ -282,6 +282,7 @@ class ParticleMeasurement(Base):
     value = Column(Integer, nullable=True)
 
     author = Column(String(100), nullable=False)  # 작성자
+    action_note = Column(String(500), nullable=True)  # 장비 조치 사항
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
