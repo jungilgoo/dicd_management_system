@@ -11,6 +11,7 @@
     let currentChartPeriod = '30d';
     let customStartDate = null;
     let customEndDate = null;
+    let actionNotesCache = [];
 
     // 장비 설정 데이터 관리 (동적)
     let equipmentSettings = {};
@@ -442,11 +443,17 @@
 
                 const specMax = equipmentSetting ? equipmentSetting.specMax : 20;
 
+                actionNotesCache = chartData.action_notes || [];
+                const actionNoteMarkers = actionNotesCache.map((note, i) =>
+                    note ? (chartData.data[i] || 0) : null
+                );
+
                 particleChart.data.labels = chartData.labels;
                 particleChart.data.datasets[0].data = chartData.data_y;
                 particleChart.data.datasets[1].data = chartData.data_o;
                 particleChart.data.datasets[2].data = chartData.data_b;
                 particleChart.data.datasets[3].data = Array(chartData.labels.length).fill(specMax);
+                particleChart.data.datasets[4].data = actionNoteMarkers;
 
                 const stackedMax = chartData.labels.length > 0
                     ? Math.max(...chartData.labels.map((_, i) =>
@@ -514,6 +521,8 @@
 
             const specMax = equipmentSetting ? equipmentSetting.specMax : 20;
 
+            actionNotesCache = chartData.action_notes || [];
+
             // 실제 누적 최대값 계산 (Y+O+B 합산)
             const stackedMax = chartData.labels.length > 0
                 ? Math.max(...chartData.labels.map((_, i) =>
@@ -522,6 +531,11 @@
                 : 0;
             const yAxisMax = Math.max(specMax, stackedMax);
             const margin = Math.max(1, Math.round(yAxisMax * 0.1));
+
+            // 조치 사항 마커 데이터 (있는 항목만 해당 합계값에 표시)
+            const actionNoteMarkers = actionNotesCache.map((note, i) =>
+                note ? (chartData.data[i] || 0) : null
+            );
 
             particleChart = new Chart(ctx, {
                 type: 'bar',
@@ -562,6 +576,18 @@
                         pointRadius: 0,
                         borderWidth: 2,
                         yAxisID: 'ySpec'
+                    }, {
+                        label: '장비 조치 사항',
+                        data: actionNoteMarkers,
+                        type: 'line',
+                        showLine: false,
+                        pointStyle: 'triangle',
+                        pointRadius: 9,
+                        pointHoverRadius: 11,
+                        backgroundColor: 'rgba(220, 53, 69, 0.9)',
+                        borderColor: 'rgba(220, 53, 69, 0.9)',
+                        fill: false,
+                        yAxisID: 'y'
                     }]
                 },
                 options: {
@@ -598,7 +624,17 @@
                         },
                         tooltip: {
                             mode: 'index',
-                            intersect: false
+                            intersect: false,
+                            callbacks: {
+                                afterBody: function(tooltipItems) {
+                                    const idx = tooltipItems[0].dataIndex;
+                                    const note = actionNotesCache[idx];
+                                    if (note) {
+                                        return ['', '📋 조치 사항: ' + note];
+                                    }
+                                    return [];
+                                }
+                            }
                         }
                     }
                 }
@@ -635,7 +671,8 @@
                 data: chartData.data || [],
                 data_y: chartData.data_y || [],
                 data_o: chartData.data_o || [],
-                data_b: chartData.data_b || []
+                data_b: chartData.data_b || [],
+                action_notes: chartData.action_notes || []
             };
         } catch (error) {
             console.error('차트 데이터 로드 실패:', error);

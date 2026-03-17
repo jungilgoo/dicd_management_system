@@ -271,6 +271,7 @@ def get_chart_data(
         data_o = []
         data_b = []
         spec_max_line = []
+        action_notes = []
 
         measurements_sorted = sorted(measurements, key=lambda x: x.created_at)
 
@@ -287,6 +288,7 @@ def get_chart_data(
                 data_o.append(max(0, int(o_val)))
                 data_b.append(max(0, int(b_val)))
                 spec_max_line.append(equipment.spec_max)
+                action_notes.append(m.action_note if m.action_note else None)
 
         return particle.ParticleChartData(
             labels=labels,
@@ -295,7 +297,8 @@ def get_chart_data(
             data_o=data_o,
             data_b=data_b,
             spec_max_line=spec_max_line,
-            equipment_name=equipment.name
+            equipment_name=equipment.name,
+            action_notes=action_notes
         )
 
     except HTTPException:

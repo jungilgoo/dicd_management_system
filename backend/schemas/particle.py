@@ -168,6 +168,7 @@ class ParticleChartData(BaseModel):
     data_b: List[Optional[int]]
     spec_max_line: List[int]
     equipment_name: str
+    action_notes: List[Optional[str]] = []
 
 
 # ===== 통계 데이터 스키마 =====
