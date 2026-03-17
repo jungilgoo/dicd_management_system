@@ -680,8 +680,11 @@
         const finalO = getVal(`after-o-${equipmentNumber}`) - getVal(`before-o-${equipmentNumber}`);
         const finalB = getVal(`after-b-${equipmentNumber}`) - getVal(`before-b-${equipmentNumber}`);
         const total = finalY + finalO + finalB;
-        const totalEl = document.getElementById(`total-${equipmentNumber}`);
-        if (totalEl) totalEl.value = total;
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+        setVal(`final-y-${equipmentNumber}`, finalY);
+        setVal(`final-o-${equipmentNumber}`, finalO);
+        setVal(`final-b-${equipmentNumber}`, finalB);
+        setVal(`total-${equipmentNumber}`, total);
     };
     window.particleEditItem = async function(id) {
         await openEditModal(id);
@@ -1032,100 +1035,69 @@
         const container = document.getElementById('equipment-input-container');
         if (!container) return;
 
-        let html = '';
         const sortedEquipments = Object.keys(equipmentSettings)
             .map(num => parseInt(num))
             .sort((a, b) => a - b);
 
-        sortedEquipments.forEach(equipmentNumber => {
-            const setting = equipmentSettings[equipmentNumber];
-
-            html += `
-                <div class="card mb-3">
-                    <div class="card-header py-2 bg-primary text-white">
-                        <strong><i class="fas fa-cog mr-1"></i>${setting.name}</strong>
-                        <span class="float-right text-white-50 small">SPEC 최대: ${setting.specMax}개</span>
-                    </div>
-                    <div class="card-body py-2">
-                        <div class="row">
-                            <!-- 코팅 전 -->
-                            <div class="col-md-5">
-                                <p class="mb-1 font-weight-bold text-muted small">코팅 전</p>
-                                <div class="row">
-                                    <div class="col-4">
-                                        <label class="form-label mb-0 small">Y</label>
-                                        <input type="number" class="form-control form-control-sm text-center particle-input"
-                                               placeholder="0" min="0" max="99999"
-                                               id="before-y-${equipmentNumber}"
-                                               oninput="particleCalcFinal(${equipmentNumber})">
-                                    </div>
-                                    <div class="col-4">
-                                        <label class="form-label mb-0 small">O</label>
-                                        <input type="number" class="form-control form-control-sm text-center particle-input"
-                                               placeholder="0" min="0" max="99999"
-                                               id="before-o-${equipmentNumber}"
-                                               oninput="particleCalcFinal(${equipmentNumber})">
-                                    </div>
-                                    <div class="col-4">
-                                        <label class="form-label mb-0 small">B</label>
-                                        <input type="number" class="form-control form-control-sm text-center particle-input"
-                                               placeholder="0" min="0" max="99999"
-                                               id="before-b-${equipmentNumber}"
-                                               oninput="particleCalcFinal(${equipmentNumber})">
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- 코팅 후 -->
-                            <div class="col-md-5">
-                                <p class="mb-1 font-weight-bold text-muted small">코팅 후</p>
-                                <div class="row">
-                                    <div class="col-4">
-                                        <label class="form-label mb-0 small">Y</label>
-                                        <input type="number" class="form-control form-control-sm text-center particle-input"
-                                               placeholder="0" min="0" max="99999"
-                                               id="after-y-${equipmentNumber}"
-                                               oninput="particleCalcFinal(${equipmentNumber})">
-                                    </div>
-                                    <div class="col-4">
-                                        <label class="form-label mb-0 small">O</label>
-                                        <input type="number" class="form-control form-control-sm text-center particle-input"
-                                               placeholder="0" min="0" max="99999"
-                                               id="after-o-${equipmentNumber}"
-                                               oninput="particleCalcFinal(${equipmentNumber})">
-                                    </div>
-                                    <div class="col-4">
-                                        <label class="form-label mb-0 small">B</label>
-                                        <input type="number" class="form-control form-control-sm text-center particle-input"
-                                               placeholder="0" min="0" max="99999"
-                                               id="after-b-${equipmentNumber}"
-                                               oninput="particleCalcFinal(${equipmentNumber})">
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- 합계 -->
-                            <div class="col-md-2">
-                                <p class="mb-1 font-weight-bold small">합계 (자동)</p>
-                                <input type="number" class="form-control form-control-sm text-center font-weight-bold particle-total"
-                                       id="total-${equipmentNumber}" readonly style="background:#e8f5e9;">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
         if (sortedEquipments.length === 0) {
-            html = `
-                <div class="row">
-                    <div class="col-md-12 text-center text-muted py-4">
-                        <i class="fas fa-plus-circle fa-3x mb-3"></i>
-                        <p>장비가 없습니다. "장비 설정" 탭에서 장비를 추가하세요.</p>
-                    </div>
-                </div>
-            `;
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-plus-circle fa-3x mb-3"></i>
+                    <p>장비가 없습니다. "장비 설정" 탭에서 장비를 추가하세요.</p>
+                </div>`;
+            return;
         }
 
-        container.innerHTML = html;
+        const inp = (id, eqNum) =>
+            `<input type="number" class="form-control form-control-sm text-center particle-input"
+                    placeholder="0" min="0" max="99999" id="${id}"
+                    oninput="particleCalcFinal(${eqNum})" style="min-width:52px;">`;
+        const ro = (id) =>
+            `<input type="number" class="form-control form-control-sm text-center" id="${id}" readonly
+                    style="background:#f5f5f5;min-width:52px;">`;
+
+        let rows = sortedEquipments.map(n => {
+            const s = equipmentSettings[n];
+            return `
+            <tr>
+                <td class="align-middle font-weight-bold text-nowrap">
+                    <i class="fas fa-cog text-secondary mr-1"></i>${s.name}
+                    <br><small class="text-muted font-weight-normal">SPEC≤${s.specMax}</small>
+                </td>
+                <td>${inp(`before-y-${n}`, n)}</td>
+                <td>${inp(`before-o-${n}`, n)}</td>
+                <td>${inp(`before-b-${n}`, n)}</td>
+                <td>${inp(`after-y-${n}`, n)}</td>
+                <td>${inp(`after-o-${n}`, n)}</td>
+                <td>${inp(`after-b-${n}`, n)}</td>
+                <td>${ro(`final-y-${n}`)}</td>
+                <td>${ro(`final-o-${n}`)}</td>
+                <td>${ro(`final-b-${n}`)}</td>
+                <td><input type="number" class="form-control form-control-sm text-center font-weight-bold particle-total"
+                           id="total-${n}" readonly style="background:#e8f5e9;min-width:52px;"></td>
+            </tr>`;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm text-center mb-0" style="font-size:0.85rem;">
+                    <thead class="thead-light">
+                        <tr>
+                            <th rowspan="2" class="align-middle" style="min-width:90px;">장비명</th>
+                            <th colspan="3" class="text-primary">코팅 전</th>
+                            <th colspan="3" class="text-success">코팅 후</th>
+                            <th colspan="3" class="text-warning bg-light">최종 (자동)</th>
+                            <th rowspan="2" class="align-middle text-danger">합계</th>
+                        </tr>
+                        <tr>
+                            <th class="text-primary">Y</th><th class="text-primary">O</th><th class="text-primary">B</th>
+                            <th class="text-success">Y</th><th class="text-success">O</th><th class="text-success">B</th>
+                            <th class="text-warning">Y</th><th class="text-warning">O</th><th class="text-warning">B</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
     }
 
     function regenerateChartFilters() {
