@@ -725,28 +725,22 @@
                                 }
                             }
                         }
+                    },
+                    onClick: function(_event, elements) {
+                        const markers = elements.filter(el => el.datasetIndex === 4);
+                        if (!markers.length) return;
+                        markers.forEach(el => {
+                            const idx = el.index;
+                            if (toggledNoteIndices.has(idx)) {
+                                toggledNoteIndices.delete(idx);
+                            } else {
+                                toggledNoteIndices.add(idx);
+                            }
+                        });
+                        particleChart.update('none');
                     }
                 }
             }, [actionNoteLabelPlugin]);
-
-            // 마커 클릭 시 조치 사항 레이블 ON/OFF
-            canvas.addEventListener('click', function(event) {
-                if (!particleChart) return;
-                const points = particleChart.getElementsAtEventForMode(event, 'point', { intersect: true }, false);
-                let changed = false;
-                points.forEach(p => {
-                    if (p.datasetIndex === 4) {
-                        const idx = p.index;
-                        if (toggledNoteIndices.has(idx)) {
-                            toggledNoteIndices.delete(idx);
-                        } else {
-                            toggledNoteIndices.add(idx);
-                        }
-                        changed = true;
-                    }
-                });
-                if (changed) particleChart.update('none');
-            });
 
             console.log('Particle 차트 초기화 완료');
 
