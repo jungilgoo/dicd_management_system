@@ -739,8 +739,9 @@
                         });
                         particleChart.update('none');
                     }
-                }
-            }, [actionNoteLabelPlugin]);
+                },
+                plugins: [actionNoteLabelPlugin]
+            });
 
             console.log('Particle 차트 초기화 완료');
 
