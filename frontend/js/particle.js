@@ -175,7 +175,7 @@
                         markerDataset.pointRadius = markerVisible ? 9 : 0;
                         markerDataset.pointHoverRadius = markerVisible ? 11 : 0;
                     }
-                    particleChart.update('none');
+                    particleChart.update();
                 }
             });
         }
@@ -564,6 +564,8 @@
                 particleChart.data.datasets[2].data = chartData.data_b;
                 particleChart.data.datasets[3].data = Array(chartData.labels.length).fill(specMax);
                 particleChart.data.datasets[4].data = actionNoteMarkers;
+                particleChart.data.datasets[4].pointRadius = markerVisible ? 9 : 0;
+                particleChart.data.datasets[4].pointHoverRadius = markerVisible ? 11 : 0;
 
                 const stackedMax = chartData.labels.length > 0
                     ? Math.max(...chartData.labels.map((_, i) =>
@@ -693,8 +695,8 @@
                         showLine: false,
                         pointStyle: 'triangle',
                         rotation: 180,
-                        pointRadius: 9,
-                        pointHoverRadius: 11,
+                        pointRadius: markerVisible ? 9 : 0,
+                        pointHoverRadius: markerVisible ? 11 : 0,
                         backgroundColor: 'rgba(220, 53, 69, 0.9)',
                         borderColor: 'rgba(220, 53, 69, 0.9)',
                         fill: false,
