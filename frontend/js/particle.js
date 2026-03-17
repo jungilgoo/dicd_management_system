@@ -1090,10 +1090,10 @@
                             <th class="text-danger">합계</th>
                         </tr>
                         <tr>
-                            <th class="text-primary">Y</th><th class="text-primary">O</th><th class="text-primary">B</th>
-                            <th class="text-success">Y</th><th class="text-success">O</th><th class="text-success">B</th>
-                            <th class="text-warning">Y</th><th class="text-warning">O</th><th class="text-warning">B</th>
-                            <th></th>
+                            <th class="text-primary" style="width:100%;">Y</th><th class="text-primary" style="width:100%;">O</th><th class="text-primary" style="width:100%;">B</th>
+                            <th class="text-success" style="width:100%;">Y</th><th class="text-success" style="width:100%;">O</th><th class="text-success" style="width:100%;">B</th>
+                            <th class="text-warning" style="width:100%;">Y</th><th class="text-warning" style="width:100%;">O</th><th class="text-warning" style="width:100%;">B</th>
+                            <th style="width:100%;"></th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
