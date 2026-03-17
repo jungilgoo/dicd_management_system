@@ -1138,8 +1138,7 @@
                 <!-- 장비명 테이블 (내용 폭 자동) -->
                 <table class="table table-bordered table-sm mb-0 flex-shrink-0 name-table" style="width:auto;">
                     <thead class="thead-light">
-                        <tr><th rowspan="2" class="align-middle text-nowrap px-3">장비명</th></tr>
-                        <tr></tr>
+                        <tr><th class="align-middle text-nowrap px-3 name-header">장비명</th></tr>
                     </thead>
                     <tbody>${nameRows}</tbody>
                 </table>
@@ -1164,6 +1163,16 @@
                 </div>
             </div>`;
 
+        // 레이아웃이 완전히 계산된 후 장비명 헤더 높이를 데이터 테이블 thead에 맞춤
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const nameHeader = container.querySelector('.name-header');
+                const dataThead = container.querySelector('.data-table thead');
+                if (nameHeader && dataThead && dataThead.offsetHeight > 0) {
+                    nameHeader.style.height = dataThead.offsetHeight + 'px';
+                }
+            });
+        });
     }
 
     function regenerateChartFilters() {
