@@ -1080,26 +1080,19 @@
 
         container.innerHTML = `
             <div class="table-responsive">
-                <table class="table table-bordered table-sm text-center mb-0" style="font-size:0.85rem;table-layout:fixed;width:100%;">
-                    <colgroup>
-                        <col style="width:10%;">
-                        <col style="width:9%;"><col style="width:9%;"><col style="width:9%;">
-                        <col style="width:9%;"><col style="width:9%;"><col style="width:9%;">
-                        <col style="width:9%;"><col style="width:9%;"><col style="width:9%;">
-                        <col style="width:9%;">
-                    </colgroup>
+                <table class="table table-bordered table-sm text-center mb-0" style="font-size:0.85rem;width:100%;">
                     <thead class="thead-light">
                         <tr>
-                            <th rowspan="2" class="align-middle">장비명</th>
-                            <th colspan="3" class="text-primary">코팅 전</th>
-                            <th colspan="3" class="text-success">코팅 후</th>
-                            <th colspan="3" class="text-warning bg-light">최종 (자동)</th>
-                            <th rowspan="2" class="align-middle text-danger">합계</th>
+                            <th rowspan="2" class="align-middle text-nowrap">장비명</th>
+                            <th colspan="3" class="text-primary" style="width:1%;">코팅 전</th>
+                            <th colspan="3" class="text-success" style="width:1%;">코팅 후</th>
+                            <th colspan="3" class="text-warning bg-light" style="width:1%;">최종 (자동)</th>
+                            <th rowspan="2" class="align-middle text-danger" style="width:1%;">합계</th>
                         </tr>
                         <tr>
-                            <th class="text-primary">Y</th><th class="text-primary">O</th><th class="text-primary">B</th>
-                            <th class="text-success">Y</th><th class="text-success">O</th><th class="text-success">B</th>
-                            <th class="text-warning">Y</th><th class="text-warning">O</th><th class="text-warning">B</th>
+                            <th class="text-primary" style="width:1%;">Y</th><th class="text-primary" style="width:1%;">O</th><th class="text-primary" style="width:1%;">B</th>
+                            <th class="text-success" style="width:1%;">Y</th><th class="text-success" style="width:1%;">O</th><th class="text-success" style="width:1%;">B</th>
+                            <th class="text-warning" style="width:1%;">Y</th><th class="text-warning" style="width:1%;">O</th><th class="text-warning" style="width:1%;">B</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
