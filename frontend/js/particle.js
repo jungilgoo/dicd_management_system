@@ -19,6 +19,7 @@
     // 페이지 초기화
     async function initParticlePage() {
         setupEventListeners();
+        await loadRecentData();
         console.log('Particle 페이지 초기화 완료');
     }
 
@@ -64,8 +65,10 @@
         const addEquipmentBtn = document.getElementById('add-equipment-btn');
         if (addEquipmentBtn) addEquipmentBtn.addEventListener('click', addNewEquipment);
 
-        const saveEditBtn = document.getElementById('save-edit-btn');
-        if (saveEditBtn) saveEditBtn.addEventListener('click', saveEditedData);
+        const refreshInlineDataBtn = document.getElementById('refresh-inline-data-btn');
+        if (refreshInlineDataBtn) {
+            refreshInlineDataBtn.addEventListener('click', () => loadRecentData(currentPage));
+        }
     }
 
     // 탭 이벤트 리스너 설정
@@ -98,9 +101,6 @@
                         setTimeout(async () => {
                             await initChartTab();
                         }, 100);
-                        break;
-                    case 'data':
-                        loadRecentData();
                         break;
                     case 'settings':
                         setTimeout(() => {
@@ -192,10 +192,10 @@
     // 최근 데이터 로드
     async function loadRecentData(page = 1) {
         try {
-            const tbody = document.getElementById('particle-table-body');
+            const tbody = document.getElementById('inline-data-tbody');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center">
+                    <td colspan="14" class="text-center">
                         <div class="spinner-border text-primary" role="status">
                             <span class="sr-only">로딩 중...</span>
                         </div>
@@ -219,10 +219,10 @@
 
         } catch (error) {
             console.error('최근 데이터 로드 실패:', error);
-            const tbody = document.getElementById('particle-table-body');
+            const tbody = document.getElementById('inline-data-tbody');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center text-danger">
+                    <td colspan="14" class="text-center text-danger">
                         데이터를 불러오는 중 오류가 발생했습니다.
                     </td>
                 </tr>
@@ -230,14 +230,14 @@
         }
     }
 
-    // 테이블 업데이트
+    // 테이블 업데이트 (인라인 편집 지원)
     function updateTable(data) {
-        const tbody = document.getElementById('particle-table-body');
+        const tbody = document.getElementById('inline-data-tbody');
 
         if (!data || data.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center text-muted">
+                    <td colspan="14" class="text-center text-muted">
                         데이터가 없습니다.
                     </td>
                 </tr>
@@ -246,7 +246,6 @@
         }
 
         const fmt = (v) => (v !== null && v !== undefined) ? v : '-';
-        const fmtYOB = (y, o, b) => `${fmt(y)} / ${fmt(o)} / ${fmt(b)}`;
 
         let html = '';
         data.forEach(item => {
@@ -263,23 +262,29 @@
             const valueDisplay = item.value !== null && item.value !== undefined
                 ? (isOutOfSpec
                     ? `<span style="color:red;font-weight:bold;">${item.value}개 ⚠</span>`
-                    : `${item.value}개`)
-                : '-';
+                    : `<span>${item.value}개</span>`)
+                : '<span>-</span>';
 
             html += `
-                <tr>
-                    <td>${formatDateTime(item.created_at)}</td>
+                <tr data-id="${item.id}">
+                    <td style="white-space:nowrap;">${formatDateTime(item.created_at)}</td>
                     <td>${item.equipment_name}</td>
-                    <td><small>${fmtYOB(item.before_y, item.before_o, item.before_b)}</small></td>
-                    <td><small>${fmtYOB(item.after_y, item.after_o, item.after_b)}</small></td>
-                    <td><small>${fmtYOB(item.final_y, item.final_o, item.final_b)}</small></td>
-                    <td>${valueDisplay}</td>
+                    <td class="text-center">${fmt(item.before_y)}</td>
+                    <td class="text-center">${fmt(item.before_o)}</td>
+                    <td class="text-center">${fmt(item.before_b)}</td>
+                    <td class="text-center">${fmt(item.after_y)}</td>
+                    <td class="text-center">${fmt(item.after_o)}</td>
+                    <td class="text-center">${fmt(item.after_b)}</td>
+                    <td class="text-center" id="inline-final-y-${item.id}">${fmt(item.final_y)}</td>
+                    <td class="text-center" id="inline-final-o-${item.id}">${fmt(item.final_o)}</td>
+                    <td class="text-center" id="inline-final-b-${item.id}">${fmt(item.final_b)}</td>
+                    <td class="text-center" id="inline-total-${item.id}">${valueDisplay}</td>
                     <td>${item.author}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary mr-1" onclick="particleEditItem(${item.id})">
+                    <td style="white-space:nowrap;">
+                        <button class="btn btn-xs btn-primary mr-1" onclick="particleStartInlineEdit(${item.id})" title="수정">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="particleDeleteItem(${item.id})">
+                        <button class="btn btn-xs btn-danger" onclick="particleDeleteItem(${item.id})" title="삭제">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -292,7 +297,7 @@
 
     // 페이지네이션 업데이트
     function updatePagination() {
-        const pagination = document.getElementById('pagination');
+        const pagination = document.getElementById('inline-pagination');
         let html = '';
 
         if (currentPage > 1) {
@@ -331,7 +336,7 @@
         const startItem = (currentPage - 1) * itemsPerPage + 1;
         const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
-        document.getElementById('table-info').textContent =
+        document.getElementById('inline-table-info').textContent =
             `${totalItems}개 중 ${startItem} - ${endItem}개 표시`;
     }
 
@@ -671,6 +676,150 @@
 
     // 전역 함수들 (HTML에서 호출)
     window.particleLoadRecentData = loadRecentData;
+
+    // 인라인 편집: 수정 모드로 전환
+    window.particleStartInlineEdit = function(id) {
+        const tr = document.querySelector(`tr[data-id="${id}"]`);
+        if (!tr) return;
+        tr.classList.add('table-warning');
+
+        const cells = tr.querySelectorAll('td');
+        // cells 순서: 0=날짜, 1=장비명, 2=before_y, 3=before_o, 4=before_b, 5=after_y, 6=after_o, 7=after_b, 8=final_y, 9=final_o, 10=final_b, 11=합계, 12=author, 13=동작
+
+        const makeNumInput = (fieldName, val, eqId) => {
+            const v = (val === '-' || val === '') ? '' : val;
+            return `<input type="number" class="form-control form-control-sm text-center"
+                data-field="${fieldName}" min="0" max="99999"
+                style="width:60px;padding:2px 4px;"
+                value="${v}"
+                oninput="particleCalcInlineEdit(${eqId})">`;
+        };
+
+        const beforeY = cells[2].textContent.trim();
+        const beforeO = cells[3].textContent.trim();
+        const beforeB = cells[4].textContent.trim();
+        const afterY  = cells[5].textContent.trim();
+        const afterO  = cells[6].textContent.trim();
+        const afterB  = cells[7].textContent.trim();
+        const author  = cells[12].textContent.trim();
+
+        cells[2].innerHTML = makeNumInput('before_y', beforeY, id);
+        cells[3].innerHTML = makeNumInput('before_o', beforeO, id);
+        cells[4].innerHTML = makeNumInput('before_b', beforeB, id);
+        cells[5].innerHTML = makeNumInput('after_y',  afterY,  id);
+        cells[6].innerHTML = makeNumInput('after_o',  afterO,  id);
+        cells[7].innerHTML = makeNumInput('after_b',  afterB,  id);
+
+        // final/합계는 자동계산 표시
+        cells[8].style.background  = '#f5f5f5';
+        cells[9].style.background  = '#f5f5f5';
+        cells[10].style.background = '#f5f5f5';
+        cells[11].style.background = '#e8f5e9';
+
+        cells[12].innerHTML = `<input type="text" class="form-control form-control-sm"
+            data-field="author" maxlength="50"
+            style="width:80px;padding:2px 4px;"
+            value="${author}">`;
+
+        cells[13].innerHTML = `
+            <button class="btn btn-xs btn-success mr-1" onclick="particleSaveInlineEdit(${id})" title="저장">
+                <i class="fas fa-save"></i>
+            </button>
+            <button class="btn btn-xs btn-secondary" onclick="particleCancelInlineEdit(${id})" title="취소">
+                <i class="fas fa-times"></i>
+            </button>`;
+
+        // 첫 번째 입력 필드에 포커스
+        const firstInput = tr.querySelector('input[data-field="before_y"]');
+        if (firstInput) firstInput.focus();
+    };
+
+    // 인라인 편집: 자동 계산
+    window.particleCalcInlineEdit = function(id) {
+        const tr = document.querySelector(`tr[data-id="${id}"]`);
+        if (!tr) return;
+
+        const getNum = (field) => {
+            const el = tr.querySelector(`input[data-field="${field}"]`);
+            return el && el.value !== '' ? (parseInt(el.value) || 0) : 0;
+        };
+
+        const fy = getNum('after_y') - getNum('before_y');
+        const fo = getNum('after_o') - getNum('before_o');
+        const fb = getNum('after_b') - getNum('before_b');
+        const total = fy + fo + fb;
+
+        const fy_el = document.getElementById(`inline-final-y-${id}`);
+        const fo_el = document.getElementById(`inline-final-o-${id}`);
+        const fb_el = document.getElementById(`inline-final-b-${id}`);
+        const tot_el = document.getElementById(`inline-total-${id}`);
+
+        if (fy_el) fy_el.textContent = fy;
+        if (fo_el) fo_el.textContent = fo;
+        if (fb_el) fb_el.textContent = fb;
+        if (tot_el) tot_el.innerHTML = `<span>${total}개</span>`;
+    };
+
+    // 인라인 편집: 취소
+    window.particleCancelInlineEdit = function(_id) {
+        loadRecentData(currentPage);
+    };
+
+    // 인라인 편집: 저장
+    window.particleSaveInlineEdit = async function(id) {
+        const tr = document.querySelector(`tr[data-id="${id}"]`);
+        if (!tr) return;
+
+        const getNum = (field) => {
+            const el = tr.querySelector(`input[data-field="${field}"]`);
+            return el && el.value !== '' ? parseInt(el.value) : null;
+        };
+        const getStr = (field) => {
+            const el = tr.querySelector(`input[data-field="${field}"]`);
+            return el ? el.value.trim() : '';
+        };
+
+        const author = getStr('author');
+        if (!author) {
+            showToast('작성자를 입력해주세요.', 'error');
+            return;
+        }
+
+        const saveBtn = tr.querySelector('.btn-success');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+
+        try {
+            const data = {
+                before_y: getNum('before_y'),
+                before_o: getNum('before_o'),
+                before_b: getNum('before_b'),
+                after_y:  getNum('after_y'),
+                after_o:  getNum('after_o'),
+                after_b:  getNum('after_b'),
+                author: author
+            };
+
+            await api.updateParticleMeasurement(id, data);
+
+            if (api.cache) api.cache.data = {};
+
+            showToast('데이터가 성공적으로 수정되었습니다.', 'success');
+            await loadRecentData(currentPage);
+            await refreshChart();
+
+        } catch (error) {
+            console.error('데이터 수정 실패:', error);
+            showToast('데이터 수정 중 오류가 발생했습니다.', 'error');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i>';
+            }
+        }
+    };
+
     window.particleCalcFinal = function(equipmentNumber) {
         const getVal = (id) => {
             const el = document.getElementById(id);
@@ -685,9 +834,6 @@
         setVal(`final-o-${equipmentNumber}`, finalO);
         setVal(`final-b-${equipmentNumber}`, finalB);
         setVal(`total-${equipmentNumber}`, total);
-    };
-    window.particleEditItem = async function(id) {
-        await openEditModal(id);
     };
     window.particleDeleteItem = async function(id) {
         if (confirm('정말 삭제하시겠습니까?')) {
@@ -707,106 +853,6 @@
             }
         }
     };
-
-    // 모달 내 최종값 자동 계산
-    function calcEditFinal() {
-        const getNum = (id) => {
-            const el = document.getElementById(id);
-            return el && el.value !== '' ? (parseInt(el.value) || 0) : 0;
-        };
-        const fy = getNum('edit-after-y') - getNum('edit-before-y');
-        const fo = getNum('edit-after-o') - getNum('edit-before-o');
-        const fb = getNum('edit-after-b') - getNum('edit-before-b');
-        document.getElementById('edit-final-y').value = fy;
-        document.getElementById('edit-final-o').value = fo;
-        document.getElementById('edit-final-b').value = fb;
-        document.getElementById('edit-total-value').value = fy + fo + fb;
-    }
-
-    // 수정 모달 열기
-    async function openEditModal(measurementId) {
-        try {
-            const measurement = await api.getParticleMeasurement(measurementId);
-
-            document.getElementById('edit-measurement-id').value = measurement.id;
-            document.getElementById('edit-equipment-name').value = measurement.equipment_name || '';
-            document.getElementById('edit-author').value = measurement.author || '';
-
-            const setVal = (id, v) => { document.getElementById(id).value = (v !== null && v !== undefined) ? v : ''; };
-            setVal('edit-before-y', measurement.before_y);
-            setVal('edit-before-o', measurement.before_o);
-            setVal('edit-before-b', measurement.before_b);
-            setVal('edit-after-y', measurement.after_y);
-            setVal('edit-after-o', measurement.after_o);
-            setVal('edit-after-b', measurement.after_b);
-
-            calcEditFinal();
-
-            // before/after 변경 시 자동 재계산
-            ['edit-before-y','edit-before-o','edit-before-b','edit-after-y','edit-after-o','edit-after-b'].forEach(id => {
-                document.getElementById(id).oninput = calcEditFinal;
-            });
-
-            $('#editParticleModal').modal('show');
-
-        } catch (error) {
-            console.error('측정 데이터 조회 실패:', error);
-            showToast('데이터를 불러오는 중 오류가 발생했습니다.', 'error');
-        }
-    }
-
-    // 수정된 데이터 저장
-    async function saveEditedData() {
-        const saveBtn = document.getElementById('save-edit-btn');
-        const originalText = saveBtn.innerHTML;
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> 저장 중...';
-
-        try {
-            const measurementId = document.getElementById('edit-measurement-id').value;
-            const author = document.getElementById('edit-author').value;
-
-            if (!author) {
-                showToast('작성자를 입력해주세요.', 'error');
-                return;
-            }
-
-            const getNum = (id) => {
-                const el = document.getElementById(id);
-                return el && el.value !== '' ? parseInt(el.value) : null;
-            };
-
-            const data = {
-                before_y: getNum('edit-before-y'),
-                before_o: getNum('edit-before-o'),
-                before_b: getNum('edit-before-b'),
-                after_y:  getNum('edit-after-y'),
-                after_o:  getNum('edit-after-o'),
-                after_b:  getNum('edit-after-b'),
-                author: author
-            };
-
-            await api.updateParticleMeasurement(measurementId, data);
-
-            showToast('데이터가 성공적으로 수정되었습니다.', 'success');
-
-            $('#editParticleModal').modal('hide');
-
-            if (api.cache) {
-                api.cache.data = {};
-            }
-
-            await loadRecentData(currentPage);
-            await refreshChart();
-
-        } catch (error) {
-            console.error('데이터 수정 실패:', error);
-            showToast('데이터 수정 중 오류가 발생했습니다.', 'error');
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = originalText;
-        }
-    }
 
     // 기본 장비 설정 생성 함수
     function createDefaultEquipmentSettings() {
@@ -1028,7 +1074,7 @@
     function regenerateAllTabs() {
         regenerateInputTab();
         regenerateChartFilters();
-        regenerateDataFilters();
+        regenerateInlineFilters();
     }
 
     function regenerateInputTab() {
@@ -1145,15 +1191,15 @@
         setupChartFilterListeners();
     }
 
-    function regenerateDataFilters() {
-        const container = document.getElementById('data-equipment-filter-container');
+    function regenerateInlineFilters() {
+        const container = document.getElementById('inline-equipment-filter-container');
         if (!container) return;
 
         let html = '';
 
         const isAllActive = currentEquipmentFilter === 'all' ? 'btn-primary active' : 'btn-outline-secondary';
         html += `
-            <button type="button" class="btn ${isAllActive} btn-sm mr-2 mb-2 equipment-filter-btn"
+            <button type="button" class="btn ${isAllActive} btn-sm mr-1 inline-equipment-filter-btn"
                     data-equipment="all">
                 <i class="fas fa-list mr-1"></i> 전체
             </button>
@@ -1168,7 +1214,7 @@
             const isActive = currentEquipmentFilter === equipmentNumber.toString() ? 'btn-primary active' : 'btn-outline-secondary';
 
             html += `
-                <button type="button" class="btn ${isActive} btn-sm mr-2 mb-2 equipment-filter-btn"
+                <button type="button" class="btn ${isActive} btn-sm mr-1 inline-equipment-filter-btn"
                         data-equipment="${equipmentNumber}">
                     <i class="fas fa-cog mr-1"></i> ${setting.name}
                 </button>
@@ -1176,7 +1222,7 @@
         });
 
         container.innerHTML = html;
-        setupDataFilterListeners();
+        setupInlineFilterListeners();
     }
 
     function setupChartFilterListeners() {
@@ -1202,8 +1248,8 @@
         });
     }
 
-    function setupDataFilterListeners() {
-        const equipmentFilterBtns = document.querySelectorAll('.equipment-filter-btn');
+    function setupInlineFilterListeners() {
+        const equipmentFilterBtns = document.querySelectorAll('.inline-equipment-filter-btn');
         equipmentFilterBtns.forEach(btn => {
             btn.addEventListener('click', function() {
                 equipmentFilterBtns.forEach(b => {
