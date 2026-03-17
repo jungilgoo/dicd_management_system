@@ -162,6 +162,7 @@ def get_measurements(
                 final_b=m.final_b,
                 value=m.value,
                 author=m.author,
+                action_note=m.action_note,
                 created_at=m.created_at
             ))
 
