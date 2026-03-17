@@ -13,6 +13,7 @@
     let customEndDate = null;
     let actionNotesCache = [];
     let toggledNoteIndices = new Set();
+    let markerVisible = true;
 
     // 조치 사항 레이블 박스를 차트 위에 직접 그리는 플러그인
     const actionNoteLabelPlugin = {
@@ -156,6 +157,27 @@
         const refreshInlineDataBtn = document.getElementById('refresh-inline-data-btn');
         if (refreshInlineDataBtn) {
             refreshInlineDataBtn.addEventListener('click', () => loadRecentData(currentPage));
+        }
+
+        const toggleMarkerBtn = document.getElementById('toggle-marker-btn');
+        if (toggleMarkerBtn) {
+            toggleMarkerBtn.addEventListener('click', () => {
+                markerVisible = !markerVisible;
+                toggleMarkerBtn.innerHTML = markerVisible
+                    ? '<i class="fas fa-tag mr-1"></i> 마커 숨기기'
+                    : '<i class="fas fa-tag mr-1"></i> 마커 보이기';
+                toggleMarkerBtn.classList.toggle('btn-outline-danger', markerVisible);
+                toggleMarkerBtn.classList.toggle('btn-danger', !markerVisible);
+
+                if (particleChart) {
+                    const markerDataset = particleChart.data.datasets[4];
+                    if (markerDataset) {
+                        markerDataset.pointRadius = markerVisible ? 9 : 0;
+                        markerDataset.pointHoverRadius = markerVisible ? 11 : 0;
+                    }
+                    particleChart.update('none');
+                }
+            });
         }
     }
 
