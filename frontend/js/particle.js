@@ -1086,7 +1086,7 @@
                             <th rowspan="2" class="align-middle">장비명</th>
                             <th colspan="3" class="text-primary">코팅 전</th>
                             <th colspan="3" class="text-success">코팅 후</th>
-                            <th colspan="3" class="text-warning bg-light">최종 (자동)</th>
+                            <th colspan="3" class="text-warning bg-light">최종</th>
                             <th class="text-danger">합계</th>
                         </tr>
                         <tr>
