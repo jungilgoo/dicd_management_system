@@ -1060,9 +1060,9 @@
             const s = equipmentSettings[n];
             return `
             <tr>
-                <td class="align-middle font-weight-bold text-nowrap">
+                <td class="align-middle font-weight-bold" style="width:1px;white-space:nowrap;">
                     <i class="fas fa-cog text-secondary mr-1"></i>${s.name}
-                    <br><small class="text-muted font-weight-normal">SPEC≤${s.specMax}</small>
+                    <small class="text-muted font-weight-normal ml-1">(SPEC≤${s.specMax})</small>
                 </td>
                 <td>${inp(`before-y-${n}`, n)}</td>
                 <td>${inp(`before-o-${n}`, n)}</td>
@@ -1083,7 +1083,7 @@
                 <table class="table table-bordered table-sm text-center mb-0" style="font-size:0.85rem;width:100%;">
                     <thead class="thead-light">
                         <tr>
-                            <th rowspan="2" class="align-middle" style="width:0;white-space:nowrap;">장비명</th>
+                            <th rowspan="2" class="align-middle">장비명</th>
                             <th colspan="3" class="text-primary" style="width:1%;">코팅 전</th>
                             <th colspan="3" class="text-success" style="width:1%;">코팅 후</th>
                             <th colspan="3" class="text-warning bg-light" style="width:1%;">최종 (자동)</th>
