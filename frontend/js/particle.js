@@ -781,7 +781,7 @@
             return el && el.value !== '' ? parseInt(el.value) : null;
         };
         const getStr = (field) => {
-            const el = tr.querySelector(`input[data-field="${field}"]`);
+            const el = tr.querySelector(`input[data-field="${field}"], textarea[data-field="${field}"]`);
             return el ? el.value.trim() : '';
         };
 
