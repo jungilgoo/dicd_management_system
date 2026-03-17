@@ -1053,7 +1053,7 @@
                     placeholder="0" min="0" max="99999" id="${id}"
                     oninput="particleCalcFinal(${eqNum})">`;
         const ro = (id, bg='#f5f5f5') =>
-            `<input type="number" class="form-control form-control-sm text-center" id="${id}" readonly
+            `<input type="number" class="form-control form-control-sm text-center" id="${id}" readonly tabindex="-1"
                     style="background:${bg};">`;
 
         const nameRows = sortedEquipments.map(n => {
