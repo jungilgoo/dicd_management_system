@@ -1051,19 +1051,23 @@
         const inp = (id, eqNum) =>
             `<input type="number" class="form-control form-control-sm text-center particle-input"
                     placeholder="0" min="0" max="99999" id="${id}"
-                    oninput="particleCalcFinal(${eqNum})" style="min-width:52px;">`;
-        const ro = (id) =>
+                    oninput="particleCalcFinal(${eqNum})">`;
+        const ro = (id, bg='#f5f5f5') =>
             `<input type="number" class="form-control form-control-sm text-center" id="${id}" readonly
-                    style="background:#f5f5f5;min-width:52px;">`;
+                    style="background:${bg};">`;
 
-        let rows = sortedEquipments.map(n => {
+        const nameRows = sortedEquipments.map(n => {
             const s = equipmentSettings[n];
-            return `
-            <tr>
-                <td class="align-middle font-weight-bold" style="width:1px;white-space:nowrap;">
+            return `<tr>
+                <td class="align-middle font-weight-bold text-nowrap px-3">
                     <i class="fas fa-cog text-secondary mr-1"></i>${s.name}
                     <small class="text-muted font-weight-normal ml-1">(SPEC≤${s.specMax})</small>
                 </td>
+            </tr>`;
+        }).join('');
+
+        const dataRows = sortedEquipments.map(n => `
+            <tr>
                 <td>${inp(`before-y-${n}`, n)}</td>
                 <td>${inp(`before-o-${n}`, n)}</td>
                 <td>${inp(`before-b-${n}`, n)}</td>
@@ -1073,31 +1077,38 @@
                 <td>${ro(`final-y-${n}`)}</td>
                 <td>${ro(`final-o-${n}`)}</td>
                 <td>${ro(`final-b-${n}`)}</td>
-                <td><input type="number" class="form-control form-control-sm text-center font-weight-bold particle-total"
-                           id="total-${n}" readonly style="background:#e8f5e9;min-width:52px;"></td>
-            </tr>`;
-        }).join('');
+                <td>${ro(`total-${n}`, '#e8f5e9')}</td>
+            </tr>`).join('');
 
         container.innerHTML = `
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm text-center mb-0" style="font-size:0.85rem;width:100%;">
+            <div class="d-flex" style="font-size:0.85rem;">
+                <!-- 장비명 테이블 (내용 폭 자동) -->
+                <table class="table table-bordered table-sm mb-0 flex-shrink-0" style="width:auto;">
                     <thead class="thead-light">
-                        <tr>
-                            <th rowspan="2" class="align-middle">장비명</th>
-                            <th colspan="3" class="text-primary">코팅 전</th>
-                            <th colspan="3" class="text-success">코팅 후</th>
-                            <th colspan="3" class="text-warning bg-light">최종</th>
-                            <th class="text-danger">합계</th>
-                        </tr>
-                        <tr>
-                            <th class="text-primary" style="width:100%;">Y</th><th class="text-primary" style="width:100%;">O</th><th class="text-primary" style="width:100%;">B</th>
-                            <th class="text-success" style="width:100%;">Y</th><th class="text-success" style="width:100%;">O</th><th class="text-success" style="width:100%;">B</th>
-                            <th class="text-warning" style="width:100%;">Y</th><th class="text-warning" style="width:100%;">O</th><th class="text-warning" style="width:100%;">B</th>
-                            <th style="width:100%;"></th>
-                        </tr>
+                        <tr><th rowspan="2" class="align-middle text-nowrap px-3">장비명</th></tr>
+                        <tr><th style="visibility:hidden;border:none;padding:0;">Y</th></tr>
                     </thead>
-                    <tbody>${rows}</tbody>
+                    <tbody>${nameRows}</tbody>
                 </table>
+                <!-- 데이터 테이블 (균등 컬럼) -->
+                <div class="flex-grow-1 overflow-auto">
+                    <table class="table table-bordered table-sm text-center mb-0" style="width:100%;table-layout:fixed;">
+                        <thead class="thead-light">
+                            <tr>
+                                <th colspan="3" class="text-primary">코팅 전</th>
+                                <th colspan="3" class="text-success">코팅 후</th>
+                                <th colspan="3" class="text-warning">최종</th>
+                                <th rowspan="2" class="align-middle text-danger">합계</th>
+                            </tr>
+                            <tr>
+                                <th class="text-primary">Y</th><th class="text-primary">O</th><th class="text-primary">B</th>
+                                <th class="text-success">Y</th><th class="text-success">O</th><th class="text-success">B</th>
+                                <th class="text-warning">Y</th><th class="text-warning">O</th><th class="text-warning">B</th>
+                            </tr>
+                        </thead>
+                        <tbody>${dataRows}</tbody>
+                    </table>
+                </div>
             </div>`;
     }
 
