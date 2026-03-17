@@ -1051,10 +1051,10 @@
         const inp = (id, eqNum) =>
             `<input type="number" class="form-control form-control-sm text-center particle-input"
                     placeholder="0" min="0" max="99999" id="${id}"
-                    oninput="particleCalcFinal(${eqNum})">`;
-        const ro = (id, bg='#f5f5f5') =>
+                    oninput="particleCalcFinal(${eqNum})" style="min-width:52px;">`;
+        const ro = (id) =>
             `<input type="number" class="form-control form-control-sm text-center" id="${id}" readonly
-                    style="background:${bg};">`;
+                    style="background:#f5f5f5;min-width:52px;">`;
 
         let rows = sortedEquipments.map(n => {
             const s = equipmentSettings[n];
@@ -1073,25 +1073,33 @@
                 <td>${ro(`final-y-${n}`)}</td>
                 <td>${ro(`final-o-${n}`)}</td>
                 <td>${ro(`final-b-${n}`)}</td>
-                <td>${ro(`total-${n}`, '#e8f5e9')}</td>
+                <td><input type="number" class="form-control form-control-sm text-center font-weight-bold particle-total"
+                           id="total-${n}" readonly style="background:#e8f5e9;min-width:52px;"></td>
             </tr>`;
         }).join('');
 
         container.innerHTML = `
             <div class="table-responsive">
-                <table class="table table-bordered table-sm text-center mb-0" style="font-size:0.85rem;">
+                <table class="table table-bordered table-sm text-center mb-0" style="font-size:0.85rem;table-layout:fixed;width:100%;">
+                    <colgroup>
+                        <col style="width:10%;">
+                        <col style="width:9%;"><col style="width:9%;"><col style="width:9%;">
+                        <col style="width:9%;"><col style="width:9%;"><col style="width:9%;">
+                        <col style="width:9%;"><col style="width:9%;"><col style="width:9%;">
+                        <col style="width:9%;">
+                    </colgroup>
                     <thead class="thead-light">
                         <tr>
-                            <th rowspan="2" class="align-middle" style="min-width:90px;">장비명</th>
+                            <th rowspan="2" class="align-middle">장비명</th>
                             <th colspan="3" class="text-primary">코팅 전</th>
                             <th colspan="3" class="text-success">코팅 후</th>
-                            <th colspan="3" class="text-warning bg-light" style="width:156px;">최종 (자동)</th>
-                            <th rowspan="2" class="align-middle text-danger" style="width:52px;">합계</th>
+                            <th colspan="3" class="text-warning bg-light">최종 (자동)</th>
+                            <th rowspan="2" class="align-middle text-danger">합계</th>
                         </tr>
                         <tr>
-                            <th class="text-primary" style="width:52px;">Y</th><th class="text-primary" style="width:52px;">O</th><th class="text-primary" style="width:52px;">B</th>
-                            <th class="text-success" style="width:52px;">Y</th><th class="text-success" style="width:52px;">O</th><th class="text-success" style="width:52px;">B</th>
-                            <th class="text-warning" style="width:52px;">Y</th><th class="text-warning" style="width:52px;">O</th><th class="text-warning" style="width:52px;">B</th>
+                            <th class="text-primary">Y</th><th class="text-primary">O</th><th class="text-primary">B</th>
+                            <th class="text-success">Y</th><th class="text-success">O</th><th class="text-success">B</th>
+                            <th class="text-warning">Y</th><th class="text-warning">O</th><th class="text-warning">B</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>

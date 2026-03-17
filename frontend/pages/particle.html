@@ -172,9 +172,9 @@
                                 <div class="tab-pane fade show active" id="input" role="tabpanel" aria-labelledby="input-tab">
                                     <form id="particle-form">
                                         <!-- 파티클 크기 범례 -->
-                                        <div class="mb-3">
-                                            <span class="badge badge-primary mr-2">Y: 0.3~1.0㎛</span>
-                                            <span class="badge badge-warning mr-2">O: 1.0~2.5㎛</span>
+                                        <div class="text-right mb-2">
+                                            <span class="badge badge-primary mr-1">Y: 0.3~1.0㎛</span>
+                                            <span class="badge badge-warning mr-1">O: 1.0~2.5㎛</span>
                                             <span class="badge badge-info">B: 2.5~5.1㎛</span>
                                         </div>
 
@@ -184,14 +184,20 @@
                                         </div>
 
                                         <!-- 작성자 및 저장 버튼 -->
-                                        <div class="d-flex justify-content-end align-items-center mt-3" style="gap:12px;">
-                                            <div class="form-group mb-0 d-flex align-items-center" style="gap:8px;">
-                                                <label for="author" class="mb-0 text-nowrap">작성자</label>
-                                                <input type="text" class="form-control form-control-sm" id="author" name="author" required style="width:140px;">
+                                        <div class="row mt-4">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="author">작성자</label>
+                                                    <input type="text" class="form-control form-control-sm" id="author" name="author" required>
+                                                </div>
                                             </div>
-                                            <button type="submit" class="btn btn-primary btn-sm">
-                                                <i class="fas fa-save mr-1"></i> 저장
-                                            </button>
+                                            <div class="col-md-4 d-flex align-items-end">
+                                                <div class="form-group w-100">
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="fas fa-save mr-2"></i> 저장
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </form>
                                 </div>
