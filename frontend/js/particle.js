@@ -12,6 +12,93 @@
     let customStartDate = null;
     let customEndDate = null;
     let actionNotesCache = [];
+    let toggledNoteIndices = new Set();
+
+    // 조치 사항 레이블 박스를 차트 위에 직접 그리는 플러그인
+    const actionNoteLabelPlugin = {
+        id: 'actionNoteLabels',
+        afterDraw(chart) {
+            if (!toggledNoteIndices.size) return;
+            const meta = chart.getDatasetMeta(4);
+            if (!meta || !meta.data) return;
+
+            const ctx = chart.ctx;
+            const chartArea = chart.chartArea;
+            const fontSize = 12;
+            const padding = 8;
+            const lineHeight = fontSize + 5;
+            const maxLineWidth = 200;
+
+            function drawRoundedRect(x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, y + h - r);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                ctx.lineTo(x + r, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+            }
+
+            function wrapText(text, maxWidth) {
+                const lines = [];
+                let line = '';
+                for (let i = 0; i < text.length; i++) {
+                    const testLine = line + text[i];
+                    if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+                        lines.push(line);
+                        line = text[i];
+                    } else {
+                        line = testLine;
+                    }
+                }
+                if (line) lines.push(line);
+                return lines;
+            }
+
+            toggledNoteIndices.forEach(idx => {
+                const note = actionNotesCache[idx];
+                if (!note) return;
+                const point = meta.data[idx];
+                if (!point) return;
+
+                ctx.save();
+                ctx.font = `${fontSize}px sans-serif`;
+
+                const lines = wrapText(note, maxLineWidth - padding * 2);
+                const boxW = Math.min(maxLineWidth, Math.max(...lines.map(l => ctx.measureText(l).width)) + padding * 2);
+                const boxH = lines.length * lineHeight + padding * 2;
+
+                let boxX = point.x - boxW / 2;
+                let boxY = point.y - boxH - 14;
+
+                // 차트 영역 밖으로 나가지 않도록 보정
+                boxX = Math.max(chartArea.left, Math.min(boxX, chartArea.right - boxW));
+                if (boxY < chartArea.top) boxY = point.y + 14;
+
+                // 박스 배경
+                ctx.fillStyle = 'rgba(30, 30, 30, 0.92)';
+                ctx.strokeStyle = 'rgba(220, 53, 69, 0.9)';
+                ctx.lineWidth = 1.5;
+                drawRoundedRect(boxX, boxY, boxW, boxH, 4);
+                ctx.fill();
+                ctx.stroke();
+
+                // 텍스트
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                lines.forEach((l, i) => {
+                    ctx.fillText(l, boxX + padding, boxY + padding + i * lineHeight);
+                });
+
+                ctx.restore();
+            });
+        }
+    };
 
     // 장비 설정 데이터 관리 (동적)
     let equipmentSettings = {};
@@ -444,6 +531,7 @@
                 const specMax = equipmentSetting ? equipmentSetting.specMax : 20;
 
                 actionNotesCache = chartData.action_notes || [];
+                toggledNoteIndices = new Set();
                 const actionNoteMarkers = actionNotesCache.map((note, i) =>
                     note ? (chartData.data[i] || 0) : null
                 );
@@ -582,6 +670,7 @@
                         type: 'line',
                         showLine: false,
                         pointStyle: 'triangle',
+                        rotation: 180,
                         pointRadius: 9,
                         pointHoverRadius: 11,
                         backgroundColor: 'rgba(220, 53, 69, 0.9)',
@@ -638,6 +727,25 @@
                         }
                     }
                 }
+            }, [actionNoteLabelPlugin]);
+
+            // 마커 클릭 시 조치 사항 레이블 ON/OFF
+            canvas.addEventListener('click', function(event) {
+                if (!particleChart) return;
+                const points = particleChart.getElementsAtEventForMode(event, 'point', { intersect: true }, false);
+                let changed = false;
+                points.forEach(p => {
+                    if (p.datasetIndex === 4) {
+                        const idx = p.index;
+                        if (toggledNoteIndices.has(idx)) {
+                            toggledNoteIndices.delete(idx);
+                        } else {
+                            toggledNoteIndices.add(idx);
+                        }
+                        changed = true;
+                    }
+                });
+                if (changed) particleChart.update('none');
             });
 
             console.log('Particle 차트 초기화 완료');
