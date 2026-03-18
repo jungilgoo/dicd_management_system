@@ -112,7 +112,57 @@
         console.log('Particle 페이지 초기화 완료');
     }
 
-    // 차트 다운로드 함수 (24cm × 13cm 고정 크기, 150 DPI)
+    // PNG pHYs 청크 삽입 (DPI 메타데이터 → PPT/Word에서 정확한 물리 크기)
+    function crc32(data) {
+        const table = [];
+        for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            table[i] = c;
+        }
+        let crc = 0xFFFFFFFF;
+        for (let i = 0; i < data.length; i++) crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    function setImageDpi(dataUrl, dpi) {
+        const base64 = dataUrl.split(',')[1];
+        const binaryStr = atob(base64);
+        const src = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) src[i] = binaryStr.charCodeAt(i);
+
+        // pHYs 청크 생성 (pixels per meter = dpi / 2.54 * 100)
+        const ppm = Math.round(dpi * 100 / 2.54);
+        const phys = new Uint8Array(21);
+        // length = 9
+        phys[3] = 9;
+        // type = "pHYs"
+        phys[4] = 0x70; phys[5] = 0x48; phys[6] = 0x59; phys[7] = 0x73;
+        // X pixels per unit (big-endian)
+        phys[8]  = (ppm >> 24) & 0xFF; phys[9]  = (ppm >> 16) & 0xFF;
+        phys[10] = (ppm >> 8)  & 0xFF; phys[11] = ppm & 0xFF;
+        // Y pixels per unit (big-endian)
+        phys[12] = (ppm >> 24) & 0xFF; phys[13] = (ppm >> 16) & 0xFF;
+        phys[14] = (ppm >> 8)  & 0xFF; phys[15] = ppm & 0xFF;
+        // unit = 1 (meter)
+        phys[16] = 1;
+        // CRC (type + data)
+        const c = crc32(phys.subarray(4, 17));
+        phys[17] = (c >> 24) & 0xFF; phys[18] = (c >> 16) & 0xFF;
+        phys[19] = (c >> 8)  & 0xFF; phys[20] = c & 0xFF;
+
+        // PNG signature(8) + IHDR chunk(25) = 33 bytes 뒤에 삽입
+        const dst = new Uint8Array(src.length + 21);
+        dst.set(src.subarray(0, 33), 0);
+        dst.set(phys, 33);
+        dst.set(src.subarray(33), 54);
+
+        let bin = '';
+        dst.forEach(b => bin += String.fromCharCode(b));
+        return 'data:image/png;base64,' + btoa(bin);
+    }
+
+    // 차트 다운로드 함수 (24cm × 13cm 고정 크기, 200 DPI)
     function downloadChart() {
         if (!particleChart) {
             alert('다운로드할 차트가 없습니다. 먼저 차트를 로드하세요.');
@@ -147,7 +197,7 @@
 
         const link = document.createElement('a');
         link.download = fileName;
-        link.href = offCanvas.toDataURL('image/png');
+        link.href = setImageDpi(offCanvas.toDataURL('image/png'), 200);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
