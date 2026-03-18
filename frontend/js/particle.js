@@ -27,8 +27,6 @@
             const chartArea = chart.chartArea;
             const fontSize = 12;
             const padding = 8;
-            const lineHeight = fontSize + 5;
-            const maxLineWidth = 200;
 
             function drawRoundedRect(x, y, w, h, r) {
                 ctx.beginPath();
@@ -44,22 +42,6 @@
                 ctx.closePath();
             }
 
-            function wrapText(text, maxWidth) {
-                const lines = [];
-                let line = '';
-                for (let i = 0; i < text.length; i++) {
-                    const testLine = line + text[i];
-                    if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
-                        lines.push(line);
-                        line = text[i];
-                    } else {
-                        line = testLine;
-                    }
-                }
-                if (line) lines.push(line);
-                return lines;
-            }
-
             toggledNoteIndices.forEach(idx => {
                 const note = actionNotesCache[idx];
                 if (!note) return;
@@ -69,9 +51,8 @@
                 ctx.save();
                 ctx.font = `${fontSize}px sans-serif`;
 
-                const lines = wrapText(note, maxLineWidth - padding * 2);
-                const boxW = Math.min(maxLineWidth, Math.max(...lines.map(l => ctx.measureText(l).width)) + padding * 2);
-                const boxH = lines.length * lineHeight + padding * 2;
+                const boxW = ctx.measureText(note).width + padding * 2;
+                const boxH = fontSize + padding * 2;
 
                 let boxX = point.x - boxW / 2;
                 let boxY = point.y - boxH - 14;
@@ -92,9 +73,7 @@
                 ctx.fillStyle = '#ffffff';
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'top';
-                lines.forEach((l, i) => {
-                    ctx.fillText(l, boxX + padding, boxY + padding + i * lineHeight);
-                });
+                ctx.fillText(note, boxX + padding, boxY + padding);
 
                 ctx.restore();
             });
@@ -602,8 +581,17 @@
 
                 actionNotesCache = chartData.action_notes || [];
                 toggledNoteIndices = new Set();
+
+                const stackedMax = chartData.labels.length > 0
+                    ? Math.max(...chartData.labels.map((_, i) =>
+                        (chartData.data_y[i] || 0) + (chartData.data_o[i] || 0) + (chartData.data_b[i] || 0)
+                      ))
+                    : 0;
+                const yAxisMax = Math.max(specMax, stackedMax);
+                const margin = Math.max(1, Math.round(yAxisMax * 0.1));
+
                 const actionNoteMarkers = actionNotesCache.map((note, i) =>
-                    note ? (chartData.data[i] || 0) : null
+                    note ? (chartData.data[i] || 0) + margin * 0.7 : null
                 );
 
                 particleChart.data.labels = chartData.labels;
@@ -614,14 +602,6 @@
                 particleChart.data.datasets[4].data = actionNoteMarkers;
                 particleChart.data.datasets[4].pointRadius = markerVisible ? 9 : 0;
                 particleChart.data.datasets[4].pointHoverRadius = markerVisible ? 11 : 0;
-
-                const stackedMax = chartData.labels.length > 0
-                    ? Math.max(...chartData.labels.map((_, i) =>
-                        (chartData.data_y[i] || 0) + (chartData.data_o[i] || 0) + (chartData.data_b[i] || 0)
-                      ))
-                    : 0;
-                const yAxisMax = Math.max(specMax, stackedMax);
-                const margin = Math.max(1, Math.round(yAxisMax * 0.1));
                 particleChart.options.scales.y.min = 0;
                 particleChart.options.scales.y.max = yAxisMax + margin;
                 particleChart.options.scales.ySpec.min = 0;
@@ -693,9 +673,9 @@
             const yAxisMax = Math.max(specMax, stackedMax);
             const margin = Math.max(1, Math.round(yAxisMax * 0.1));
 
-            // 조치 사항 마커 데이터 (있는 항목만 해당 합계값에 표시)
+            // 조치 사항 마커 데이터 (막대 위로 margin*0.7만큼 띄워서 표시)
             const actionNoteMarkers = actionNotesCache.map((note, i) =>
-                note ? (chartData.data[i] || 0) : null
+                note ? (chartData.data[i] || 0) + margin * 0.7 : null
             );
 
             particleChart = new Chart(ctx, {
