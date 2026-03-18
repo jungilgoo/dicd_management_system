@@ -596,7 +596,7 @@
                 const margin = Math.max(1, Math.round(yAxisMax * 0.1));
 
                 const actionNoteMarkers = actionNotesCache.map((note, i) =>
-                    note ? (chartData.data[i] || 0) + margin * 0.2 : null
+                    note ? (chartData.data[i] || 0) + margin * 0.3 : null
                 );
 
                 particleChart.data.labels = chartData.labels;
@@ -681,7 +681,7 @@
 
             // 조치 사항 마커 데이터 (막대 위로 margin*0.7만큼 띄워서 표시)
             const actionNoteMarkers = actionNotesCache.map((note, i) =>
-                note ? (chartData.data[i] || 0) + margin * 0.2 : null
+                note ? (chartData.data[i] || 0) + margin * 0.3 : null
             );
 
             particleChart = new Chart(ctx, {
@@ -695,7 +695,7 @@
                         borderColor: 'rgba(255, 200, 0, 1)',
                         borderWidth: 1,
                         pointStyle: 'rect',
-                        barPercentage: 0.5,
+                        barPercentage: 0.6,
                         categoryPercentage: 0.8,
                         stack: 'particle',
                         yAxisID: 'y'
@@ -706,7 +706,7 @@
                         borderColor: 'rgba(230, 110, 0, 1)',
                         borderWidth: 1,
                         pointStyle: 'rect',
-                        barPercentage: 0.5,
+                        barPercentage: 0.6,
                         categoryPercentage: 0.8,
                         stack: 'particle',
                         yAxisID: 'y'
@@ -717,7 +717,7 @@
                         borderColor: 'rgba(30, 100, 200, 1)',
                         borderWidth: 1,
                         pointStyle: 'rect',
-                        barPercentage: 0.5,
+                        barPercentage: 0.6,
                         categoryPercentage: 0.8,
                         stack: 'particle',
                         yAxisID: 'y'
