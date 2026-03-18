@@ -25,7 +25,7 @@
 
             const ctx = chart.ctx;
             const chartArea = chart.chartArea;
-            const fontSize = 12;
+            const fontSize = 16;
             const padding = 8;
 
             function drawRoundedRect(x, y, w, h, r) {
@@ -753,8 +753,10 @@
                             stacked: true,
                             title: {
                                 display: true,
-                                text: '파티클 개수 (개)'
-                            }
+                                text: '파티클 개수 (개)',
+                                font: { size: 16 }
+                            },
+                            ticks: { font: { size: 16 } }
                         },
                         ySpec: {
                             display: false,
@@ -765,15 +767,17 @@
                             stacked: true,
                             title: {
                                 display: true,
-                                text: '측정일시'
-                            }
+                                text: '측정일시',
+                                font: { size: 16 }
+                            },
+                            ticks: { font: { size: 16 } }
                         }
                     },
                     plugins: {
                         title: {
                             display: true,
                             text: `실시간 Particle 추이 - ${equipmentSetting ? equipmentSetting.name : '장비'}`,
-                            font: { size: 16, weight: 'bold' },
+                            font: { size: 21, weight: 'bold' },
                             padding: { top: 10, bottom: 10 }
                         },
                         legend: {
@@ -781,6 +785,7 @@
                             position: 'top',
                             labels: {
                                 usePointStyle: true,
+                                font: { size: 16 },
                                 generateLabels: function(chart) {
                                     const labels = window.Chart.defaults.plugins.legend.labels.generateLabels(chart);
                                     // SPEC 항목: pointStyle을 점선 캔버스로 교체
