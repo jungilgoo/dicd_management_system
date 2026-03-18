@@ -781,7 +781,25 @@
                             position: 'top',
                             labels: {
                                 usePointStyle: true,
-                                pointStyleWidth: 20
+                                generateLabels: function(chart) {
+                                    const labels = window.Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    // SPEC 항목: pointStyle을 점선 캔버스로 교체
+                                    const specLabel = labels.find(l => l.datasetIndex === 3);
+                                    if (specLabel) {
+                                        const lc = document.createElement('canvas');
+                                        lc.width = 30; lc.height = 12;
+                                        const lctx = lc.getContext('2d');
+                                        lctx.strokeStyle = 'rgb(220, 53, 69)';
+                                        lctx.lineWidth = 2;
+                                        lctx.setLineDash([5, 3]);
+                                        lctx.beginPath();
+                                        lctx.moveTo(0, 6);
+                                        lctx.lineTo(30, 6);
+                                        lctx.stroke();
+                                        specLabel.pointStyle = lc;
+                                    }
+                                    return labels;
+                                }
                             }
                         },
                         tooltip: {
