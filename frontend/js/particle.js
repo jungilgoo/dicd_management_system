@@ -112,6 +112,41 @@
         console.log('Particle 페이지 초기화 완료');
     }
 
+    // 차트 다운로드 함수 (24cm × 13cm 고정 크기, 150 DPI)
+    function downloadChart() {
+        if (!particleChart) {
+            alert('다운로드할 차트가 없습니다. 먼저 차트를 로드하세요.');
+            return;
+        }
+
+        const TARGET_W = Math.round(24 * 150 / 2.54);  // 1417px
+        const TARGET_H = Math.round(13 * 150 / 2.54);  // 768px
+
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = TARGET_W;
+        offCanvas.height = TARGET_H;
+        const ctx = offCanvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, TARGET_W, TARGET_H);
+        ctx.drawImage(particleChart.canvas, 0, 0, TARGET_W, TARGET_H);
+
+        const equipmentEl = document.getElementById('current-chart-equipment');
+        const equipmentName = equipmentEl ? equipmentEl.textContent : '장비';
+        const today = new Date();
+        const dateStr = today.getFullYear() +
+            String(today.getMonth() + 1).padStart(2, '0') +
+            String(today.getDate()).padStart(2, '0');
+        const fileName = `particle_chart_${equipmentName}_${dateStr}.png`;
+
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = offCanvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     // 이벤트 리스너 설정
     function setupEventListeners() {
         setupTabEventListeners();
@@ -157,6 +192,11 @@
         const refreshInlineDataBtn = document.getElementById('refresh-inline-data-btn');
         if (refreshInlineDataBtn) {
             refreshInlineDataBtn.addEventListener('click', () => loadRecentData(currentPage));
+        }
+
+        const downloadChartBtn = document.getElementById('download-chart-btn');
+        if (downloadChartBtn) {
+            downloadChartBtn.addEventListener('click', downloadChart);
         }
 
         const toggleMarkerBtn = document.getElementById('toggle-marker-btn');
