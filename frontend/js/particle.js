@@ -119,17 +119,23 @@
             return;
         }
 
-        const TARGET_W = Math.round(24 * 150 / 2.54);  // 1417px
-        const TARGET_H = Math.round(13 * 150 / 2.54);  // 768px
+        // 200 DPI 기준 24cm × 13cm
+        const TARGET_W = Math.round(24 * 200 / 2.54);  // 1890px
+        const TARGET_H = Math.round(13 * 200 / 2.54);  // 1024px
+
+        // Chart.js로 목표 크기에서 직접 재렌더링 후 캡처 (단순 확대 아님)
+        particleChart.resize(TARGET_W, TARGET_H);
 
         const offCanvas = document.createElement('canvas');
         offCanvas.width = TARGET_W;
         offCanvas.height = TARGET_H;
         const ctx = offCanvas.getContext('2d');
-
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, TARGET_W, TARGET_H);
         ctx.drawImage(particleChart.canvas, 0, 0, TARGET_W, TARGET_H);
+
+        // 화면 크기로 복원
+        particleChart.resize();
 
         const equipmentEl = document.getElementById('current-chart-equipment');
         const equipmentName = equipmentEl ? equipmentEl.textContent : '장비';
