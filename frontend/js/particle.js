@@ -57,9 +57,14 @@
                 let boxX = point.x - boxW / 2;
                 let boxY = point.y - boxH - 14;
 
-                // 차트 영역 밖으로 나가지 않도록 보정
-                boxX = Math.max(chartArea.left, Math.min(boxX, chartArea.right - boxW));
-                if (boxY < chartArea.top) boxY = point.y + 14;
+                if (boxY < chartArea.top) {
+                    // 위쪽 공간 부족 → 마커 오른쪽에 표시 (막대 그래프 미침범)
+                    boxX = Math.min(point.x + 14, chartArea.right - boxW);
+                    boxY = Math.max(chartArea.top, point.y - boxH / 2);
+                } else {
+                    // 위쪽 공간 충분 → 마커 위에 표시
+                    boxX = Math.max(chartArea.left, Math.min(boxX, chartArea.right - boxW));
+                }
 
                 // 박스 배경
                 ctx.fillStyle = 'rgba(30, 30, 30, 0.92)';
