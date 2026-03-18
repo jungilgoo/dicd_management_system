@@ -618,6 +618,7 @@
                 particleChart.options.scales.y.max = yAxisMax + margin;
                 particleChart.options.scales.ySpec.min = 0;
                 particleChart.options.scales.ySpec.max = yAxisMax + margin;
+                particleChart.options.plugins.title.text = `실시간 Particle 추이 - ${equipmentSetting ? equipmentSetting.name : '장비'}`;
 
                 particleChart.update();
             } catch (error) {
@@ -766,11 +767,17 @@
                             stacked: true,
                             title: {
                                 display: true,
-                                text: '측정 시간'
+                                text: '측정일시'
                             }
                         }
                     },
                     plugins: {
+                        title: {
+                            display: true,
+                            text: `실시간 Particle 추이 - ${equipmentSetting ? equipmentSetting.name : '장비'}`,
+                            font: { size: 16, weight: 'bold' },
+                            padding: { top: 10, bottom: 10 }
+                        },
                         legend: {
                             display: true,
                             position: 'top'
