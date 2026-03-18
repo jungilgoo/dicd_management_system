@@ -122,9 +122,9 @@
 
         const TARGET_W = 910;
         const TARGET_H = 490;
-        const SCALE = 3;  // 3배 크기로 렌더링 후 축소 (supersampling)
+        const SCALE = 1.5;  // 1.5배 크기로 렌더링 후 축소 (supersampling)
 
-        // 3배 크기(2730×1470)로 렌더링
+        // 1.5배 크기(1365×735)로 렌더링
         particleChart.resize(TARGET_W * SCALE, TARGET_H * SCALE);
 
         // 910×490으로 축소하여 캡처 (downscaling → 선명도 향상)
