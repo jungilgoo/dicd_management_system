@@ -122,10 +122,12 @@
 
         const TARGET_W = 910;
         const TARGET_H = 490;
+        const SCALE = 3;  // 3배 크기로 렌더링 후 축소 (supersampling)
 
-        // Chart.js로 목표 크기에서 직접 재렌더링 후 캡처
-        particleChart.resize(TARGET_W, TARGET_H);
+        // 3배 크기(2730×1470)로 렌더링
+        particleChart.resize(TARGET_W * SCALE, TARGET_H * SCALE);
 
+        // 910×490으로 축소하여 캡처 (downscaling → 선명도 향상)
         const offCanvas = document.createElement('canvas');
         offCanvas.width = TARGET_W;
         offCanvas.height = TARGET_H;
