@@ -604,6 +604,7 @@
                 particleChart.data.datasets[1].data = chartData.data_o;
                 particleChart.data.datasets[2].data = chartData.data_b;
                 particleChart.data.datasets[3].data = Array(chartData.labels.length).fill(specMax);
+                particleChart.data.datasets[3].label = `SPEC (${specMax}개 이하)`;
                 particleChart.data.datasets[4].data = actionNoteMarkers;
                 particleChart.data.datasets[4].pointRadius = markerVisible ? 9 : 0;
                 particleChart.data.datasets[4].pointHoverRadius = markerVisible ? 11 : 0;
@@ -693,6 +694,7 @@
                         backgroundColor: 'rgba(255, 220, 0, 0.85)',
                         borderColor: 'rgba(255, 200, 0, 1)',
                         borderWidth: 1,
+                        pointStyle: 'rect',
                         stack: 'particle',
                         yAxisID: 'y'
                     }, {
@@ -701,6 +703,7 @@
                         backgroundColor: 'rgba(255, 140, 0, 0.85)',
                         borderColor: 'rgba(230, 110, 0, 1)',
                         borderWidth: 1,
+                        pointStyle: 'rect',
                         stack: 'particle',
                         yAxisID: 'y'
                     }, {
@@ -709,10 +712,11 @@
                         backgroundColor: 'rgba(54, 130, 220, 0.85)',
                         borderColor: 'rgba(30, 100, 200, 1)',
                         borderWidth: 1,
+                        pointStyle: 'rect',
                         stack: 'particle',
                         yAxisID: 'y'
                     }, {
-                        label: 'SPEC 최대값',
+                        label: `SPEC (${specMax}개 이하)`,
                         data: Array(chartData.labels.length).fill(specMax),
                         type: 'line',
                         borderColor: 'rgb(220, 53, 69)',
@@ -720,6 +724,7 @@
                         borderDash: [5, 5],
                         fill: false,
                         pointRadius: 0,
+                        pointStyle: 'line',
                         borderWidth: 2,
                         yAxisID: 'ySpec'
                     }, {
@@ -773,7 +778,11 @@
                         },
                         legend: {
                             display: true,
-                            position: 'top'
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyleWidth: 20
+                            }
                         },
                         tooltip: {
                             mode: 'index',
