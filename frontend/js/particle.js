@@ -706,6 +706,8 @@
                         borderColor: 'rgba(230, 110, 0, 1)',
                         borderWidth: 1,
                         pointStyle: 'rect',
+                        barPercentage: 0.5,
+                        categoryPercentage: 0.8,
                         stack: 'particle',
                         yAxisID: 'y'
                     }, {
@@ -715,6 +717,8 @@
                         borderColor: 'rgba(30, 100, 200, 1)',
                         borderWidth: 1,
                         pointStyle: 'rect',
+                        barPercentage: 0.5,
+                        categoryPercentage: 0.8,
                         stack: 'particle',
                         yAxisID: 'y'
                     }, {
