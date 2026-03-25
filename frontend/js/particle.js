@@ -14,6 +14,7 @@
     let actionNotesCache = [];
     let toggledNoteIndices = new Set();
     let markerVisible = true;
+    const BEFORE_DRAFT_STORAGE_KEY = 'particleBeforeDraft';
 
     // 조치 사항 레이블 박스를 차트 위에 직접 그리는 플러그인
     const actionNoteLabelPlugin = {
@@ -92,12 +93,156 @@
     // 페이지 초기화
     async function initParticlePage() {
         setupEventListeners();
+        renderBeforeDraftStatus();
         await loadRecentData();
         console.log('Particle 페이지 초기화 완료');
     }
 
     // PNG pHYs 청크 삽입 (DPI 메타데이터 → PPT/Word에서 정확한 물리 크기)
     // 차트 다운로드 함수 (910×490px)
+    function collectBeforeDraftData() {
+        const equipmentData = {};
+        let hasData = false;
+
+        Object.keys(equipmentSettings).forEach(equipmentNumber => {
+            const readValue = (id) => {
+                const el = document.getElementById(id);
+                if (!el || el.value === '') return null;
+                const parsed = parseInt(el.value, 10);
+                return Number.isNaN(parsed) ? null : parsed;
+            };
+
+            const before_y = readValue(`before-y-${equipmentNumber}`);
+            const before_o = readValue(`before-o-${equipmentNumber}`);
+            const before_b = readValue(`before-b-${equipmentNumber}`);
+
+            if ([before_y, before_o, before_b].some(v => v !== null)) {
+                hasData = true;
+                equipmentData[equipmentNumber] = { before_y, before_o, before_b };
+            }
+        });
+
+        return {
+            hasData,
+            data: {
+                version: 1,
+                saved_at: new Date().toISOString(),
+                author: (document.getElementById('author')?.value || '').trim(),
+                equipment_data: equipmentData
+            }
+        };
+    }
+
+    function getBeforeDraft() {
+        const raw = localStorage.getItem(BEFORE_DRAFT_STORAGE_KEY);
+        if (!raw) return null;
+
+        try {
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object' || !parsed.equipment_data) {
+                localStorage.removeItem(BEFORE_DRAFT_STORAGE_KEY);
+                return null;
+            }
+            return parsed;
+        } catch (error) {
+            console.warn('Particle before draft parse failed:', error);
+            localStorage.removeItem(BEFORE_DRAFT_STORAGE_KEY);
+            return null;
+        }
+    }
+
+    function renderBeforeDraftStatus() {
+        const statusEl = document.getElementById('before-draft-status');
+        const loadBtn = document.getElementById('load-before-draft-btn');
+        const clearBtn = document.getElementById('clear-before-draft-btn');
+        if (!statusEl) return;
+
+        const draft = getBeforeDraft();
+        if (!draft) {
+            statusEl.textContent = '임시저장된 코팅 전 데이터가 없습니다.';
+            if (loadBtn) loadBtn.disabled = true;
+            if (clearBtn) clearBtn.disabled = true;
+            return;
+        }
+
+        const timestamp = draft.saved_at ? formatDateTime(draft.saved_at) : '시간 정보 없음';
+        const authorText = draft.author ? ` / 작성자: ${draft.author}` : '';
+        statusEl.textContent = `마지막 임시저장: ${timestamp}${authorText}`;
+        if (loadBtn) loadBtn.disabled = false;
+        if (clearBtn) clearBtn.disabled = false;
+    }
+
+    function saveBeforeDraft() {
+        const draftPayload = collectBeforeDraftData();
+        if (!draftPayload.hasData) {
+            showToast('코팅 전 측정값이 있어야 임시저장할 수 있습니다.', 'warning');
+            return;
+        }
+
+        localStorage.setItem(BEFORE_DRAFT_STORAGE_KEY, JSON.stringify(draftPayload.data));
+        renderBeforeDraftStatus();
+        showToast('코팅 전 데이터가 임시저장되었습니다.', 'success');
+    }
+
+    function applyBeforeDraftData(draft) {
+        let restoredCount = 0;
+
+        Object.keys(draft.equipment_data || {}).forEach(equipmentNumber => {
+            const values = draft.equipment_data[equipmentNumber];
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (!el) return false;
+                el.value = value === null || value === undefined ? '' : value;
+                return true;
+            };
+
+            const restored = [
+                setValue(`before-y-${equipmentNumber}`, values.before_y),
+                setValue(`before-o-${equipmentNumber}`, values.before_o),
+                setValue(`before-b-${equipmentNumber}`, values.before_b)
+            ].some(Boolean);
+
+            if (restored) {
+                restoredCount++;
+                if (typeof window.particleCalcFinal === 'function') {
+                    window.particleCalcFinal(equipmentNumber);
+                }
+            }
+        });
+
+        const authorEl = document.getElementById('author');
+        if (authorEl && draft.author) {
+            authorEl.value = draft.author;
+        }
+
+        return restoredCount;
+    }
+
+    function loadBeforeDraft() {
+        const draft = getBeforeDraft();
+        if (!draft) {
+            renderBeforeDraftStatus();
+            showToast('불러올 임시저장 데이터가 없습니다.', 'warning');
+            return;
+        }
+
+        const restoredCount = applyBeforeDraftData(draft);
+        if (restoredCount === 0) {
+            showToast('현재 화면과 일치하는 장비 임시저장 데이터가 없습니다.', 'warning');
+            return;
+        }
+
+        showToast(`임시저장 데이터를 불러왔습니다. (${restoredCount}개 장비)`, 'success');
+    }
+
+    function clearBeforeDraft(showMessage = true) {
+        localStorage.removeItem(BEFORE_DRAFT_STORAGE_KEY);
+        renderBeforeDraftStatus();
+        if (showMessage) {
+            showToast('임시저장 데이터를 삭제했습니다.', 'info');
+        }
+    }
+
     function downloadChart() {
         if (!particleChart) {
             alert('다운로드할 차트가 없습니다. 먼저 차트를 로드하세요.');
@@ -146,6 +291,21 @@
         const form = document.getElementById('particle-form');
         if (form) {
             form.addEventListener('submit', handleFormSubmit);
+        }
+
+        const saveBeforeDraftBtn = document.getElementById('save-before-draft-btn');
+        if (saveBeforeDraftBtn) {
+            saveBeforeDraftBtn.addEventListener('click', saveBeforeDraft);
+        }
+
+        const loadBeforeDraftBtn = document.getElementById('load-before-draft-btn');
+        if (loadBeforeDraftBtn) {
+            loadBeforeDraftBtn.addEventListener('click', loadBeforeDraft);
+        }
+
+        const clearBeforeDraftBtn = document.getElementById('clear-before-draft-btn');
+        if (clearBeforeDraftBtn) {
+            clearBeforeDraftBtn.addEventListener('click', () => clearBeforeDraft());
         }
 
         const saveSettingsBtn = document.getElementById('save-equipment-settings-btn');
@@ -308,6 +468,7 @@
             showToast(`Particle 데이터가 성공적으로 저장되었습니다. (${result.length}건)`, 'success');
 
             resetMeasurementValues();
+            clearBeforeDraft(false);
 
             await loadRecentData();
             await refreshChart();
@@ -1140,6 +1301,7 @@
 
             renderEquipmentSettings();
             regenerateAllTabs();
+            renderBeforeDraftStatus();
 
         } catch (error) {
             console.error('서버에서 장비 설정 로드 실패:', error);
@@ -1162,6 +1324,7 @@
 
             renderEquipmentSettings();
             regenerateAllTabs();
+            renderBeforeDraftStatus();
 
             showToast('장비 설정을 불러오는 중 오류가 발생했습니다. 기본 설정을 사용합니다.', 'warning');
         }
