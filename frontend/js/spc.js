@@ -315,7 +315,8 @@
                 ...apiParams
             };
             const measurementsResult = await api.getMeasurements(measureParams);
-            currentMeasurements = measurementsResult;
+            // SPC 차트는 created_at asc 순서로 표시하므로, getMeasurements(desc) 결과를 역순 정렬
+            currentMeasurements = Array.isArray(measurementsResult) ? [...measurementsResult].reverse() : measurementsResult;
             
             // 변경점 데이터 로드
             let startDateForChangePoints = startDate;
