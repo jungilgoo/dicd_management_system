@@ -1159,8 +1159,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (viewAllBtn) {
         viewAllBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            if (typeof openTab === 'function') {
-                openTab('spc_alarms');
+            if (window.TabManager && typeof window.TabManager.openTab === 'function') {
+                window.TabManager.openTab('spc_alarms');
             }
         });
     }
