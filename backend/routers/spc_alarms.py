@@ -52,7 +52,7 @@ def get_alarm_summary(
 def get_alarms(
     target_id: Optional[int] = None,
     severity: Optional[str] = None,
-    status: Optional[str] = Query('ACTIVE', description="알람 상태 (ACTIVE, ACKNOWLEDGED, RESOLVED, SUPERSEDED)"),
+    status: Optional[str] = Query(None, description="알람 상태 (ACTIVE, ACKNOWLEDGED, RESOLVED, SUPERSEDED). 미지정 시 전체"),
     process_type: Optional[str] = Query('PHOTO', description="공정 타입"),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
