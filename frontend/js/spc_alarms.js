@@ -134,10 +134,13 @@ function renderAlarmTable(alarms) {
         let actions = '';
         if (alarm.status === 'ACTIVE') {
             actions = `<button class="btn btn-xs btn-warning mr-1" onclick="acknowledgeAlarm(${alarm.id})"><i class="fas fa-check"></i> 확인</button>
-                       <button class="btn btn-xs btn-success" onclick="resolveAlarm(${alarm.id})"><i class="fas fa-check-double"></i> 해결</button>`;
+                       <button class="btn btn-xs btn-success mr-1" onclick="resolveAlarm(${alarm.id})"><i class="fas fa-check-double"></i> 해결</button>`;
         } else if (alarm.status === 'ACKNOWLEDGED') {
-            actions = `<button class="btn btn-xs btn-success" onclick="resolveAlarm(${alarm.id})"><i class="fas fa-check-double"></i> 해결</button>`;
+            actions = `<button class="btn btn-xs btn-success mr-1" onclick="resolveAlarm(${alarm.id})"><i class="fas fa-check-double"></i> 해결</button>`;
         }
+        // 바로가기 버튼 (항상 표시)
+        actions += `<button class="btn btn-xs btn-outline-primary mr-1" title="데이터 조회" onclick="openViewFromAlarm(${alarm.product_group_id}, ${alarm.process_id}, ${alarm.target_id}, '${(alarm.lot_no || '').replace(/'/g, "\\'")}')"><i class="fas fa-search"></i></button>`;
+        actions += `<button class="btn btn-xs btn-outline-info" title="SPC 분석" onclick="openSpcFromAlarm(${alarm.target_id}, '${(alarm.product_group_name || '').replace(/'/g, "\\'")}', '${(alarm.process_name || '').replace(/'/g, "\\'")}', '${(alarm.target_name || '').replace(/'/g, "\\'")}')"><i class="fas fa-chart-line"></i></button>`;
 
         return `<tr>
             <td>${currentPage * pageSize + idx + 1}</td>
@@ -207,6 +210,30 @@ async function showAlarmDetail(alarmId) {
         $('#alarm-detail-modal').modal('show');
     } catch (e) {
         alert('알람 상세 조회 실패: ' + e.message);
+    }
+}
+
+function openViewFromAlarm(productGroupId, processId, targetId, lotNo) {
+    const tabManager = window.parent && window.parent.TabManager ? window.parent.TabManager : window.TabManager;
+    if (tabManager && typeof tabManager.openTab === 'function') {
+        tabManager.openTab('view', {
+            productGroupId: productGroupId,
+            processId: processId,
+            targetId: targetId,
+            lotNo: lotNo
+        });
+    }
+}
+
+function openSpcFromAlarm(targetId, productGroup, process, targetName) {
+    const tabManager = window.parent && window.parent.TabManager ? window.parent.TabManager : window.TabManager;
+    if (tabManager && typeof tabManager.openTab === 'function') {
+        tabManager.openTab('spc', {
+            targetId: targetId,
+            productGroup: productGroup,
+            process: process,
+            targetName: targetName
+        });
     }
 }
 

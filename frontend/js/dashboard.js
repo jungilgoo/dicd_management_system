@@ -1108,7 +1108,7 @@ function updateAlarmSummaryBar(summary, alarms) {
     tbody.innerHTML = '';
 
     if (!alarms || alarms.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">활성 알람이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">활성 알람이 없습니다.</td></tr>';
         return;
     }
 
@@ -1129,6 +1129,10 @@ function updateAlarmSummaryBar(summary, alarms) {
             <td>${alarm.device || '-'}</td>
             <td>${alarm.lot_no || '-'}</td>
             <td class="text-truncate" style="max-width:250px" title="${alarm.description}">${alarm.description}</td>
+            <td>
+                <button class="btn btn-xs btn-outline-primary mr-1" title="데이터 조회" onclick="openViewFromAlarm(${alarm.product_group_id}, ${alarm.process_id}, ${alarm.target_id}, '${(alarm.lot_no || '').replace(/'/g, "\\'")}')"><i class="fas fa-search"></i></button>
+                <button class="btn btn-xs btn-outline-info" title="SPC 분석" onclick="openSpcFromAlarm(${alarm.target_id}, '${(alarm.product_group_name || '').replace(/'/g, "\\'")}', '${(alarm.process_name || '').replace(/'/g, "\\'")}', '${(alarm.target_name || '').replace(/'/g, "\\'")}')"><i class="fas fa-chart-line"></i></button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -1147,6 +1151,29 @@ function formatTimeAgo(dateStr) {
     if (diffHour < 24) return `${diffHour}시간전`;
     const diffDay = Math.floor(diffHour / 24);
     return `${diffDay}일전`;
+}
+
+// 알람 바로가기 함수
+function openViewFromAlarm(productGroupId, processId, targetId, lotNo) {
+    if (window.TabManager && typeof window.TabManager.openTab === 'function') {
+        window.TabManager.openTab('view', {
+            productGroupId: productGroupId,
+            processId: processId,
+            targetId: targetId,
+            lotNo: lotNo
+        });
+    }
+}
+
+function openSpcFromAlarm(targetId, productGroup, process, targetName) {
+    if (window.TabManager && typeof window.TabManager.openTab === 'function') {
+        window.TabManager.openTab('spc', {
+            targetId: targetId,
+            productGroup: productGroup,
+            process: process,
+            targetName: targetName
+        });
+    }
 }
 
 // 전체보기 클릭 이벤트

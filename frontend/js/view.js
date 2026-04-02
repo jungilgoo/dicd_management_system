@@ -1426,4 +1426,82 @@ async function bulkDeleteMeasurements() {
         alert('일괄 삭제 중 오류가 발생했습니다: ' + error.message);
     }
 }
+
+    // 탭에서 전달받은 설정 복원 함수
+    window.restoreSettings = function(settings) {
+        if (!settings) return;
+
+        // DOM 및 초기화 완료 대기
+        function waitForInitialization() {
+            return new Promise((resolve) => {
+                let attempts = 0;
+                const maxAttempts = 50;
+                const checkInterval = 100;
+
+                function check() {
+                    attempts++;
+                    const productGroupSelect = document.getElementById('product-group');
+                    if (productGroupSelect && productGroupSelect.options.length > 1) {
+                        resolve();
+                    } else if (attempts < maxAttempts) {
+                        setTimeout(check, checkInterval);
+                    } else {
+                        resolve();
+                    }
+                }
+                check();
+            });
+        }
+
+        waitForInitialization().then(async () => {
+            try {
+                const productGroupSelect = document.getElementById('product-group');
+                const processSelect = document.getElementById('process');
+                const targetSelect = document.getElementById('target');
+
+                // 1. 제품군 선택
+                if (settings.productGroupId) {
+                    productGroupSelect.value = settings.productGroupId.toString();
+
+                    // 공정 목록 로드
+                    const processes = await api.getProcesses(settings.productGroupId);
+                    if (processes && processes.length > 0) {
+                        let options = '<option value="">전체</option>';
+                        processes.forEach(p => {
+                            options += `<option value="${p.id}">${p.name}</option>`;
+                        });
+                        processSelect.innerHTML = options;
+                        processSelect.disabled = false;
+                    }
+
+                    // 2. 공정 선택
+                    if (settings.processId) {
+                        processSelect.value = settings.processId.toString();
+
+                        // 타겟 목록 로드
+                        const targets = await api.getTargets(settings.processId, window.PROCESS_TYPE);
+                        if (targets && targets.length > 0) {
+                            let options = '<option value="">전체</option>';
+                            targets.forEach(t => {
+                                options += `<option value="${t.id}">${t.name}</option>`;
+                            });
+                            targetSelect.innerHTML = options;
+                            targetSelect.disabled = false;
+                        }
+
+                        // 3. 타겟 선택
+                        if (settings.targetId) {
+                            targetSelect.value = settings.targetId.toString();
+                        }
+                    }
+                }
+
+                // 4. 데이터 로드
+                await loadMeasurements();
+
+            } catch (error) {
+                console.error('설정 복원 실패:', error);
+            }
+        });
+    };
 })();

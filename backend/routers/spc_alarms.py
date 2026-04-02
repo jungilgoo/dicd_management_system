@@ -97,8 +97,10 @@ def get_alarms(
         if alarm.target:
             item.target_name = alarm.target.name
             if alarm.target.process:
+                item.process_id = alarm.target.process.id
                 item.process_name = alarm.target.process.name
                 if alarm.target.process.product_group:
+                    item.product_group_id = alarm.target.process.product_group.id
                     item.product_group_name = alarm.target.process.product_group.name
         if alarm.measurement:
             item.device = alarm.measurement.device
