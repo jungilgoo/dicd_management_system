@@ -1151,10 +1151,14 @@ async function saveEditedMeasurement() {
         // 모달 닫기
         $('#edit-modal').modal('hide');
         
-        // 캐시 업데이트
+        // 캐시 업데이트 (enriched 필드 보존)
         const index = measurementsCache.findIndex(m => m.id == measurementId);
         if (index !== -1) {
-            measurementsCache[index] = updatedMeasurement;
+            const existing = measurementsCache[index];
+            measurementsCache[index] = {
+                ...existing,
+                ...updatedMeasurement
+            };
         }
         
         // 테이블 업데이트
