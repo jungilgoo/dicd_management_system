@@ -1,3 +1,4 @@
+from sqlalchemy import Integer, cast
 from sqlalchemy.orm import Session
 from . import models
 from ..schemas import product_group, process, target, measurement, spec, equipment, pr_thickness, change_point, author, particle
@@ -118,7 +119,7 @@ def get_targets(db: Session, process_id: int = None, process_type: str = 'PHOTO'
         query = query.filter(models.Target.process_id == process_id)
     if process_type:
         query = query.filter(models.Target.process_type == process_type)
-    return query.order_by(models.Target.id).all()
+    return query.order_by(cast(models.Target.name, Integer), models.Target.id).all()
 
 def get_target(db: Session, target_id: int):
     return db.query(models.Target).filter(models.Target.id == target_id).first()
