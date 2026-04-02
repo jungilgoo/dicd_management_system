@@ -1229,6 +1229,29 @@
             });
         }
         
+        // R 차트 이상점 표시 (UCL 초과 직접 감지)
+        const rOutlierData = Array(rValues.length).fill(null);
+        let hasROutlier = false;
+        rValues.forEach((v, i) => {
+            if (v > rUcl) {
+                rOutlierData[i] = v;
+                hasROutlier = true;
+            }
+        });
+        if (hasROutlier) {
+            datasets.push({
+                label: '이상점',
+                data: rOutlierData,
+                borderColor: '#dc3545',
+                backgroundColor: '#dc3545',
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                pointStyle: 'circle',
+                fill: false,
+                showLine: false
+            });
+        }
+
         // R 차트 알람 마커 표시 (R_CHART 유형만)
         if (currentAlarms && currentAlarms.length > 0 && currentMeasurements && currentMeasurements.length > 0) {
             const measurementIdToIndex = {};
