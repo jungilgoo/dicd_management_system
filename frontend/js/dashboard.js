@@ -1108,7 +1108,7 @@ function updateAlarmSummaryBar(summary, alarms) {
     tbody.innerHTML = '';
 
     if (!alarms || alarms.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">활성 알람이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">활성 알람이 없습니다.</td></tr>';
         return;
     }
 
@@ -1130,9 +1130,13 @@ function updateAlarmSummaryBar(summary, alarms) {
         tr.innerHTML = `
             <td>${severityBadge}</td>
             <td>${formatTimeAgo(alarm.created_at)}</td>
+            <td>${alarm.product_group_name || '-'}</td>
+            <td>${alarm.process_name || '-'}</td>
             <td>${alarm.target_name || '-'}</td>
+            <td>${alarm.device || '-'}</td>
+            <td>${alarm.lot_no || '-'}</td>
             <td>${alarmTypeMap[alarm.alarm_type] || alarm.alarm_type}</td>
-            <td class="text-truncate" style="max-width:300px" title="${alarm.description}">${alarm.description}</td>
+            <td class="text-truncate" style="max-width:200px" title="${alarm.description}">${alarm.description}</td>
         `;
         tbody.appendChild(tr);
     });

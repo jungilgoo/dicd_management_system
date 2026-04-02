@@ -90,13 +90,18 @@ def get_alarms(
         models.SpcAlarm.created_at.desc()
     ).offset(offset).limit(limit).all()
 
-    # 타겟명, lot_no 추가
+    # 제품군/공정/타겟명, device, lot_no 추가
     result = []
     for alarm in alarms:
         item = schemas.SpcAlarmListItem.model_validate(alarm)
-        item.target_name = alarm.target.name if alarm.target else None
-        # lot_no는 measurement에서 가져옴
+        if alarm.target:
+            item.target_name = alarm.target.name
+            if alarm.target.process:
+                item.process_name = alarm.target.process.name
+                if alarm.target.process.product_group:
+                    item.product_group_name = alarm.target.process.product_group.name
         if alarm.measurement:
+            item.device = alarm.measurement.device
             item.lot_no = alarm.measurement.lot_no
         result.append(item)
 

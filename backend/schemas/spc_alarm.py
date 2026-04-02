@@ -33,8 +33,11 @@ class SpcAlarm(SpcAlarmBase):
 
 
 class SpcAlarmListItem(SpcAlarm):
-    """알람 목록용 (타겟명 포함)"""
+    """알람 목록용 (제품군/공정/타겟명, DEVICE, LOT NO 포함)"""
+    product_group_name: Optional[str] = None
+    process_name: Optional[str] = None
     target_name: Optional[str] = None
+    device: Optional[str] = None
     lot_no: Optional[str] = None
 
 
