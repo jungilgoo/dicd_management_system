@@ -108,19 +108,12 @@ function renderAlarmTable(alarms) {
     const countInfo = document.getElementById('alarm-count-info');
 
     if (!alarms || alarms.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">알람이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-3">알람이 없습니다.</td></tr>';
         countInfo.textContent = '0건';
         return;
     }
 
     countInfo.textContent = `${alarms.length}건`;
-
-    const alarmTypeMap = {
-        'SPEC': '스펙 초과',
-        'R_CHART': 'R차트 UCL',
-        'NELSON': 'Nelson Rule',
-        'XBAR': 'X-bar 이탈'
-    };
 
     const statusMap = {
         'ACTIVE': '<span class="badge badge-danger">활성</span>',
@@ -135,10 +128,6 @@ function renderAlarmTable(alarms) {
             : alarm.severity === 'WARNING'
             ? '<span class="badge badge-warning">Warning</span>'
             : '<span class="badge badge-info">Info</span>';
-
-        const typeText = alarm.alarm_type === 'NELSON'
-            ? `Nelson Rule ${alarm.rule_number || ''}`
-            : (alarmTypeMap[alarm.alarm_type] || alarm.alarm_type);
 
         const createdAt = alarm.created_at ? new Date(alarm.created_at).toLocaleString('ko-KR') : '-';
 
@@ -155,9 +144,11 @@ function renderAlarmTable(alarms) {
             <td>${severityBadge}</td>
             <td>${statusMap[alarm.status] || alarm.status}</td>
             <td>${createdAt}</td>
+            <td>${alarm.product_group_name || '-'}</td>
+            <td>${alarm.process_name || '-'}</td>
             <td>${alarm.target_name || '-'}</td>
+            <td>${alarm.device || '-'}</td>
             <td>${alarm.lot_no || '-'}</td>
-            <td>${typeText}</td>
             <td class="text-truncate" style="max-width:250px; cursor:pointer" title="${alarm.description}" onclick="showAlarmDetail(${alarm.id})">${alarm.description}</td>
             <td>${alarm.value != null ? alarm.value : '-'}</td>
             <td>${actions}</td>
