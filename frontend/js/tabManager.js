@@ -108,6 +108,12 @@ window.TabManager = (function() {
             icon: 'fas fa-exchange-alt',
             getUrl: () => getPagePrefix() + 'change_points.html',
             closable: true
+        },
+        'spc_alarms': {
+            title: 'SPC 알람 관리',
+            icon: 'fas fa-bell',
+            getUrl: () => 'pages/alarms/spc_alarms.html',
+            closable: true
         }
     };
 
@@ -223,6 +229,12 @@ window.TabManager = (function() {
         $(`a[href="${prefix}change_points.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('change_points');
+        });
+
+        // SPC 알람 관리
+        $('a[href="pages/alarms/spc_alarms.html"]').on('click', function(e) {
+            e.preventDefault();
+            openTab('spc_alarms');
         });
     }
 

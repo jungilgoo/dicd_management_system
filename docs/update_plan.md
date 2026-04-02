@@ -6,6 +6,23 @@
 
 ## 현재 진행 중인 업데이트
 
+### 2026-04-02 - SPC 이상치 감지 모니터링 기능
+- **목적**: 측정 데이터 입력 시 실시간 SPC 알람 자동 판정 및 관리
+- **상세 계획**: `docs/spc_alarm_plan.md` 참조
+- **상태**: Phase 5 완료 (서버 테스트 대기)
+- **작업 내용**:
+  - [x] Phase 1: DB 모델 추가 (SpcAlarm, MeasurementChangeHistory)
+  - [x] Phase 2: 판정 서비스 (spc_alarm.py) - Spec/R차트/Nelson Rule 1,2,3
+  - [x] Phase 3: CRUD 통합 (create/update_measurement에서 자동 알람 호출)
+  - [x] Phase 4: API 엔드포인트 (조회/확인/해결)
+  - [x] Phase 5-1: 대시보드 알람 요약 바
+  - [x] Phase 5-2: 사이드바 알람 배지
+  - [x] Phase 5-3: SPC 차트 알람 마커 연동
+  - [x] Phase 5-4: 알람 관리 페이지 (spc_alarms.html)
+  - [x] 탭 매니저에 SPC 알람 탭 등록
+  - [ ] 서버 배포 후 테이블 생성 (`python backend/utils/create_spc_alarm_tables.py`)
+  - [ ] 서버 테스트
+
 ### 2025-12-10 - ETCH 공정 관리 시스템 추가
 - **목적**: PHOTO 공정 관리 시스템과 동일한 기능을 가진 ETCH 공정 관리 시스템 구축
 - **상태**: Phase 14/15 완료 (최종 통합 테스트 대기)

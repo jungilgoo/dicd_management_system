@@ -30,6 +30,7 @@ from backend.routers import particle as particle_router
 from backend.routers import change_points as change_points_router
 from backend.routers import authors as authors_router
 from backend.routers import auto_update_spec as auto_update_spec_router
+from backend.routers import spc_alarms as spc_alarms_router
 
 # 데이터베이스 테이블 생성 (에러 발생 시 서버는 계속 실행)
 try:
@@ -78,6 +79,7 @@ app.include_router(particle_router.router)
 app.include_router(change_points_router.router)
 app.include_router(authors_router.router)
 app.include_router(auto_update_spec_router.router)
+app.include_router(spc_alarms_router.router)
 print("✅ 모든 API 라우터 등록 완료")
 
 

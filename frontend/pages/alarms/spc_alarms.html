@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPC 알람 관리 - PHOTO 공정 관리 시스템</title>
+    <link rel="stylesheet" href="../../lib/css/source-sans-pro.css">
+    <link rel="stylesheet" href="../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../lib/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../lib/css/daterangepicker.css">
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- 콘텐츠 래퍼 -->
+        <div class="content-wrapper" style="margin-left: 0;">
+            <!-- 콘텐츠 헤더 -->
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1><i class="fas fa-bell mr-2"></i>SPC 알람 관리</h1>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 메인 콘텐츠 -->
+            <section class="content">
+                <div class="container-fluid">
+                    <!-- 필터 카드 -->
+                    <div class="card card-outline card-primary">
+                        <div class="card-header py-2">
+                            <h3 class="card-title"><i class="fas fa-filter mr-1"></i> 필터</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <label class="mb-1">심각도</label>
+                                    <select class="form-control form-control-sm" id="filter-severity">
+                                        <option value="">전체</option>
+                                        <option value="CRITICAL">Critical</option>
+                                        <option value="WARNING">Warning</option>
+                                        <option value="INFO">Info</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="mb-1">상태</label>
+                                    <select class="form-control form-control-sm" id="filter-status">
+                                        <option value="ACTIVE">활성</option>
+                                        <option value="ACKNOWLEDGED">확인됨</option>
+                                        <option value="RESOLVED">해결됨</option>
+                                        <option value="SUPERSEDED">대체됨</option>
+                                        <option value="">전체</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="mb-1">기간</label>
+                                    <input type="text" class="form-control form-control-sm" id="filter-daterange" placeholder="날짜 범위 선택">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="mb-1">타겟</label>
+                                    <select class="form-control form-control-sm" id="filter-target">
+                                        <option value="">전체</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-sm btn-primary" id="btn-search"><i class="fas fa-search mr-1"></i>조회</button>
+                                    <button class="btn btn-sm btn-outline-secondary ml-1" id="btn-reset"><i class="fas fa-redo mr-1"></i>초기화</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 알람 요약 -->
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="small-box bg-danger">
+                                <div class="inner">
+                                    <h3 id="summary-critical">0</h3>
+                                    <p>Critical</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3 id="summary-warning">0</h3>
+                                    <p>Warning</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-exclamation-circle"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3 id="summary-info">0</h3>
+                                    <p>Info</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-info-circle"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small-box bg-secondary">
+                                <div class="inner">
+                                    <h3 id="summary-total">0</h3>
+                                    <p>전체</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-bell"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 알람 목록 테이블 -->
+                    <div class="card">
+                        <div class="card-header py-2">
+                            <h3 class="card-title"><i class="fas fa-list mr-1"></i> 알람 목록</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:40px">#</th>
+                                            <th style="width:70px">심각도</th>
+                                            <th style="width:70px">상태</th>
+                                            <th style="width:130px">발생 시간</th>
+                                            <th style="width:100px">타겟</th>
+                                            <th style="width:80px">LOT NO</th>
+                                            <th style="width:100px">유형</th>
+                                            <th>내용</th>
+                                            <th style="width:70px">값</th>
+                                            <th style="width:140px">액션</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="alarm-table-body">
+                                        <tr>
+                                            <td colspan="10" class="text-center text-muted py-3">조회 버튼을 눌러주세요.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted" id="alarm-count-info">0건</small>
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0" id="alarm-pagination">
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- 알람 상세 모달 -->
+    <div class="modal fade" id="alarm-detail-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-bell mr-1"></i> 알람 상세</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body" id="alarm-detail-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../lib/js/jquery-3.6.0.min.js"></script>
+    <script src="../../lib/js/bootstrap.bundle.min.js"></script>
+    <script src="../../lib/js/adminlte.min.js"></script>
+    <script src="../../lib/js/moment.min.js"></script>
+    <script src="../../lib/js/daterangepicker.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/spc_alarms.js"></script>
+</body>
+</html>

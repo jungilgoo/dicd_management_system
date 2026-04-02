@@ -26,7 +26,7 @@
                         <li class="nav-item">
                             <a href="etch_index.html" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
-                                <p>대시보드</p>
+                                <p>대시보드 <span class="badge badge-danger right" id="alarm-badge" style="display:none">0</span></p>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -117,6 +117,12 @@
                                 <p>변경점 관리</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="pages/alarms/spc_alarms.html" class="nav-link" data-tab="spc_alarms">
+                                <i class="nav-icon fas fa-bell"></i>
+                                <p>SPC 알람 관리</p>
+                            </a>
+                        </li>
 
                         <!-- 공정 전환 버튼 (사이드바 하단) -->
                         <li class="nav-item mt-3">
@@ -155,6 +161,42 @@
                     <!-- 메인 콘텐츠 -->
                     <section class="content">
                         <div class="container-fluid">
+                            <!-- SPC 알람 요약 바 -->
+                            <div class="row" id="alarm-summary-bar" style="display:none">
+                                <div class="col-md-12">
+                                    <div class="card card-outline" id="alarm-summary-card">
+                                        <div class="card-header py-2">
+                                            <h3 class="card-title"><i class="fas fa-bell mr-1"></i> 활성 알람</h3>
+                                            <div class="card-tools">
+                                                <span class="badge badge-danger mr-1" id="alarm-critical-badge" style="display:none">Critical 0건</span>
+                                                <span class="badge badge-warning mr-1" id="alarm-warning-badge" style="display:none">Warning 0건</span>
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-2">
+                                            <table class="table table-sm table-hover mb-0" id="alarm-summary-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:60px">심각도</th>
+                                                        <th style="width:80px">시간</th>
+                                                        <th style="width:120px">타겟</th>
+                                                        <th style="width:100px">유형</th>
+                                                        <th>내용</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="alarm-summary-tbody">
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="card-footer py-1 text-right">
+                                            <a href="#" id="alarm-view-all" class="btn btn-sm btn-outline-secondary">전체보기 <i class="fas fa-arrow-right ml-1"></i></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- 메인 카드 -->
                             <div class="row">
                                 <div class="col-md-12">

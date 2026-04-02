@@ -183,6 +183,33 @@ class API {
         }
     }
     
+    // PATCH 요청
+    async patch(endpoint, data) {
+        try {
+            const response = await fetch(`${this.baseUrl}${endpoint}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            const baseEndpoint = endpoint.split('/').slice(0, 3).join('/');
+            this.clearCache(baseEndpoint);
+
+            return result;
+        } catch (error) {
+            console.error('API PATCH 요청 오류:', error);
+            throw error;
+        }
+    }
+
     // DELETE 요청
     async delete(endpoint) {
         try {

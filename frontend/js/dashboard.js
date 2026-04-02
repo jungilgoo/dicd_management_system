@@ -6,15 +6,20 @@ let currentPeriodDays = 14; // 기본값은 14일
 
 // 초기화 함수
 function initDashboard() {
+    // SPC 알람 요약 로드
+    loadAlarmSummary();
+
     // 공정능력지수 히트맵 로드
     loadCpkHeatmap();
 
     // 모니터링 타겟 로드 및 설정
     initMonitoringTargets();
-    
+
     // 이벤트 리스너 설정
     setupEventListeners();
 
+    // 알람 배지 주기적 갱신 (60초)
+    setInterval(loadAlarmSummary, 60000);
 }
 
 // 이벤트 리스너 설정
@@ -1025,6 +1030,141 @@ const DASHBOARD_UTILS = {
     }
 };
 
+
+// ===== SPC 알람 요약 기능 =====
+
+async function loadAlarmSummary() {
+    const processType = window.PROCESS_TYPE || 'PHOTO';
+    try {
+        // 요약 + 최근 알람 5건 병렬 요청
+        const [summaryRes, alarmsRes] = await Promise.all([
+            api.get(`/api/spc-alarms/summary?process_type=${processType}`),
+            api.get(`/api/spc-alarms/?status=ACTIVE&limit=5&process_type=${processType}`)
+        ]);
+
+        const summary = summaryRes;
+        const alarms = alarmsRes;
+
+        updateAlarmBadge(summary);
+        updateAlarmSummaryBar(summary, alarms);
+    } catch (e) {
+        console.error('알람 요약 로드 실패:', e);
+    }
+}
+
+function updateAlarmBadge(summary) {
+    const badge = document.getElementById('alarm-badge');
+    if (!badge) return;
+
+    if (summary.critical_count > 0) {
+        badge.textContent = summary.critical_count;
+        badge.style.display = '';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function updateAlarmSummaryBar(summary, alarms) {
+    const bar = document.getElementById('alarm-summary-bar');
+    const card = document.getElementById('alarm-summary-card');
+    const critBadge = document.getElementById('alarm-critical-badge');
+    const warnBadge = document.getElementById('alarm-warning-badge');
+    const tbody = document.getElementById('alarm-summary-tbody');
+
+    if (!bar || !card) return;
+
+    // 알람 0건이면 숨김
+    if (summary.total_count === 0) {
+        bar.style.display = 'none';
+        return;
+    }
+
+    bar.style.display = '';
+
+    // 카드 테두리 색상
+    card.className = 'card card-outline';
+    if (summary.critical_count > 0) {
+        card.classList.add('card-danger');
+    } else if (summary.warning_count > 0) {
+        card.classList.add('card-warning');
+    }
+
+    // 배지 업데이트
+    if (summary.critical_count > 0) {
+        critBadge.textContent = `Critical ${summary.critical_count}건`;
+        critBadge.style.display = '';
+    } else {
+        critBadge.style.display = 'none';
+    }
+    if (summary.warning_count > 0) {
+        warnBadge.textContent = `Warning ${summary.warning_count}건`;
+        warnBadge.style.display = '';
+    } else {
+        warnBadge.style.display = 'none';
+    }
+
+    // 테이블 렌더링
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!alarms || alarms.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">활성 알람이 없습니다.</td></tr>';
+        return;
+    }
+
+    alarms.forEach(alarm => {
+        const tr = document.createElement('tr');
+        const severityBadge = alarm.severity === 'CRITICAL'
+            ? '<span class="badge badge-danger">Critical</span>'
+            : alarm.severity === 'WARNING'
+            ? '<span class="badge badge-warning">Warning</span>'
+            : '<span class="badge badge-info">Info</span>';
+
+        const alarmTypeMap = {
+            'SPEC': '스펙 초과',
+            'R_CHART': 'R차트 UCL',
+            'NELSON': `Nelson Rule ${alarm.rule_number || ''}`,
+            'XBAR': 'X-bar 이탈'
+        };
+
+        tr.innerHTML = `
+            <td>${severityBadge}</td>
+            <td>${formatTimeAgo(alarm.created_at)}</td>
+            <td>${alarm.target_name || '-'}</td>
+            <td>${alarmTypeMap[alarm.alarm_type] || alarm.alarm_type}</td>
+            <td class="text-truncate" style="max-width:300px" title="${alarm.description}">${alarm.description}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function formatTimeAgo(dateStr) {
+    if (!dateStr) return '-';
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now - date;
+    const diffMin = Math.floor(diffMs / 60000);
+
+    if (diffMin < 1) return '방금';
+    if (diffMin < 60) return `${diffMin}분전`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `${diffHour}시간전`;
+    const diffDay = Math.floor(diffHour / 24);
+    return `${diffDay}일전`;
+}
+
+// 전체보기 클릭 이벤트
+document.addEventListener('DOMContentLoaded', function() {
+    const viewAllBtn = document.getElementById('alarm-view-all');
+    if (viewAllBtn) {
+        viewAllBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof openTab === 'function') {
+                openTab('spc_alarms');
+            }
+        });
+    }
+});
 
 // 페이지 로드 시 대시보드 초기화
 document.addEventListener('DOMContentLoaded', initDashboard);

@@ -37,6 +37,7 @@
     let currentChangePoints = null; // 변경점 데이터
     let showChangePoints = true; // 변경점 표시 여부
     let currentSpcResult = null; // 공정팀 양식 다운로드용 SPC 분석 결과
+    let currentAlarms = null; // SPC 알람 데이터
     
     // 변경점 데이터 로드
     async function loadChangePoints(targetId, startDate = null, endDate = null) {
@@ -333,12 +334,21 @@
             }
             
             const changePointsResult = await loadChangePoints(
-                selectedTargetId, 
-                startDateForChangePoints, 
+                selectedTargetId,
+                startDateForChangePoints,
                 endDateForChangePoints
             );
             currentChangePoints = changePointsResult;
-            
+
+            // SPC 알람 데이터 로드
+            try {
+                const processType = window.PROCESS_TYPE || 'PHOTO';
+                currentAlarms = await api.get(`/api/spc-alarms/?target_id=${selectedTargetId}&process_type=${processType}&status=&limit=500`);
+            } catch (alarmErr) {
+                console.warn('SPC 알람 로드 실패 (무시):', alarmErr);
+                currentAlarms = null;
+            }
+
             // 차트 데이터 섹션 숨기기
             hideChartDataSection();
             
@@ -512,7 +522,8 @@
                         filter: function(tooltipItem) {
                             const label = tooltipItem.dataset.label;
                             return label !== 'CL' && label !== 'UCL' && label !== 'LCL' &&
-                                   label !== 'USL' && label !== 'LSL' && label !== '타겟';
+                                   label !== 'USL' && label !== 'LSL' && label !== '타겟' &&
+                                   label !== '알람(Critical)' && label !== '알람(Warning)';
                         },
                         label: function(context) {
                             const label = context.dataset.label || '';
@@ -812,6 +823,60 @@
             }
         }
         
+        // SPC 알람 마커 표시
+        if (currentAlarms && currentAlarms.length > 0 && currentMeasurements && currentMeasurements.length > 0) {
+            // measurement_id → 차트 인덱스 매핑
+            const measurementIdToIndex = {};
+            currentMeasurements.forEach((m, idx) => {
+                measurementIdToIndex[m.id] = idx;
+            });
+
+            const criticalData = Array(values.length).fill(null);
+            const warningData = Array(values.length).fill(null);
+            let hasCritical = false;
+            let hasWarning = false;
+
+            currentAlarms.forEach(alarm => {
+                const idx = measurementIdToIndex[alarm.measurement_id];
+                if (idx === undefined) return;
+
+                if (alarm.severity === 'CRITICAL') {
+                    criticalData[idx] = values[idx];
+                    hasCritical = true;
+                } else if (alarm.severity === 'WARNING' && criticalData[idx] === null) {
+                    warningData[idx] = values[idx];
+                    hasWarning = true;
+                }
+            });
+
+            if (hasCritical) {
+                datasets.push({
+                    label: '알람(Critical)',
+                    data: criticalData,
+                    borderColor: '#dc3545',
+                    backgroundColor: '#dc3545',
+                    pointRadius: 7,
+                    pointHoverRadius: 9,
+                    pointStyle: 'triangle',
+                    fill: false,
+                    showLine: false
+                });
+            }
+            if (hasWarning) {
+                datasets.push({
+                    label: '알람(Warning)',
+                    data: warningData,
+                    borderColor: '#ff8c00',
+                    backgroundColor: '#ff8c00',
+                    pointRadius: 7,
+                    pointHoverRadius: 9,
+                    pointStyle: 'triangle',
+                    fill: false,
+                    showLine: false
+                });
+            }
+        }
+
         // 변경점 annotations 생성
         const changePointAnnotations = {};
         if (currentChangePoints && currentChangePoints.length > 0 && showChangePoints) {
@@ -1164,6 +1229,39 @@
             });
         }
         
+        // R 차트 알람 마커 표시 (R_CHART 유형만)
+        if (currentAlarms && currentAlarms.length > 0 && currentMeasurements && currentMeasurements.length > 0) {
+            const measurementIdToIndex = {};
+            currentMeasurements.forEach((m, idx) => {
+                measurementIdToIndex[m.id] = idx;
+            });
+
+            const rAlarmData = Array(rValues.length).fill(null);
+            let hasRAlarm = false;
+
+            currentAlarms.forEach(alarm => {
+                if (alarm.alarm_type !== 'R_CHART') return;
+                const idx = measurementIdToIndex[alarm.measurement_id];
+                if (idx === undefined) return;
+                rAlarmData[idx] = rValues[idx];
+                hasRAlarm = true;
+            });
+
+            if (hasRAlarm) {
+                datasets.push({
+                    label: '알람(R차트)',
+                    data: rAlarmData,
+                    borderColor: '#dc3545',
+                    backgroundColor: '#dc3545',
+                    pointRadius: 7,
+                    pointHoverRadius: 9,
+                    pointStyle: 'triangle',
+                    fill: false,
+                    showLine: false
+                });
+            }
+        }
+
         // R 차트용 변경점 annotations 생성 (X-bar 차트와 동일한 로직 사용)
         const rChangePointAnnotations = {};
         if (currentChangePoints && currentChangePoints.length > 0 && showChangePoints) {
@@ -1266,7 +1364,8 @@
                             // USL, LSL, Target 기준선 제외
                             filter: function(tooltipItem) {
                                 const label = tooltipItem.dataset.label;
-                                return label !== 'USL' && label !== 'LSL' && label !== 'Target';
+                                return label !== 'USL' && label !== 'LSL' && label !== 'Target' &&
+                                       label !== '알람(R차트)';
                             },
                             // 각 데이터셋의 값만 표시
                             label: function(context) {

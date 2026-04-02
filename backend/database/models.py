@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -288,6 +288,67 @@ class ParticleMeasurement(Base):
 
     # 관계 설정
     equipment = relationship("ParticleEquipment", back_populates="particle_measurements")
+
+
+# SPC 알람 테이블 (삭제 금지, 상태 변경만 허용)
+class SpcAlarm(Base):
+    __tablename__ = "spc_alarms"
+
+    id = Column(Integer, primary_key=True, index=True)
+    measurement_id = Column(Integer, ForeignKey("measurements.id"), nullable=False)
+    target_id = Column(Integer, ForeignKey("targets.id"), nullable=False)
+    alarm_type = Column(String(20), nullable=False)  # SPEC, XBAR, R_CHART, NELSON
+    severity = Column(String(10), nullable=False)  # CRITICAL, WARNING, INFO
+    rule_number = Column(Integer, nullable=True)  # Nelson Rule 번호 (1,2,3) 또는 NULL
+    description = Column(Text, nullable=False)  # 판정 상세 내용
+
+    # 판정 시점 스냅샷 (감사 추적용)
+    value = Column(Float, nullable=False)  # 판정 대상 값
+    cl_snapshot = Column(Float, nullable=True)  # 판정 시점 CL
+    ucl_snapshot = Column(Float, nullable=True)  # 판정 시점 UCL
+    lcl_snapshot = Column(Float, nullable=True)  # 판정 시점 LCL
+    spec_usl = Column(Float, nullable=True)  # 판정 시점 USL
+    spec_lsl = Column(Float, nullable=True)  # 판정 시점 LSL
+
+    # 상태 관리
+    status = Column(String(20), nullable=False, default='ACTIVE')  # ACTIVE, ACKNOWLEDGED, RESOLVED, SUPERSEDED
+    acknowledged_by = Column(String(100), nullable=True)
+    acknowledged_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_by = Column(String(100), nullable=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # 인덱스
+    __table_args__ = (
+        Index('ix_spc_alarms_target_created', 'target_id', 'created_at'),
+        Index('ix_spc_alarms_severity_status', 'severity', 'status'),
+    )
+
+    # 관계 설정
+    measurement = relationship("Measurement")
+    target = relationship("Target")
+
+
+# 측정 수정 이력 테이블
+class MeasurementChangeHistory(Base):
+    __tablename__ = "measurement_change_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    measurement_id = Column(Integer, ForeignKey("measurements.id"), nullable=False, index=True)
+    change_type = Column(String(20), nullable=False)  # UPDATE, DELETE
+
+    # 변경 전/후 값 스냅샷 (JSON)
+    before_values = Column(Text, nullable=False)
+    after_values = Column(Text, nullable=True)  # DELETE 시 NULL
+
+    changed_by = Column(String(100), nullable=False)
+    reason = Column(String(500), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # 관계 설정
+    measurement = relationship("Measurement")
 
 
 # 작성자 테이블

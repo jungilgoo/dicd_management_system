@@ -194,6 +194,14 @@ def create_measurement(db: Session, measurement_data: measurement.MeasurementCre
     db.commit()
     db.refresh(db_measurement)
 
+    # SPC 알람 판정
+    try:
+        from ..services.spc_alarm import evaluate_measurement_alarms
+        evaluate_measurement_alarms(db, db_measurement.id)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"SPC 알람 판정 실패 (measurement_id={db_measurement.id}): {e}")
+
     return db_measurement
 
 def get_measurements(db: Session, target_id: int = None, process_id: int = None,
@@ -256,12 +264,31 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
 # 측정 데이터 업데이트 함수 수정
 def update_measurement(db: Session, measurement_id: int, measurement_data: measurement.MeasurementCreate):
     db_measurement = db.query(models.Measurement).filter(models.Measurement.id == measurement_id).first()
-    
+
     if db_measurement:
+        # 수정 이력 저장 (수정 전 스냅샷)
+        try:
+            from ..services.spc_alarm import save_change_history
+            after_values = {
+                "value_top": measurement_data.value_top,
+                "value_center": measurement_data.value_center,
+                "value_bottom": measurement_data.value_bottom,
+                "value_left": measurement_data.value_left,
+                "value_right": measurement_data.value_right,
+            }
+            save_change_history(
+                db, db_measurement, after_values,
+                changed_by=measurement_data.author,
+                change_type='UPDATE'
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"수정 이력 저장 실패: {e}")
+
         # 업데이트할 필드 설정
         for key, value in measurement_data.dict(exclude_unset=True).items():
             setattr(db_measurement, key, value)
-        
+
         # 통계치 재계산
         values = [
             db_measurement.value_top,
@@ -276,9 +303,17 @@ def update_measurement(db: Session, measurement_id: int, measurement_data: measu
         db_measurement.max_value = stats["max"]
         db_measurement.range_value = stats["range"]
         db_measurement.std_dev = stats["std_dev"]
-        
+
         db.commit()
         db.refresh(db_measurement)
+
+        # SPC 알람 재판정 (수정된 측정 + 주변 Nelson Rule 윈도우)
+        try:
+            from ..services.spc_alarm import reevaluate_after_edit
+            reevaluate_after_edit(db, measurement_id)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"SPC 알람 재판정 실패 (measurement_id={measurement_id}): {e}")
 
     return db_measurement
 
