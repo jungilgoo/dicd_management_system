@@ -157,11 +157,8 @@ function renderAlarmTable(alarms) {
 }
 
 async function acknowledgeAlarm(alarmId) {
-    const user = prompt('확인 처리자 이름을 입력하세요:');
-    if (!user) return;
-
     try {
-        await api.patch(`/spc-alarms/${alarmId}/acknowledge`, { acknowledged_by: user });
+        await api.patch(`/spc-alarms/${alarmId}/acknowledge`, { acknowledged_by: '담당자' });
         loadAlarms();
         loadSummary();
     } catch (e) {
@@ -170,11 +167,8 @@ async function acknowledgeAlarm(alarmId) {
 }
 
 async function resolveAlarm(alarmId) {
-    const user = prompt('해결 처리자 이름을 입력하세요:');
-    if (!user) return;
-
     try {
-        await api.patch(`/spc-alarms/${alarmId}/resolve`, { resolved_by: user });
+        await api.patch(`/spc-alarms/${alarmId}/resolve`, { resolved_by: '담당자' });
         loadAlarms();
         loadSummary();
     } catch (e) {
