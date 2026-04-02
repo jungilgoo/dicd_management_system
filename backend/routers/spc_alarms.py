@@ -93,7 +93,7 @@ def get_alarms(
     # 타겟명, lot_no 추가
     result = []
     for alarm in alarms:
-        item = schemas.SpcAlarmListItem.from_orm(alarm)
+        item = schemas.SpcAlarmListItem.model_validate(alarm)
         item.target_name = alarm.target.name if alarm.target else None
         # lot_no는 measurement에서 가져옴
         if alarm.measurement:
