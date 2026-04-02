@@ -41,13 +41,13 @@ function initAlarmPage() {
 async function loadTargets() {
     try {
         const processType = window.PROCESS_TYPE || 'PHOTO';
-        const groups = await api.get('/api/product-groups/');
+        const groups = await api.get('/product-groups/');
         const targetSelect = document.getElementById('filter-target');
 
         for (const group of groups) {
-            const processes = await api.get(`/api/processes/?product_group_id=${group.id}`);
+            const processes = await api.get(`/processes/?product_group_id=${group.id}`);
             for (const process of processes) {
-                const targets = await api.get(`/api/targets/?process_id=${process.id}&process_type=${processType}`);
+                const targets = await api.get(`/targets/?process_id=${process.id}&process_type=${processType}`);
                 for (const target of targets) {
                     const option = document.createElement('option');
                     option.value = target.id;
@@ -64,7 +64,7 @@ async function loadTargets() {
 async function loadSummary() {
     try {
         const processType = window.PROCESS_TYPE || 'PHOTO';
-        const summary = await api.get(`/api/spc-alarms/summary?process_type=${processType}`);
+        const summary = await api.get(`/spc-alarms/summary?process_type=${processType}`);
 
         document.getElementById('summary-critical').textContent = summary.critical_count;
         document.getElementById('summary-warning').textContent = summary.warning_count;
@@ -94,7 +94,7 @@ async function loadAlarms() {
     }
 
     try {
-        const alarms = await api.get(`/api/spc-alarms/?${params}`);
+        const alarms = await api.get(`/spc-alarms/?${params}`);
         renderAlarmTable(alarms);
     } catch (e) {
         console.error('알람 목록 로드 실패:', e);
@@ -170,7 +170,7 @@ async function acknowledgeAlarm(alarmId) {
     if (!user) return;
 
     try {
-        await api.patch(`/api/spc-alarms/${alarmId}/acknowledge`, { acknowledged_by: user });
+        await api.patch(`/spc-alarms/${alarmId}/acknowledge`, { acknowledged_by: user });
         loadAlarms();
         loadSummary();
     } catch (e) {
@@ -183,7 +183,7 @@ async function resolveAlarm(alarmId) {
     if (!user) return;
 
     try {
-        await api.patch(`/api/spc-alarms/${alarmId}/resolve`, { resolved_by: user });
+        await api.patch(`/spc-alarms/${alarmId}/resolve`, { resolved_by: user });
         loadAlarms();
         loadSummary();
     } catch (e) {
@@ -193,7 +193,7 @@ async function resolveAlarm(alarmId) {
 
 async function showAlarmDetail(alarmId) {
     try {
-        const alarm = await api.get(`/api/spc-alarms/${alarmId}`);
+        const alarm = await api.get(`/spc-alarms/${alarmId}`);
         const body = document.getElementById('alarm-detail-body');
 
         const statusMap = {

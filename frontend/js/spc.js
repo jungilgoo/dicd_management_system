@@ -343,7 +343,7 @@
             // SPC 알람 데이터 로드
             try {
                 const processType = window.PROCESS_TYPE || 'PHOTO';
-                currentAlarms = await api.get(`/api/spc-alarms/?target_id=${selectedTargetId}&process_type=${processType}&status=&limit=500`);
+                currentAlarms = await api.get(`/spc-alarms/?target_id=${selectedTargetId}&process_type=${processType}&status=&limit=500`);
             } catch (alarmErr) {
                 console.warn('SPC 알람 로드 실패 (무시):', alarmErr);
                 currentAlarms = null;

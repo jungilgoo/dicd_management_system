@@ -1038,8 +1038,8 @@ async function loadAlarmSummary() {
     try {
         // 요약 + 최근 알람 5건 병렬 요청
         const [summaryRes, alarmsRes] = await Promise.all([
-            api.get(`/api/spc-alarms/summary?process_type=${processType}`),
-            api.get(`/api/spc-alarms/?status=ACTIVE&limit=5&process_type=${processType}`)
+            api.get(`/spc-alarms/summary?process_type=${processType}`),
+            api.get(`/spc-alarms/?status=ACTIVE&limit=5&process_type=${processType}`)
         ]);
 
         const summary = summaryRes;
