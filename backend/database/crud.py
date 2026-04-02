@@ -320,6 +320,9 @@ def update_measurement(db: Session, measurement_id: int, measurement_data: measu
 def delete_measurement(db: Session, measurement_id: int):
     db_measurement = db.query(models.Measurement).filter(models.Measurement.id == measurement_id).first()
     if db_measurement:
+        # 연결된 알람 및 변경 이력 먼저 삭제
+        db.query(models.SpcAlarm).filter(models.SpcAlarm.measurement_id == measurement_id).delete()
+        db.query(models.MeasurementChangeHistory).filter(models.MeasurementChangeHistory.measurement_id == measurement_id).delete()
         db.delete(db_measurement)
         db.commit()
         return True
@@ -344,6 +347,10 @@ def delete_measurements_bulk(db: Session, measurement_ids: list):
     ).all()
 
     deleted_count = len(measurements_to_delete)
+
+    # 연결된 알람 및 변경 이력 먼저 삭제
+    db.query(models.SpcAlarm).filter(models.SpcAlarm.measurement_id.in_(measurement_ids)).delete(synchronize_session=False)
+    db.query(models.MeasurementChangeHistory).filter(models.MeasurementChangeHistory.measurement_id.in_(measurement_ids)).delete(synchronize_session=False)
 
     # 삭제 실행
     for measurement in measurements_to_delete:
