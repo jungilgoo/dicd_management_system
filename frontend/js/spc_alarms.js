@@ -2,6 +2,7 @@
 
 let currentPage = 0;
 const pageSize = 50;
+let pendingResolveAlarmId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     initAlarmPage();
@@ -11,6 +12,9 @@ function initAlarmPage() {
     // 이벤트 리스너
     document.getElementById('btn-search').addEventListener('click', () => { currentPage = 0; loadAlarms(); });
     document.getElementById('btn-reset').addEventListener('click', resetFilters);
+
+    // 조치완료 모달 확인 버튼
+    document.getElementById('btn-resolve-confirm').addEventListener('click', confirmResolve);
 
     // DateRangePicker 초기화
     $('#filter-daterange').daterangepicker({
@@ -99,8 +103,16 @@ async function loadAlarms() {
     } catch (e) {
         console.error('알람 목록 로드 실패:', e);
         document.getElementById('alarm-table-body').innerHTML =
-            '<tr><td colspan="10" class="text-center text-danger">알람 목록을 불러오는 중 오류가 발생했습니다.</td></tr>';
+            '<tr><td colspan="12" class="text-center text-danger">알람 목록을 불러오는 중 오류가 발생했습니다.</td></tr>';
     }
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    const date = d.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' });
+    const time = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `<div>${date}</div><div class="text-muted" style="font-size:0.85em">${time}</div>`;
 }
 
 function renderAlarmTable(alarms) {
@@ -115,38 +127,41 @@ function renderAlarmTable(alarms) {
 
     countInfo.textContent = `${alarms.length}건`;
 
-    const statusMap = {
-        'ACTIVE': '<span class="badge badge-danger">활성</span>',
-        'ACKNOWLEDGED': '<span class="badge badge-warning">확인됨</span>',
-        'RESOLVED': '<span class="badge badge-success">해결됨</span>',
-        'SUPERSEDED': '<span class="badge badge-secondary">대체됨</span>'
-    };
-
     tbody.innerHTML = alarms.map((alarm, idx) => {
         const severityBadge = alarm.severity === 'CRITICAL'
-            ? '<span class="badge badge-danger">Critical</span>'
+            ? '<span class="badge badge-danger">C</span>'
             : alarm.severity === 'WARNING'
-            ? '<span class="badge badge-warning">Warning</span>'
-            : '<span class="badge badge-info">Info</span>';
+            ? '<span class="badge badge-warning">W</span>'
+            : '<span class="badge badge-info">I</span>';
 
-        const createdAt = alarm.created_at ? new Date(alarm.created_at).toLocaleString('ko-KR') : '-';
-
-        let actions = '';
+        // 상태: 조치 전/후 색상 구분
+        let statusBadge;
         if (alarm.status === 'ACTIVE') {
-            actions = `<button class="btn btn-xs btn-warning mr-1" onclick="acknowledgeAlarm(${alarm.id})"><i class="fas fa-check"></i> 확인</button>
-                       <button class="btn btn-xs btn-success mr-1" onclick="resolveAlarm(${alarm.id})"><i class="fas fa-check-double"></i> 해결</button>`;
-        } else if (alarm.status === 'ACKNOWLEDGED') {
-            actions = `<button class="btn btn-xs btn-success mr-1" onclick="resolveAlarm(${alarm.id})"><i class="fas fa-check-double"></i> 해결</button>`;
+            statusBadge = '<span class="badge badge-danger">미조치</span>';
+        } else if (alarm.status === 'RESOLVED') {
+            statusBadge = '<span class="badge badge-success">완료</span>';
+        } else if (alarm.status === 'SUPERSEDED') {
+            statusBadge = '<span class="badge badge-secondary">대체</span>';
+        } else {
+            statusBadge = `<span class="badge badge-secondary">${alarm.status}</span>`;
         }
-        // 바로가기 버튼 (항상 표시)
-        actions += `<button class="btn btn-xs btn-outline-primary mr-1" title="데이터 조회" onclick="openViewFromAlarm(${alarm.product_group_id}, ${alarm.process_id}, ${alarm.target_id}, '${(alarm.lot_no || '').replace(/'/g, "\\'")}')"><i class="fas fa-search"></i></button>`;
-        actions += `<button class="btn btn-xs btn-outline-info" title="SPC 분석" onclick="openSpcFromAlarm(${alarm.target_id}, '${(alarm.product_group_name || '').replace(/'/g, "\\'")}', '${(alarm.process_name || '').replace(/'/g, "\\'")}', '${(alarm.target_name || '').replace(/'/g, "\\'")}')"><i class="fas fa-chart-line"></i></button>`;
+
+        // 액션: 위=조치완료, 아래=바로가기
+        let actionTop = '';
+        if (alarm.status === 'ACTIVE') {
+            actionTop = `<button class="btn btn-xs btn-danger" onclick="openResolveModal(${alarm.id})"><i class="fas fa-check-circle mr-1"></i>조치완료</button>`;
+        } else if (alarm.status === 'RESOLVED') {
+            const noteTitle = alarm.resolve_note ? ` title="${alarm.resolve_note.replace(/"/g, '&quot;')}"` : '';
+            actionTop = `<span class="badge badge-success"${noteTitle}><i class="fas fa-check-circle mr-1"></i>조치완료</span>`;
+        }
+
+        const actionBottom = `<button class="btn btn-xs btn-outline-primary mr-1" title="데이터 조회" onclick="openViewFromAlarm(${alarm.product_group_id}, ${alarm.process_id}, ${alarm.target_id}, '${(alarm.lot_no || '').replace(/'/g, "\\'")}')"><i class="fas fa-search"></i></button><button class="btn btn-xs btn-outline-info" title="SPC 분석" onclick="openSpcFromAlarm(${alarm.target_id}, '${(alarm.product_group_name || '').replace(/'/g, "\\'")}', '${(alarm.process_name || '').replace(/'/g, "\\'")}', '${(alarm.target_name || '').replace(/'/g, "\\'")}')"><i class="fas fa-chart-line"></i></button>`;
 
         return `<tr>
             <td>${currentPage * pageSize + idx + 1}</td>
             <td>${severityBadge}</td>
-            <td>${statusMap[alarm.status] || alarm.status}</td>
-            <td>${createdAt}</td>
+            <td>${statusBadge}</td>
+            <td>${formatDateTime(alarm.created_at)}</td>
             <td>${alarm.product_group_name || '-'}</td>
             <td>${alarm.process_name || '-'}</td>
             <td>${alarm.target_name || '-'}</td>
@@ -154,28 +169,33 @@ function renderAlarmTable(alarms) {
             <td>${alarm.lot_no || '-'}</td>
             <td class="text-truncate" style="max-width:250px; cursor:pointer" title="${alarm.description}" onclick="showAlarmDetail(${alarm.id})">${alarm.description}</td>
             <td>${alarm.value != null ? alarm.value : '-'}</td>
-            <td>${actions}</td>
+            <td><div class="mb-1">${actionTop}</div><div>${actionBottom}</div></td>
         </tr>`;
     }).join('');
 }
 
-async function acknowledgeAlarm(alarmId) {
-    try {
-        await api.patch(`/spc-alarms/${alarmId}/acknowledge`, { acknowledged_by: '담당자' });
-        loadAlarms();
-        loadSummary();
-    } catch (e) {
-        alert('알람 확인 처리 실패: ' + e.message);
-    }
+// 조치완료 모달 열기
+function openResolveModal(alarmId) {
+    pendingResolveAlarmId = alarmId;
+    document.getElementById('resolve-note').value = '';
+    $('#resolve-modal').modal('show');
 }
 
-async function resolveAlarm(alarmId) {
+// 조치완료 확인
+async function confirmResolve() {
+    if (!pendingResolveAlarmId) return;
+
+    const note = document.getElementById('resolve-note').value.trim();
     try {
-        await api.patch(`/spc-alarms/${alarmId}/resolve`, { resolved_by: '담당자' });
+        await api.patch(`/spc-alarms/${pendingResolveAlarmId}/resolve`, {
+            resolve_note: note || null
+        });
+        $('#resolve-modal').modal('hide');
+        pendingResolveAlarmId = null;
         loadAlarms();
         loadSummary();
     } catch (e) {
-        alert('알람 해결 처리 실패: ' + e.message);
+        alert('조치 완료 처리 실패: ' + e.message);
     }
 }
 
@@ -185,7 +205,7 @@ async function showAlarmDetail(alarmId) {
         const body = document.getElementById('alarm-detail-body');
 
         const statusMap = {
-            'ACTIVE': '활성', 'ACKNOWLEDGED': '확인됨', 'RESOLVED': '해결됨', 'SUPERSEDED': '대체됨'
+            'ACTIVE': '미조치', 'RESOLVED': '조치완료', 'SUPERSEDED': '대체됨'
         };
 
         body.innerHTML = `
@@ -202,8 +222,8 @@ async function showAlarmDetail(alarmId) {
                 <tr><th>판정 시점 USL</th><td>${alarm.spec_usl != null ? alarm.spec_usl : '-'}</td></tr>
                 <tr><th>판정 시점 LSL</th><td>${alarm.spec_lsl != null ? alarm.spec_lsl : '-'}</td></tr>
                 <tr><th>발생 시간</th><td>${alarm.created_at ? new Date(alarm.created_at).toLocaleString('ko-KR') : '-'}</td></tr>
-                ${alarm.acknowledged_by ? `<tr><th>확인자</th><td>${alarm.acknowledged_by} (${new Date(alarm.acknowledged_at).toLocaleString('ko-KR')})</td></tr>` : ''}
-                ${alarm.resolved_by ? `<tr><th>해결자</th><td>${alarm.resolved_by} (${new Date(alarm.resolved_at).toLocaleString('ko-KR')})</td></tr>` : ''}
+                ${alarm.resolved_by ? `<tr><th>조치 완료</th><td>${alarm.resolved_by} (${new Date(alarm.resolved_at).toLocaleString('ko-KR')})</td></tr>` : ''}
+                ${alarm.resolve_note ? `<tr><th>조치 메모</th><td>${alarm.resolve_note}</td></tr>` : ''}
             </table>
         `;
 

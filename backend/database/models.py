@@ -311,11 +311,10 @@ class SpcAlarm(Base):
     spec_lsl = Column(Float, nullable=True)  # 판정 시점 LSL
 
     # 상태 관리
-    status = Column(String(20), nullable=False, default='ACTIVE')  # ACTIVE, ACKNOWLEDGED, RESOLVED, SUPERSEDED
-    acknowledged_by = Column(String(100), nullable=True)
-    acknowledged_at = Column(DateTime(timezone=True), nullable=True)
+    status = Column(String(20), nullable=False, default='ACTIVE')  # ACTIVE, RESOLVED, SUPERSEDED
     resolved_by = Column(String(100), nullable=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolve_note = Column(Text, nullable=True)  # 조치 메모
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

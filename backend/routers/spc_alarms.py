@@ -52,7 +52,7 @@ def get_alarm_summary(
 def get_alarms(
     target_id: Optional[int] = None,
     severity: Optional[str] = None,
-    status: Optional[str] = Query(None, description="알람 상태 (ACTIVE, ACKNOWLEDGED, RESOLVED, SUPERSEDED). 미지정 시 전체"),
+    status: Optional[str] = Query(None, description="알람 상태 (ACTIVE, RESOLVED, SUPERSEDED). 미지정 시 전체"),
     process_type: Optional[str] = Query('PHOTO', description="공정 타입"),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
@@ -119,43 +119,24 @@ def get_alarm(alarm_id: int, db: Session = Depends(database.get_db)):
     return alarm
 
 
-@router.patch("/{alarm_id}/acknowledge", response_model=schemas.SpcAlarm)
-def acknowledge_alarm(
-    alarm_id: int,
-    data: schemas.SpcAlarmAcknowledge,
-    db: Session = Depends(database.get_db)
-):
-    """알람 확인 처리"""
-    alarm = db.query(models.SpcAlarm).filter(models.SpcAlarm.id == alarm_id).first()
-    if not alarm:
-        raise HTTPException(status_code=404, detail="알람을 찾을 수 없습니다.")
-    if alarm.status != 'ACTIVE':
-        raise HTTPException(status_code=400, detail=f"ACTIVE 상태의 알람만 확인 처리할 수 있습니다. (현재: {alarm.status})")
-
-    alarm.status = 'ACKNOWLEDGED'
-    alarm.acknowledged_by = data.acknowledged_by
-    alarm.acknowledged_at = datetime.now()
-    db.commit()
-    db.refresh(alarm)
-    return alarm
-
-
 @router.patch("/{alarm_id}/resolve", response_model=schemas.SpcAlarm)
 def resolve_alarm(
     alarm_id: int,
     data: schemas.SpcAlarmResolve,
     db: Session = Depends(database.get_db)
 ):
-    """알람 해결 처리"""
+    """알람 조치 완료 처리 (ACTIVE → RESOLVED)"""
     alarm = db.query(models.SpcAlarm).filter(models.SpcAlarm.id == alarm_id).first()
     if not alarm:
         raise HTTPException(status_code=404, detail="알람을 찾을 수 없습니다.")
     if alarm.status not in ('ACTIVE', 'ACKNOWLEDGED'):
-        raise HTTPException(status_code=400, detail=f"ACTIVE 또는 ACKNOWLEDGED 상태의 알람만 해결 처리할 수 있습니다. (현재: {alarm.status})")
+        raise HTTPException(status_code=400, detail=f"ACTIVE 상태의 알람만 조치 완료할 수 있습니다. (현재: {alarm.status})")
 
     alarm.status = 'RESOLVED'
-    alarm.resolved_by = data.resolved_by
+    alarm.resolved_by = '담당자'
     alarm.resolved_at = datetime.now()
+    if data.resolve_note:
+        alarm.resolve_note = data.resolve_note
     db.commit()
     db.refresh(alarm)
     return alarm

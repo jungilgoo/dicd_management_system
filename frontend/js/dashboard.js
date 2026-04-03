@@ -1115,24 +1115,30 @@ function updateAlarmSummaryBar(summary, alarms) {
     alarms.forEach(alarm => {
         const tr = document.createElement('tr');
         const severityBadge = alarm.severity === 'CRITICAL'
-            ? '<span class="badge badge-danger">Critical</span>'
+            ? '<span class="badge badge-danger">C</span>'
             : alarm.severity === 'WARNING'
-            ? '<span class="badge badge-warning">Warning</span>'
-            : '<span class="badge badge-info">Info</span>';
+            ? '<span class="badge badge-warning">W</span>'
+            : '<span class="badge badge-info">I</span>';
+
+        const dateStr = alarm.created_at ? (() => {
+            const d = new Date(alarm.created_at);
+            const date = d.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' });
+            const time = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            return `<div>${date}</div><div class="text-muted" style="font-size:0.85em">${time}</div>`;
+        })() : '-';
+
+        const shortcuts = `<button class="btn btn-xs btn-outline-primary mr-1" title="데이터 조회" onclick="openViewFromAlarm(${alarm.product_group_id}, ${alarm.process_id}, ${alarm.target_id}, '${(alarm.lot_no || '').replace(/'/g, "\\'")}')"><i class="fas fa-search"></i></button><button class="btn btn-xs btn-outline-info" title="SPC 분석" onclick="openSpcFromAlarm(${alarm.target_id}, '${(alarm.product_group_name || '').replace(/'/g, "\\'")}', '${(alarm.process_name || '').replace(/'/g, "\\'")}', '${(alarm.target_name || '').replace(/'/g, "\\'")}')"><i class="fas fa-chart-line"></i></button>`;
 
         tr.innerHTML = `
             <td>${severityBadge}</td>
-            <td>${formatTimeAgo(alarm.created_at)}</td>
+            <td>${dateStr}</td>
             <td>${alarm.product_group_name || '-'}</td>
             <td>${alarm.process_name || '-'}</td>
             <td>${alarm.target_name || '-'}</td>
             <td>${alarm.device || '-'}</td>
             <td>${alarm.lot_no || '-'}</td>
             <td class="text-truncate" style="max-width:250px" title="${alarm.description}">${alarm.description}</td>
-            <td>
-                <button class="btn btn-xs btn-outline-primary mr-1" title="데이터 조회" onclick="openViewFromAlarm(${alarm.product_group_id}, ${alarm.process_id}, ${alarm.target_id}, '${(alarm.lot_no || '').replace(/'/g, "\\'")}')"><i class="fas fa-search"></i></button>
-                <button class="btn btn-xs btn-outline-info" title="SPC 분석" onclick="openSpcFromAlarm(${alarm.target_id}, '${(alarm.product_group_name || '').replace(/'/g, "\\'")}', '${(alarm.process_name || '').replace(/'/g, "\\'")}', '${(alarm.target_name || '').replace(/'/g, "\\'")}')"><i class="fas fa-chart-line"></i></button>
-            </td>
+            <td>${shortcuts}</td>
         `;
         tbody.appendChild(tr);
     });

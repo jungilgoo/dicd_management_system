@@ -21,10 +21,9 @@ class SpcAlarmBase(BaseModel):
 
 class SpcAlarm(SpcAlarmBase):
     id: int
-    acknowledged_by: Optional[str] = None
-    acknowledged_at: Optional[datetime] = None
     resolved_by: Optional[str] = None
     resolved_at: Optional[datetime] = None
+    resolve_note: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -43,12 +42,8 @@ class SpcAlarmListItem(SpcAlarm):
     lot_no: Optional[str] = None
 
 
-class SpcAlarmAcknowledge(BaseModel):
-    acknowledged_by: str
-
-
 class SpcAlarmResolve(BaseModel):
-    resolved_by: str
+    resolve_note: Optional[str] = None
 
 
 class SpcAlarmSummary(BaseModel):
