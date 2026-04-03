@@ -129,10 +129,10 @@ function renderAlarmTable(alarms) {
 
     tbody.innerHTML = alarms.map((alarm, idx) => {
         const severityBadge = alarm.severity === 'CRITICAL'
-            ? '<span class="badge badge-danger">C</span>'
+            ? '<span class="badge badge-danger">Critical</span>'
             : alarm.severity === 'WARNING'
-            ? '<span class="badge badge-warning">W</span>'
-            : '<span class="badge badge-info">I</span>';
+            ? '<span class="badge badge-warning">Warning</span>'
+            : '<span class="badge badge-info">Info</span>';
 
         // 상태: 조치 전/후 색상 구분
         let statusBadge;

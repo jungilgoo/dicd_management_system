@@ -1115,10 +1115,10 @@ function updateAlarmSummaryBar(summary, alarms) {
     alarms.forEach(alarm => {
         const tr = document.createElement('tr');
         const severityBadge = alarm.severity === 'CRITICAL'
-            ? '<span class="badge badge-danger">C</span>'
+            ? '<span class="badge badge-danger">Critical</span>'
             : alarm.severity === 'WARNING'
-            ? '<span class="badge badge-warning">W</span>'
-            : '<span class="badge badge-info">I</span>';
+            ? '<span class="badge badge-warning">Warning</span>'
+            : '<span class="badge badge-info">Info</span>';
 
         const dateStr = alarm.created_at ? (() => {
             const d = new Date(alarm.created_at);
