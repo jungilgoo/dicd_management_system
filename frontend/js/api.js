@@ -1,3 +1,8 @@
+// iframe 내부에서 부모 윈도우의 PROCESS_TYPE 상속
+if (!window.PROCESS_TYPE && window.parent && window.parent.PROCESS_TYPE) {
+    window.PROCESS_TYPE = window.parent.PROCESS_TYPE;
+}
+
 // API 클래스
 class API {
     // 생성자

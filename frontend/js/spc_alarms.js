@@ -1,6 +1,5 @@
 // SPC 알람 관리 페이지 JS
 
-const PROCESS_TYPE = (window.parent && window.parent.PROCESS_TYPE) || window.PROCESS_TYPE || 'PHOTO';
 let currentPage = 0;
 const pageSize = 50;
 let pendingResolveAlarmId = null;
@@ -45,7 +44,7 @@ function initAlarmPage() {
 
 async function loadTargets() {
     try {
-        const processType = PROCESS_TYPE;
+        const processType = window.PROCESS_TYPE || 'PHOTO';
         const groups = await api.get('/product-groups/');
         const targetSelect = document.getElementById('filter-target');
 
@@ -68,7 +67,7 @@ async function loadTargets() {
 
 async function loadSummary() {
     try {
-        const processType = PROCESS_TYPE;
+        const processType = window.PROCESS_TYPE || 'PHOTO';
         const summary = await api.get(`/spc-alarms/summary?process_type=${processType}`);
 
         document.getElementById('summary-critical').textContent = summary.critical_count;
@@ -81,7 +80,7 @@ async function loadSummary() {
 }
 
 async function loadAlarms() {
-    const processType = PROCESS_TYPE;
+    const processType = window.PROCESS_TYPE || 'PHOTO';
     const severity = document.getElementById('filter-severity').value;
     const status = document.getElementById('filter-status').value;
     const targetId = document.getElementById('filter-target').value;
