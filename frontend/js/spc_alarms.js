@@ -137,9 +137,9 @@ function renderAlarmTable(alarms) {
         // 상태: 조치 전/후 색상 구분
         let statusBadge;
         if (alarm.status === 'ACTIVE') {
-            statusBadge = '<span class="badge badge-danger">미조치</span>';
+            statusBadge = '<span class="badge badge-danger">미해결</span>';
         } else if (alarm.status === 'RESOLVED') {
-            statusBadge = '<span class="badge badge-success">완료</span>';
+            statusBadge = '<span class="badge badge-success">해결</span>';
         } else if (alarm.status === 'SUPERSEDED') {
             statusBadge = '<span class="badge badge-secondary">대체</span>';
         } else {
@@ -149,10 +149,10 @@ function renderAlarmTable(alarms) {
         // 액션: 위=조치완료, 아래=바로가기
         let actionTop = '';
         if (alarm.status === 'ACTIVE') {
-            actionTop = `<button class="btn btn-xs btn-danger" onclick="openResolveModal(${alarm.id})"><i class="fas fa-check-circle mr-1"></i>조치완료</button>`;
+            actionTop = `<button class="btn btn-xs btn-danger" onclick="openResolveModal(${alarm.id})"><i class="fas fa-times-circle mr-1"></i>미해결</button>`;
         } else if (alarm.status === 'RESOLVED') {
             const noteTitle = alarm.resolve_note ? ` title="${alarm.resolve_note.replace(/"/g, '&quot;')}"` : '';
-            actionTop = `<span class="badge badge-success"${noteTitle}><i class="fas fa-check-circle mr-1"></i>조치완료</span>`;
+            actionTop = `<span class="badge badge-success"${noteTitle}><i class="fas fa-check-circle mr-1"></i>해결</span>`;
         }
 
         const actionBottom = `<button class="btn btn-xs btn-outline-primary mr-1" title="데이터 조회" onclick="openViewFromAlarm(${alarm.product_group_id}, ${alarm.process_id}, ${alarm.target_id}, '${(alarm.lot_no || '').replace(/'/g, "\\'")}')"><i class="fas fa-search"></i></button><button class="btn btn-xs btn-outline-info" title="SPC 분석" onclick="openSpcFromAlarm(${alarm.target_id}, '${(alarm.product_group_name || '').replace(/'/g, "\\'")}', '${(alarm.process_name || '').replace(/'/g, "\\'")}', '${(alarm.target_name || '').replace(/'/g, "\\'")}')"><i class="fas fa-chart-line"></i></button>`;
@@ -205,7 +205,7 @@ async function showAlarmDetail(alarmId) {
         const body = document.getElementById('alarm-detail-body');
 
         const statusMap = {
-            'ACTIVE': '미조치', 'RESOLVED': '조치완료', 'SUPERSEDED': '대체됨'
+            'ACTIVE': '미해결', 'RESOLVED': '해결', 'SUPERSEDED': '대체됨'
         };
 
         body.innerHTML = `
