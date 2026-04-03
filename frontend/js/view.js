@@ -14,6 +14,11 @@
     let isBulkDeleteMode = false;
     let selectedMeasurementIds = new Set();
 
+    // 페이지네이션 상태
+    let currentPage = 1;
+    let pageSize = 100;
+    let totalCount = 0;
+
     // 탭 설정 복원 관련 상태
     let _pageInitialized = false;
     let _queuedSettings = null;
@@ -39,10 +44,10 @@
             await _applyRestoreSettings(s);
         } else {
             // 설정 없을 때만 전체 데이터 로드
-            await loadMeasurements();
+            await loadMeasurements(1);
         }
     }
-    
+
     // 날짜 범위 선택기 초기화
     function initDateRangePicker() {
         $('#date-range').daterangepicker({
@@ -103,8 +108,12 @@
     }
     
     // 측정 데이터 로드
-    async function loadMeasurements() {
+    async function loadMeasurements(page) {
         try {
+            if (page !== undefined) {
+                currentPage = page;
+            }
+
             // 로딩 표시
             document.getElementById('data-table-body').innerHTML = `
             <tr>
@@ -115,26 +124,32 @@
                 </td>
             </tr>
             `;
-            
+
             // 필터 파라미터 수집
             const filters = getFilterParams();
-            
-            // API 호출 파라미터
+
+            // API 호출 파라미터 (페이지네이션 적용)
             const params = {
                 ...filters,
-                limit: 100
+                limit: pageSize,
+                offset: (currentPage - 1) * pageSize
             };
-            
-            // 측정 데이터 가져오기
-            const measurements = await api.getMeasurements(params);
-            
+
+            // 측정 데이터 가져오기 (페이지네이션)
+            const response = await api.getMeasurementsPaginated(params);
+
+            // 총 건수 업데이트
+            totalCount = response.total_count || 0;
+
             // 캐시에 저장
-            measurementsCache = measurements;
-            
+            measurementsCache = response.items;
+
             // 테이블 업데이트
-            updateDataTable(measurements);
-            
-            
+            updateDataTable(response.items);
+
+            // 페이지네이션 UI 업데이트
+            renderPagination();
+
         } catch (error) {
             console.error('측정 데이터 로드 실패:', error);
             document.getElementById('data-table-body').innerHTML = `
@@ -146,7 +161,51 @@
             `;
         }
     }
-    
+
+    // 페이지네이션 UI 렌더링
+    function renderPagination() {
+        const totalPages = Math.ceil(totalCount / pageSize) || 1;
+        const pageInfo = document.getElementById('page-info');
+        const paginationEl = document.getElementById('pagination');
+
+        // 페이지 정보 텍스트
+        if (totalCount === 0) {
+            pageInfo.textContent = '0건';
+        } else {
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, totalCount);
+            pageInfo.textContent = `${start}-${end} / 총 ${totalCount.toLocaleString()}건`;
+        }
+
+        // 페이지 버튼 생성
+        let html = '';
+
+        // 이전 버튼
+        html += `<li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
+        </li>`;
+
+        // 페이지 번호 (최대 7개 표시)
+        let startPage = Math.max(1, currentPage - 3);
+        let endPage = Math.min(totalPages, startPage + 6);
+        if (endPage - startPage < 6) {
+            startPage = Math.max(1, endPage - 6);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>`;
+        }
+
+        // 다음 버튼
+        html += `<li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
+        </li>`;
+
+        paginationEl.innerHTML = html;
+    }
+
     // frontend/js/view.js 파일의 getFilterParams 함수 수정
 
     function getFilterParams() {
@@ -643,6 +702,23 @@
         document.getElementById('export-excel').addEventListener('click', function(e) {
             e.preventDefault();
             exportData('excel');
+        });
+
+        // 페이지 크기 변경 이벤트
+        document.getElementById('page-size').addEventListener('change', function() {
+            pageSize = parseInt(this.value);
+            loadMeasurements(1);
+        });
+
+        // 페이지네이션 클릭 이벤트 (이벤트 위임)
+        document.getElementById('pagination').addEventListener('click', function(e) {
+            e.preventDefault();
+            const link = e.target.closest('a[data-page]');
+            if (!link) return;
+            const page = parseInt(link.dataset.page);
+            const totalPages = Math.ceil(totalCount / pageSize) || 1;
+            if (page < 1 || page > totalPages) return;
+            loadMeasurements(page);
         });
 
         // 상세 정보에서 수정 버튼 클릭 이벤트
@@ -1480,7 +1556,7 @@ async function bulkDeleteMeasurements() {
                 }
             }
 
-            await loadMeasurements();
+            await loadMeasurements(1);
 
         } catch (error) {
             console.error('설정 복원 실패:', error);

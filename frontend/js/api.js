@@ -273,7 +273,21 @@ class API {
     
     // 측정 데이터 관련 메서드
     async getMeasurements(params = {}) {
-        return this.get(this.endpoints.MEASUREMENTS, params);
+        const response = await this.get(this.endpoints.MEASUREMENTS, params);
+        // 새 응답 형식 {items, total_count}에서 배열만 반환 (기존 호환)
+        if (response && response.items) {
+            return response.items;
+        }
+        return response;
+    }
+
+    async getMeasurementsPaginated(params = {}) {
+        const response = await this.get(this.endpoints.MEASUREMENTS, params);
+        // {items: [...], total_count: N} 전체 반환
+        if (response && response.items) {
+            return response;
+        }
+        return { items: response || [], total_count: (response || []).length };
     }
     
     async createMeasurement(data) {

@@ -46,6 +46,8 @@ def read_measurements(
     equipment_id: Optional[int] = None,
     keyword: Optional[str] = None,
     process_type: str = Query("PHOTO", description="공정 타입 (PHOTO, ETCH)"),
+    limit: Optional[int] = Query(None, description="페이지당 건수"),
+    offset: int = Query(0, ge=0, description="시작 위치"),
     db: Session = Depends(database.get_db)
 ):
     try:
@@ -63,7 +65,7 @@ def read_measurements(
         elif days:
             start_datetime = datetime.now() - timedelta(days=days)
 
-        measurements = crud.get_measurements(
+        measurements, total_count = crud.get_measurements(
             db,
             target_id=target_id,
             process_id=process_id,
@@ -75,6 +77,8 @@ def read_measurements(
             equipment_id=equipment_id,
             keyword=keyword,
             process_type=process_type,
+            limit=limit,
+            offset=offset,
         )
 
         # 배치 쿼리용 ID 수집
@@ -163,7 +167,7 @@ def read_measurements(
             }
             result.append(item)
 
-        return result
+        return {"items": result, "total_count": total_count}
 
     except HTTPException:
         raise

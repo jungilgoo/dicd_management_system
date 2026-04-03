@@ -209,7 +209,8 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
                      product_group_id: int = None, device: str = None,
                      lot_no: str = None, start_date: datetime = None,
                      end_date: datetime = None, equipment_id: int = None,
-                     keyword: str = None, process_type: str = 'PHOTO'):
+                     keyword: str = None, process_type: str = 'PHOTO',
+                     limit: int = None, offset: int = 0):
 
     # 조인 쿼리를 위한 설정 (process_type 필터링을 위해 항상 Target과 조인)
     query = db.query(models.Measurement)
@@ -228,7 +229,7 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
 
         if process_id:
             query = query.filter(models.Target.process_id == process_id)
-    
+
     # 기존 필터 적용
     if target_id:
         query = query.filter(models.Measurement.target_id == target_id)
@@ -248,7 +249,7 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
             (models.Measurement.development_equipment_id == equipment_id) |
             (models.Measurement.etch_equipment_id == equipment_id)
         )
-    
+
     # 키워드 검색 처리
     if keyword:
         query = query.filter(
@@ -256,11 +257,18 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
             (models.Measurement.lot_no.like(f"%{keyword}%")) |
             (models.Measurement.wafer_no.like(f"%{keyword}%"))
         )
-    
+
     # 최신 데이터 순으로 정렬
     query = query.order_by(models.Measurement.created_at.desc())
-    
-    return query.all()
+
+    # 총 건수 조회
+    total_count = query.count()
+
+    # 페이지네이션 적용
+    if limit:
+        query = query.offset(offset).limit(limit)
+
+    return query.all(), total_count
 
 # 측정 데이터 업데이트 함수 수정
 def update_measurement(db: Session, measurement_id: int, measurement_data: measurement.MeasurementCreate):
