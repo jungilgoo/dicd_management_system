@@ -66,13 +66,40 @@ def _build_spc_prompt(spc_data: dict) -> str:
             recent_lots_str = ", ".join(recent_lots[-5:])  # 마지막 5개 LOT만
             recent_values_str += f"\n  (최근 LOT: {recent_lots_str})"
 
-    # 위치별 패턴 위반 요약
-    position_patterns = spc_data.get("position_patterns", {})
-    position_pattern_summary = ""
-    if position_patterns:
-        for pos, pos_patterns in position_patterns.items():
-            if pos_patterns:
-                position_pattern_summary += f"\n  [{pos}] {len(pos_patterns)}건 위반"
+    # R 차트 분석 (위치별 데이터에서 서브그룹 내 산포 계산)
+    position_data = spc_data.get("position_data", {})
+    r_chart_summary = ""
+    if position_data:
+        positions = ['top', 'center', 'bottom', 'left', 'right']
+        r_values = []
+        data_length = len(values)
+
+        for i in range(data_length):
+            vals_at_pos = []
+            for pos in positions:
+                pos_vals = position_data.get(pos, [])
+                if i < len(pos_vals) and isinstance(pos_vals[i], (int, float)):
+                    vals_at_pos.append(pos_vals[i])
+            if len(vals_at_pos) > 1:
+                r_values.append(max(vals_at_pos) - min(vals_at_pos))
+
+        if r_values:
+            r_bar = sum(r_values) / len(r_values)
+            d2, d3 = 2.326, 0.864  # k=5 서브그룹 상수
+            r_ucl = r_bar + (3 * r_bar * d3 / d2)
+            r_lcl = max(0, r_bar - (3 * r_bar * d3 / d2))
+
+            # UCL 초과 건수
+            r_outliers = [v for v in r_values if v > r_ucl]
+            r_max = max(r_values)
+            r_min = min(r_values)
+
+            r_chart_summary = f"""- R-bar (평균 범위): {r_bar:.4f}
+- R 차트 UCL: {r_ucl:.4f}
+- R 차트 LCL: {r_lcl:.4f}
+- R 최대값: {r_max:.4f}
+- R 최소값: {r_min:.4f}
+- UCL 초과 건수: {len(r_outliers)}건"""
 
     prompt = f"""당신은 반도체/디스플레이 공정의 SPC(Statistical Process Control) 데이터 분석 전문가입니다.
 DICD(Developed Image Critical Dimension)는 포토리소그래피 공정에서 현상 후 패턴의 임계 치수를 측정한 값입니다.
@@ -107,7 +134,8 @@ DICD(Developed Image Critical Dimension)는 포토리소그래피 공정에서 �
 [Nelson Rules 패턴 위반]
 {pattern_summary}
 
-[위치별 패턴 위반]{position_pattern_summary if position_pattern_summary else " 없음"}
+[R 차트 분석 (서브그룹 내 산포 - 웨이퍼 내 균일성)]
+{r_chart_summary if r_chart_summary else "데이터 없음"}
 
 [최근 측정값 ({recent_count}개)]
 {recent_values_str if recent_values_str else "데이터 없음"}
@@ -124,16 +152,19 @@ Cp, Cpk, Pp, Ppk 값을 해석하세요. (기준: 1.33 이상 양호, 1.0~1.33 �
 - Cp vs Pp 비교: 단기 vs 장기 산포 평가
 - Cpk vs Ppk 비교: 공정 안정성 평가
 
-## 3. 주요 발견사항
+## 3. R 차트 분석 (웨이퍼 내 균일성)
+R 차트 데이터를 기반으로 서브그룹 내 산포(웨이퍼 내 위치 간 편차)를 해석하세요. UCL 초과가 있다면 해당 시점의 균일성 문제를 지적하세요.
+
+## 4. 주요 발견사항
 패턴 위반, 추세, 이상점 등 주목할 점을 구체적으로 기술하세요.
 
-## 4. 원인 추정
+## 5. 원인 추정
 발견된 문제의 가능한 원인을 공정 관점에서 추정하세요. (장비, 재료, 환경, 작업자 등)
 
-## 5. 조치 권고
+## 6. 조치 권고
 구체적이고 실행 가능한 개선 조치를 우선순위별로 제시하세요.
 
-## 6. 위험도 평가
+## 7. 위험도 평가
 🟢 양호 / 🟡 주의 / 🔴 위험 중 하나로 평가하고 근거를 간단히 설명하세요.
 
 한국어로 답변하세요. 공정 엔지니어가 이해할 수 있도록 전문 용어를 적절히 사용하되, 명확하게 설명하세요."""
