@@ -161,6 +161,13 @@ async def analyze_spc_with_ai(spc_data: dict) -> dict:
 
     prompt = _build_spc_prompt(spc_data)
 
+    # 프롬프트 로그 출력
+    logger.info("=" * 60)
+    logger.info("[AI 분석] Gemini API 프롬프트:")
+    logger.info("=" * 60)
+    logger.info(prompt)
+    logger.info("=" * 60)
+
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
@@ -173,9 +180,16 @@ async def analyze_spc_with_ai(spc_data: dict) -> dict:
             )
         )
 
+        # 응답 로그 출력
+        logger.info("[AI 분석] Gemini API 응답:")
+        logger.info("=" * 60)
+        logger.info(response.text)
+        logger.info("=" * 60)
+
         return {
             "success": True,
-            "analysis": response.text
+            "analysis": response.text,
+            "prompt": prompt
         }
 
     except Exception as e:

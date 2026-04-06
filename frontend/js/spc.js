@@ -2986,7 +2986,20 @@
 
             if (result.success && result.analysis) {
                 // Markdown을 HTML로 간단 변환
-                aiContent.innerHTML = convertMarkdownToHtml(result.analysis);
+                let html = convertMarkdownToHtml(result.analysis);
+
+                // 프롬프트 보기 토글 추가
+                if (result.prompt) {
+                    html += `
+                        <hr>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                            <i class="fas fa-code mr-1"></i> 프롬프트 보기
+                        </button>
+                        <pre style="display: none; margin-top: 10px; padding: 12px; background: #f4f6f9; border-radius: 4px; font-size: 0.82rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto;">${result.prompt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                    `;
+                }
+
+                aiContent.innerHTML = html;
             } else {
                 throw new Error(result.error || 'AI 분석 결과를 받지 못했습니다.');
             }
