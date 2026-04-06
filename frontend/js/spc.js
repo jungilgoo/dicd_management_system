@@ -1855,7 +1855,7 @@
                 <td>Rule ${pattern.rule}</td>
                 <td>${pattern.description}</td>
                 <td>${lotNoDisplay}</td>
-                <td>${pattern.value ? pattern.value.toFixed(3) : (pattern.length ? `길이: ${pattern.length}` : '-')}</td>
+                <td>${pattern.value ? pattern.value.toFixed(3) : (pattern.length ? `연속 ${pattern.length}점` : '-')}</td>
             </tr>
             `;
         });
