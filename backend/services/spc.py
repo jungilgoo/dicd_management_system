@@ -212,11 +212,13 @@ def analyze_spc(db: Session, target_id: int, days: int = 30, start_date: Optiona
     ).first()
 
     # 관리 한계선 설정
+    current_mean = round(float(np.mean(values)), 4)  # 현재 데이터 평균
+
     if active_spec and active_spec.ucl and active_spec.lcl:
-        # Spec에 고정값이 있으면 사용
-        cl = np.mean(values)  # 중심선은 데이터 평균값
+        # Spec에 고정값이 있으면 CL = (UCL + LCL) / 2 로 설정
+        cl = round((active_spec.ucl + active_spec.lcl) / 2, 4)
         control_limits = {
-            "cl": round(cl, 3),
+            "cl": cl,
             "ucl": active_spec.ucl,
             "lcl": active_spec.lcl
         }
@@ -271,6 +273,7 @@ def analyze_spc(db: Session, target_id: int, days: int = 30, start_date: Optiona
             "lot_nos": lot_nos
         },
         "control_limits": control_limits,
+        "current_mean": current_mean,
         "patterns": patterns,
         "position_data": {
             position: pos_values for position, pos_values in position_values.items()

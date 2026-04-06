@@ -36,6 +36,13 @@ def _build_spc_prompt(spc_data: dict) -> str:
     data = spc_data.get("data", {})
     sample_count = spc_data.get("sample_count", 0)
 
+    # 현재 평균 및 ΔCL
+    current_mean = spc_data.get("current_mean")
+    cl_value = control_limits.get("cl")
+    delta_cl = None
+    if current_mean is not None and cl_value is not None:
+        delta_cl = round(current_mean - cl_value, 4)
+
     # 컨텍스트 정보
     product_group = spc_data.get("product_group", "")
     process = spc_data.get("process", "")
@@ -127,10 +134,12 @@ DICD(Developed Image Critical Dimension)는 포토리소그래피 공정에서 �
 - LSL (규격하한): {spec.get('lsl', 'N/A')}
 - Target (목표값): {spec.get('target', 'N/A')}
 
-[관리한계]
+[관리한계] (CL은 UCL/LCL 기준 고정값)
 - CL (중심선): {control_limits.get('cl', 'N/A')}
 - UCL (상한관리선): {control_limits.get('ucl', 'N/A')}
 - LCL (하한관리선): {control_limits.get('lcl', 'N/A')}
+- 현재 공정 평균: {current_mean if current_mean is not None else 'N/A'}
+- ΔCL (현재 평균 - CL): {f"{'+' if delta_cl >= 0 else ''}{delta_cl}" if delta_cl is not None else 'N/A'}
 
 [공정능력지수]
 - Cp: {capability.get('cp', 'N/A')}
@@ -176,7 +185,13 @@ R 차트 데이터를 기반으로 서브그룹 내 산포(웨이퍼 내 위치 
 ## 7. 위험도 평가
 🟢 양호 / 🟡 주의 / 🔴 위험 중 하나로 평가하고 근거를 간단히 설명하세요.
 
-한국어로 답변하세요. 공정 엔지니어가 이해할 수 있도록 전문 용어를 적절히 사용하되, 명확하게 설명하세요."""
+한국어로 답변하세요. 
+결과는 역피라미드 구조(가장 중요한 결론이 맨 앞)으로 작성할 것.
+원인 분석 시 '가능성 높음/낮음'을 구분하여 엔지니어의 판단을 도울 것.
+수치 해석에 매몰되지 말고, 실제 물리적 공정(장비, 재료, 환경 등)과의 연결고리를 강화할 것.
+분석은 공정 관점에서 구체적이고 실행 가능한 조치 권고를 포함할 것.
+기술적 용어는 사용하되, 명확하고 간결하게 설명할 것.
+공정 엔지니어가 이해할 수 있도록 전문 용어를 적절히 사용하되, 명확하게 설명하세요."""
 
     return prompt
 
@@ -216,6 +231,8 @@ async def analyze_spc_with_ai(spc_data: dict) -> dict:
             prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.3,
+                top_p=0.9,
+                top_k=40,
                 max_output_tokens=8192,
             )
         )

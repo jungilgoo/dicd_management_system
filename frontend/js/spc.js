@@ -406,7 +406,7 @@
         createRChart(result);
         
         // 관리 한계 테이블 업데이트
-        updateControlLimitsTable(result.control_limits);
+        updateControlLimitsTable(result.control_limits, result.current_mean);
         
         // 공정능력지수 테이블 업데이트 (process_capability가 없을 수도 있음)
         updateCapabilityTable(result.process_capability || {});
@@ -517,6 +517,14 @@
             }
         ];
         
+        // Current Mean 표시 텍스트 생성
+        let subtitleText = '';
+        if (data.current_mean != null && data.control_limits && data.control_limits.cl != null) {
+            const delta = data.current_mean - data.control_limits.cl;
+            const sign = delta >= 0 ? '+' : '';
+            subtitleText = `Current Mean: ${data.current_mean.toFixed(4)}  (ΔCL: ${sign}${delta.toFixed(4)})`;
+        }
+
         // 차트 옵션 초기화
         const chartOptions = {
             responsive: true,
@@ -525,6 +533,15 @@
                 title: {
                     display: true,
                     text: generateChartTitle()
+                },
+                subtitle: {
+                    display: !!subtitleText,
+                    text: subtitleText,
+                    position: 'top',
+                    align: 'end',
+                    font: { size: 11, weight: 'bold' },
+                    color: '#6f42c1',
+                    padding: { bottom: 5 }
                 },
                 tooltip: {
                     mode: 'index',
@@ -1493,26 +1510,35 @@
     }
 
     // 관리 한계 테이블 업데이트
-    function updateControlLimitsTable(controlLimits) {
+    function updateControlLimitsTable(controlLimits, currentMean) {
         if (!controlLimits) {
             return;
         }
-        
+
         // 테이블 업데이트
         const tableBody = document.querySelector('#control-limits-table tbody');
-        
+
+        // ΔCL 계산
+        let deltaCLHtml = '';
+        if (currentMean != null && controlLimits.cl != null) {
+            const delta = currentMean - controlLimits.cl;
+            const sign = delta >= 0 ? '+' : '';
+            const color = Math.abs(delta) > 0.01 ? '#dc3545' : '#28a745';
+            deltaCLHtml = `<br><small style="color:${color}">현재 평균: ${currentMean.toFixed(4)} (Δ${sign}${delta.toFixed(4)})</small>`;
+        }
+
         tableBody.innerHTML = `
         <tr>
             <th>중심선 (CL)</th>
-            <td>${controlLimits.cl ? controlLimits.cl.toFixed(3) : '-'}</td>
+            <td>${controlLimits.cl != null ? controlLimits.cl.toFixed(3) : '-'}${deltaCLHtml}</td>
         </tr>
         <tr>
             <th>상한 관리선 (UCL)</th>
-            <td>${controlLimits.ucl ? controlLimits.ucl.toFixed(3) : '-'}</td>
+            <td>${controlLimits.ucl != null ? controlLimits.ucl.toFixed(3) : '-'}</td>
         </tr>
         <tr>
             <th>하한 관리선 (LCL)</th>
-            <td>${controlLimits.lcl ? controlLimits.lcl.toFixed(3) : '-'}</td>
+            <td>${controlLimits.lcl != null ? controlLimits.lcl.toFixed(3) : '-'}</td>
         </tr>
         `;
     }
