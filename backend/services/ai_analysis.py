@@ -49,8 +49,17 @@ def _build_spc_prompt(spc_data: dict) -> str:
             rule = p.get("rule", "")
             desc = p.get("description", "")
             lot = p.get("lot_no", "")
-            val = p.get("value", "")
-            pattern_lines.append(f"  - Rule {rule}: {desc} (LOT: {lot}, 값: {val})")
+            val = p.get("value")
+            length = p.get("length")
+
+            if val is not None:
+                detail = f"LOT: {lot}, 값: {val}"
+            elif length is not None:
+                detail = f"시작 LOT: {lot}, 연속 {length}점"
+            else:
+                detail = f"LOT: {lot}"
+
+            pattern_lines.append(f"  - Rule {rule}: {desc} ({detail})")
         pattern_summary = "\n".join(pattern_lines)
 
     # 최근 측정값 (최대 30개)
