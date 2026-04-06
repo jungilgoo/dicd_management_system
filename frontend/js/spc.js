@@ -421,6 +421,9 @@
         // 패턴 감지 결과 업데이트
         updatePatternsTable(result.patterns);
 
+        // 위치별 패턴 감지 결과 업데이트
+        updatePositionPatternsTable(result.position_patterns);
+
         // AI 해석 버튼 표시
         const aiBtn = document.getElementById('ai-analysis-btn');
         if (aiBtn) {
@@ -1873,6 +1876,58 @@
                 this.classList.add('table-primary');
             });
         });
+    }
+
+    // 위치별 패턴 감지 결과 테이블 업데이트
+    function updatePositionPatternsTable(positionPatterns) {
+        const card = document.getElementById('position-patterns-card');
+        const tableBody = document.querySelector('#position-patterns-table tbody');
+
+        if (!card || !tableBody) return;
+
+        // 위치 이름 한글 매핑
+        const positionNames = {
+            top: '상 (Top)',
+            center: '중 (Center)',
+            bottom: '하 (Bottom)',
+            left: '좌 (Left)',
+            right: '우 (Right)'
+        };
+
+        if (!positionPatterns || typeof positionPatterns !== 'object') {
+            card.style.display = 'none';
+            return;
+        }
+
+        // 전체 위반 건수 집계
+        let totalViolations = 0;
+        let tableHtml = '';
+
+        for (const [position, patterns] of Object.entries(positionPatterns)) {
+            if (!patterns || patterns.length === 0) continue;
+            totalViolations += patterns.length;
+
+            patterns.forEach(pattern => {
+                const lotNoDisplay = pattern.lot_no || `LOT ${pattern.position + 1}`;
+                tableHtml += `
+                <tr>
+                    <td><span class="badge badge-info">${positionNames[position] || position}</span></td>
+                    <td>Rule ${pattern.rule}</td>
+                    <td>${pattern.description}</td>
+                    <td>${lotNoDisplay}</td>
+                    <td>${pattern.value ? pattern.value.toFixed(3) : (pattern.length ? `길이: ${pattern.length}` : '-')}</td>
+                </tr>
+                `;
+            });
+        }
+
+        if (totalViolations === 0) {
+            card.style.display = 'none';
+            return;
+        }
+
+        tableBody.innerHTML = tableHtml;
+        card.style.display = 'block';
     }
 
     // 패턴 강조 함수 추가
