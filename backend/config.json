@@ -6,7 +6,8 @@
         "DB_USERNAME": "dicd_user",
         "DB_PASSWORD": "안전한_비밀번호",
         "DB_HOST": "localhost",
-        "DB_NAME": "dicd_management"
+        "DB_NAME": "dicd_management",
+        "GEMINI_API_KEY": ""
     },
     "production": {
         "DEBUG": false,
@@ -15,6 +16,7 @@
         "DB_USERNAME": "dicd_user",
         "DB_PASSWORD": "실제_비밀번호_입력",
         "DB_HOST": "localhost",
-        "DB_NAME": "dicd_management"
+        "DB_NAME": "dicd_management",
+        "GEMINI_API_KEY": ""
     }
 }

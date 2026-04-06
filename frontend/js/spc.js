@@ -420,6 +420,17 @@
         
         // 패턴 감지 결과 업데이트
         updatePatternsTable(result.patterns);
+
+        // AI 해석 버튼 표시
+        const aiBtn = document.getElementById('ai-analysis-btn');
+        if (aiBtn) {
+            aiBtn.style.display = 'inline-block';
+        }
+        // 이전 AI 분석 결과 숨기기
+        const aiCard = document.getElementById('ai-analysis-card');
+        if (aiCard) {
+            aiCard.style.display = 'none';
+        }
     }
 
     // 차트 제목 생성 함수
@@ -2918,4 +2929,100 @@
         initSpcPage();
         setupEventListeners();
     });
+
+    // AI 분석 요청 함수 (글로벌 스코프에 노출)
+    window.requestAiAnalysis = async function() {
+        if (!currentSpcResult) {
+            alert('먼저 SPC 분석을 실행하세요.');
+            return;
+        }
+
+        const aiBtn = document.getElementById('ai-analysis-btn');
+        const aiCard = document.getElementById('ai-analysis-card');
+        const aiContent = document.getElementById('ai-analysis-content');
+
+        // 버튼 로딩 상태
+        const originalBtnHtml = aiBtn.innerHTML;
+        aiBtn.disabled = true;
+        aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> AI 분석 중...';
+
+        // 결과 카드 표시 (로딩)
+        aiCard.style.display = 'block';
+        aiContent.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-purple" role="status" style="color: #6f42c1 !important;">
+                    <span class="sr-only">AI 분석 중...</span>
+                </div>
+                <p class="mt-2 text-muted">AI가 SPC 데이터를 분석하고 있습니다... (약 5~10초 소요)</p>
+            </div>
+        `;
+
+        // 컨텍스트 정보 수집
+        const productGroupSelect = document.getElementById('product-group');
+        const processSelect = document.getElementById('process');
+        const targetSelect = document.getElementById('target');
+        const productGroup = productGroupSelect ? productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '' : '';
+        const process = processSelect ? processSelect.options[processSelect.selectedIndex]?.text || '' : '';
+        const target = targetSelect ? targetSelect.options[targetSelect.selectedIndex]?.text || '' : '';
+
+        try {
+            const response = await fetch('/api/ai/analyze/spc', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    spc_data: currentSpcResult,
+                    product_group: productGroup,
+                    process: process,
+                    target: target
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success && result.analysis) {
+                // Markdown을 HTML로 간단 변환
+                aiContent.innerHTML = convertMarkdownToHtml(result.analysis);
+            } else {
+                throw new Error(result.error || 'AI 분석 결과를 받지 못했습니다.');
+            }
+        } catch (error) {
+            console.error('AI 분석 실패:', error);
+            aiContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle mr-1"></i>
+                    <strong>AI 분석 실패:</strong> ${error.message}
+                </div>
+            `;
+        } finally {
+            // 버튼 복원
+            aiBtn.disabled = false;
+            aiBtn.innerHTML = originalBtnHtml;
+        }
+    };
+
+    // 간단한 Markdown → HTML 변환
+    function convertMarkdownToHtml(markdown) {
+        let html = markdown
+            // ## 헤더
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            // **볼드**
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            // - 리스트
+            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            // 연속 li를 ul로 감싸기
+            .replace(/(<li>.*<\/li>\n?)+/g, function(match) {
+                return '<ul>' + match + '</ul>';
+            })
+            // 줄바꿈
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+
+        return '<p>' + html + '</p>';
+    }
+
 })();
