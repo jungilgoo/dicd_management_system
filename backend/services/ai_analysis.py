@@ -103,19 +103,19 @@ def _build_spc_prompt(spc_data: dict) -> str:
             r_bar = sum(r_values) / len(r_values)
             d2, d3 = 2.326, 0.864  # k=5 서브그룹 상수
             r_ucl = r_bar + (3 * r_bar * d3 / d2)
-            r_lcl = max(0, r_bar - (3 * r_bar * d3 / d2))
 
-            # UCL 초과 건수
-            r_outliers = [v for v in r_values if v > r_ucl]
-            r_max = max(r_values)
-            r_min = min(r_values)
+            # UCL 초과 이상점 상세
+            r_outlier_details = []
+            for i, rv in enumerate(r_values):
+                if rv > r_ucl:
+                    lot = lot_nos[i] if i < len(lot_nos) else f"포인트 {i+1}"
+                    r_outlier_details.append(f"LOT: {lot}, R={rv:.4f}")
 
-            r_chart_summary = f"""- R-bar (평균 범위): {r_bar:.4f}
-- R 차트 UCL: {r_ucl:.4f}
-- R 차트 LCL: {r_lcl:.4f}
-- R 최대값: {r_max:.4f}
-- R 최소값: {r_min:.4f}
-- UCL 초과 건수: {len(r_outliers)}건"""
+            r_chart_summary = f"- R-bar: {r_bar:.4f}, UCL: {r_ucl:.4f}, UCL 초과: {len(r_outlier_details)}건"
+            if r_outlier_details:
+                r_chart_summary += "\n  [이상점 상세]"
+                for detail in r_outlier_details:
+                    r_chart_summary += f"\n  - {detail}"
 
     prompt = f"""당신은 반도체/디스플레이 공정의 SPC(Statistical Process Control) 데이터 분석 전문가입니다.
 DICD(Developed Image Critical Dimension)는 포토리소그래피 공정에서 현상 후 패턴의 임계 치수를 측정한 값입니다.
@@ -170,19 +170,16 @@ Cp, Cpk, Pp, Ppk 값을 해석하세요. (기준: 1.33 이상 양호, 1.0~1.33 �
 - Cp vs Pp 비교: 단기 vs 장기 산포 평가
 - Cpk vs Ppk 비교: 공정 안정성 평가
 
-## 3. R 차트 분석 (웨이퍼 내 균일성)
-R 차트 데이터를 기반으로 서브그룹 내 산포(웨이퍼 내 위치 간 편차)를 해석하세요. UCL 초과가 있다면 해당 시점의 균일성 문제를 지적하세요.
+## 3. 주요 발견사항
+패턴 위반, 추세, 이상점, R 차트 이상(균일성 문제) 등 주목할 점을 구체적으로 기술하세요.
 
-## 4. 주요 발견사항
-패턴 위반, 추세, 이상점 등 주목할 점을 구체적으로 기술하세요.
-
-## 5. 원인 추정
+## 4. 원인 추정
 발견된 문제의 가능한 원인을 공정 관점에서 추정하세요. (장비, 재료, 환경, 작업자 등)
 
-## 6. 조치 권고
+## 5. 조치 권고
 구체적이고 실행 가능한 개선 조치를 우선순위별로 제시하세요.
 
-## 7. 위험도 평가
+## 6. 위험도 평가
 🟢 양호 / 🟡 주의 / 🔴 위험 중 하나로 평가하고 근거를 간단히 설명하세요.
 
 한국어로 답변하세요. 
