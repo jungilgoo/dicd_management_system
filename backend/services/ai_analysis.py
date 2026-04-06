@@ -163,7 +163,7 @@ async def analyze_spc_with_ai(spc_data: dict) -> dict:
 
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
 
         response = await model.generate_content_async(
             prompt,
