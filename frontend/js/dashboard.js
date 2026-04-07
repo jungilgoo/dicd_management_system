@@ -138,23 +138,12 @@ async function loadCpkHeatmap() {
         
         const targetResults = await Promise.all(targetPromises);
         
-        // 각 타겟에 대한 통계 정보 한 번에 요청 (병렬 처리)
-        const statisticsPromises = [];
-        const targetMap = {};  // 타겟 ID를 키로 하는 맵 (통계 결과와 연결하기 위함)
-        
+        // 타겟 ID 수집 + 맵 구성
+        const targetIds = [];
+        const targetMap = {};
         targetResults.forEach(result => {
             result.targets.forEach(target => {
-                // 통계 정보 가져오기 (비동기)
-                statisticsPromises.push(
-                    api.getTargetStatistics(target.id, currentPeriodDays)
-                        .then(stats => ({ targetId: target.id, stats }))
-                        .catch(error => {
-                            console.warn(`타겟 ${target.id}에 대한 통계 정보를 가져올 수 없습니다.`, error);
-                            return { targetId: target.id, stats: null };
-                        })
-                );
-                
-                // 타겟 정보 맵에 저장
+                targetIds.push(target.id);
                 targetMap[target.id] = {
                     productGroup: result.productGroup,
                     process: result.process,
@@ -162,14 +151,23 @@ async function loadCpkHeatmap() {
                 };
             });
         });
-        
-        // 모든 통계 정보 요청을 병렬로 처리하고 결과 받기
-        const statisticsResults = await Promise.all(statisticsPromises);
-        
+
+        // 일괄 통계 API 호출 (데이터 없는 타겟은 응답에서 제외됨)
+        let statsMap = {};
+        if (targetIds.length > 0) {
+            try {
+                const bulkResult = await api.getBulkTargetStatistics(targetIds, currentPeriodDays);
+                statsMap = bulkResult.results || {};
+            } catch (e) {
+                console.error('일괄 통계 조회 실패:', e);
+            }
+        }
+
         // 모든 데이터를 결합하여 히트맵 데이터 생성
-        statisticsResults.forEach(({ targetId, stats }) => {
+        targetIds.forEach(targetId => {
             const targetInfo = targetMap[targetId];
             if (!targetInfo) return;
+            const stats = statsMap[String(targetId)] || null;
             
             // 공정능력지수 추출
             let cpk = null;

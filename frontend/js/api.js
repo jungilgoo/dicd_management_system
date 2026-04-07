@@ -80,16 +80,21 @@ class API {
         try {
             const response = await fetch(url);
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                const err = new Error(`HTTP error! Status: ${response.status}`);
+                err.status = response.status;
+                throw err;
             }
             const data = await response.json();
-            
+
             // 데이터 캐싱
             this.setCachedData(endpoint, params, data);
-            
+
             return data;
         } catch (error) {
-            console.error('API GET 요청 오류:', error);
+            // 404는 "데이터 없음" 정상 흐름이 많으므로 콘솔 노이즈 방지
+            if (error && error.status !== 404) {
+                console.error('API GET 요청 오류:', error);
+            }
             throw error;
         }
     }
@@ -327,6 +332,13 @@ class API {
             params = { days: params };
         }
         return this.get(`${this.endpoints.STATISTICS}/target/${targetId}`, params);
+    }
+
+    async getBulkTargetStatistics(targetIds, days) {
+        return this.post(`${this.endpoints.STATISTICS}/targets/bulk`, {
+            target_ids: targetIds,
+            days: days
+        });
     }
     
     // 보고서 관련 메서드

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 from ..database import database
 from ..services import statistics
@@ -49,6 +50,37 @@ def get_target_statistics(
         raise HTTPException(status_code=404, detail="No measurement data found for this target")
 
     return result
+
+class BulkStatisticsRequest(BaseModel):
+    target_ids: List[int]
+    days: Optional[int] = 14
+
+
+@router.post("/targets/bulk", response_model=Dict[str, Any])
+def get_bulk_target_statistics(
+    request: BulkStatisticsRequest,
+    db: Session = Depends(database.get_db)
+):
+    """
+    여러 타겟의 통계를 한 번에 계산.
+    데이터 없는 타겟은 결과에서 제외(404 발생 안 함).
+    응답: { "results": { target_id: {cpk, sample_count, ...}, ... } }
+    """
+    start_datetime = datetime.now() - timedelta(days=request.days) if request.days else None
+
+    results = {}
+    for target_id in request.target_ids:
+        try:
+            stats = statistics.get_process_statistics(
+                db, target_id=target_id, start_date=start_datetime, end_date=None
+            )
+            if stats and stats.get("sample_count", 0) > 0:
+                results[str(target_id)] = stats
+        except Exception:
+            continue
+
+    return {"results": results}
+
 
 @router.get("/boxplot/{target_id}", response_model=Dict[str, Any])
 def get_boxplot_statistics(
