@@ -86,6 +86,7 @@ async def process_bulk_import(
 
         # 측정 데이터 생성
         imported_count = 0
+        inserted_measurements = []
         for row in validated_data:
             # 중복 항목 건너뛰기
             lot_wafer_key = f"{row['lot_no']}_{row['wafer_no']}"
@@ -149,11 +150,30 @@ async def process_bulk_import(
             )
             
             db.add(db_measurement)
+            inserted_measurements.append(db_measurement)
             imported_count += 1
-        
+
         # 변경 사항 커밋
         db.commit()
-        
+
+        # 일괄 업로드 데이터에 대해 SPC 알람 판정 후 즉시 RESOLVED 처리
+        # (과거 데이터 backfill이므로 ACTIVE 알람으로 노출되면 안 됨)
+        try:
+            from .spc_alarm import evaluate_measurement_alarms
+            from datetime import datetime as _dt
+            for m in inserted_measurements:
+                db.refresh(m)
+                created = evaluate_measurement_alarms(db, m.id)
+                for alarm in created:
+                    alarm.status = 'RESOLVED'
+                    alarm.resolved_by = 'BULK_IMPORT'
+                    alarm.resolved_at = _dt.now()
+                    alarm.resolve_note = '일괄 업로드 과거 데이터 자동 처리'
+            db.commit()
+        except Exception as _e:
+            import logging
+            logging.getLogger(__name__).error(f"일괄 업로드 SPC 알람 처리 실패: {_e}")
+
         # 결과 반환
         return {
             "success": True,

@@ -212,19 +212,15 @@ def _check_nelson_rules(
     if cl is None or ucl is None or lcl is None:
         return alarms
 
-    # 기존 detect_nelson_rules 호출
-    all_patterns = detect_nelson_rules(values, cl, ucl, lcl, lot_nos)
-
-    # Rule 1, 2, 3만 필터링하고, 현재 measurement에 해당하는 패턴만 알람 생성
-    current_index = 0  # 최근 측정이 리스트의 첫 번째 (DESC 조회 후 reverse됨)
-    # recent는 DESC로 조회되므로 values[0]이 가장 최신
-    # detect_nelson_rules는 시간순(ASC)으로 받아야 하므로 reverse
+    # recent는 DESC로 조회되므로 detect_nelson_rules에 넘기기 위해 ASC로 뒤집음
     values_asc = list(reversed(values))
     lot_nos_asc = list(reversed(lot_nos))
     current_index_asc = len(values_asc) - 1  # 최신 측정의 ASC 인덱스
 
     all_patterns = detect_nelson_rules(values_asc, cl, ucl, lcl, lot_nos_asc)
 
+    # 현재 measurement에서 "새로 완성된" 위반만 알람 생성
+    # (Rule 1: 현재 점이 3σ 이탈, Rule 2/3: 현재 점에서 패턴이 종료)
     for pattern in all_patterns:
         rule = pattern.get("rule")
         if rule not in (1, 2, 3):
@@ -232,10 +228,9 @@ def _check_nelson_rules(
 
         pos = pattern.get("position", 0)
         length = pattern.get("length", 1)
+        pattern_end = pos + length - 1
 
-        # 현재 measurement가 패턴 범위에 포함되는지 확인
-        pattern_end = pos + length - 1 if length > 1 else pos
-        if not (pos <= current_index_asc <= pattern_end):
+        if pattern_end != current_index_asc:
             continue
 
         if rule == 1:
