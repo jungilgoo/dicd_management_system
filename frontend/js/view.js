@@ -728,68 +728,86 @@
         });
 
         // 수정 모달: 제품군 변경 → 공정/타겟 캐스케이딩
-        document.getElementById('edit-product-group').addEventListener('change', async function() {
-            const productGroupId = this.value;
-            const processSelect = document.getElementById('edit-process-select');
-            const targetSelect = document.getElementById('edit-target-select');
+        const editProductGroup = document.getElementById('edit-product-group');
+        if (editProductGroup) {
+            editProductGroup.addEventListener('change', async function() {
+                const productGroupId = this.value;
+                const processSelect = document.getElementById('edit-process-select');
+                const targetSelect = document.getElementById('edit-target-select');
 
-            processSelect.innerHTML = '<option value="">선택하세요</option>';
-            processSelect.disabled = !productGroupId;
-            targetSelect.innerHTML = '<option value="">선택하세요</option>';
-            targetSelect.disabled = true;
+                processSelect.innerHTML = '<option value="">선택하세요</option>';
+                processSelect.disabled = !productGroupId;
+                targetSelect.innerHTML = '<option value="">선택하세요</option>';
+                targetSelect.disabled = true;
 
-            if (productGroupId) {
-                await loadEditProcesses(productGroupId);
-            }
-        });
+                if (productGroupId) {
+                    await loadEditProcesses(productGroupId);
+                }
+            });
+        }
 
         // 수정 모달: 공정 변경 → 타겟 캐스케이딩
-        document.getElementById('edit-process-select').addEventListener('change', async function() {
-            const processId = this.value;
-            const targetSelect = document.getElementById('edit-target-select');
+        const editProcessSelect = document.getElementById('edit-process-select');
+        if (editProcessSelect) {
+            editProcessSelect.addEventListener('change', async function() {
+                const processId = this.value;
+                const targetSelect = document.getElementById('edit-target-select');
 
-            targetSelect.innerHTML = '<option value="">선택하세요</option>';
-            targetSelect.disabled = !processId;
+                targetSelect.innerHTML = '<option value="">선택하세요</option>';
+                targetSelect.disabled = !processId;
 
-            if (processId) {
-                await loadEditTargets(processId);
-            }
-        });
+                if (processId) {
+                    await loadEditTargets(processId);
+                }
+            });
+        }
 
         // 상세 정보에서 수정 버튼 클릭 이벤트
-        document.getElementById('edit-detail-btn').addEventListener('click', function() {
-            // 상세 모달 닫기
-            $('#detail-modal').modal('hide');
-            
-            // 저장된 측정 ID 사용
-            populateEditForm(currentMeasurementId);
-        });
+        const editDetailBtn = document.getElementById('edit-detail-btn');
+        if (editDetailBtn) {
+            editDetailBtn.addEventListener('click', function() {
+                // 상세 모달 닫기
+                $('#detail-modal').modal('hide');
+
+                // 저장된 측정 ID 사용
+                populateEditForm(currentMeasurementId);
+            });
+        }
 
         // 수정 저장 버튼 클릭 이벤트
-        document.getElementById('save-edit-btn').addEventListener('click', function() {
-            saveEditedMeasurement();
-        });
+        const saveEditBtn = document.getElementById('save-edit-btn');
+        if (saveEditBtn) {
+            saveEditBtn.addEventListener('click', function() {
+                saveEditedMeasurement();
+            });
+        }
 
         // 상세 정보에서 삭제 버튼 클릭 이벤트
-        document.getElementById('delete-detail-btn').addEventListener('click', function() {
-            // 상세 모달 닫기
-            $('#detail-modal').modal('hide');
-            
-            // 저장된 측정 ID 사용
-            const measurementId = currentMeasurementId;
-            
-            // 삭제 확인 모달에 ID 설정
-            document.getElementById('delete-measurement-id').value = measurementId;
-            
-            // 삭제 확인 모달 표시
-            $('#delete-confirm-modal').modal('show');
-        });
+        const deleteDetailBtn = document.getElementById('delete-detail-btn');
+        if (deleteDetailBtn) {
+            deleteDetailBtn.addEventListener('click', function() {
+                // 상세 모달 닫기
+                $('#detail-modal').modal('hide');
+
+                // 저장된 측정 ID 사용
+                const measurementId = currentMeasurementId;
+
+                // 삭제 확인 모달에 ID 설정
+                document.getElementById('delete-measurement-id').value = measurementId;
+
+                // 삭제 확인 모달 표시
+                $('#delete-confirm-modal').modal('show');
+            });
+        }
 
         // 삭제 확인 버튼 클릭 이벤트
-        document.getElementById('confirm-delete-btn').addEventListener('click', function() {
-            const measurementId = document.getElementById('delete-measurement-id').value;
-            deleteMeasurement(measurementId);
-        });
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function() {
+                const measurementId = document.getElementById('delete-measurement-id').value;
+                deleteMeasurement(measurementId);
+            });
+        }
 
         // 일괄 삭제 버튼 클릭 이벤트
         document.getElementById('bulk-delete-btn').addEventListener('click', function() {
