@@ -12,6 +12,7 @@ function initAlarmPage() {
     // 이벤트 리스너
     document.getElementById('btn-search').addEventListener('click', () => { currentPage = 0; loadAlarms(); });
     document.getElementById('btn-reset').addEventListener('click', resetFilters);
+    document.getElementById('btn-resolve-all').addEventListener('click', resolveAllAlarms);
 
     // 조치완료 모달 확인 버튼
     document.getElementById('btn-resolve-confirm').addEventListener('click', confirmResolve);
@@ -254,6 +255,28 @@ function openSpcFromAlarm(targetId, productGroup, process, targetName) {
             process: process,
             targetName: targetName
         });
+    }
+}
+
+async function resolveAllAlarms() {
+    const processType = window.PROCESS_TYPE || 'PHOTO';
+    const severity = document.getElementById('filter-severity').value;
+    const targetId = document.getElementById('filter-target').value;
+
+    let msg = '현재 필터 조건의 미해결 알람을 모두 해결 처리하시겠습니까?';
+    if (!confirm(msg)) return;
+
+    let params = `process_type=${processType}`;
+    if (severity) params += `&severity=${severity}`;
+    if (targetId) params += `&target_id=${targetId}`;
+
+    try {
+        const result = await api.post(`/spc-alarms/resolve-all?${params}`, {});
+        alert(`${result.resolved_count}건 해결 처리되었습니다.`);
+        loadAlarms();
+        loadSummary();
+    } catch (e) {
+        alert('전체 해결 처리 실패: ' + e.message);
     }
 }
 

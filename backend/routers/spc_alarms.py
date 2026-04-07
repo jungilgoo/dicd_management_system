@@ -119,6 +119,36 @@ def get_alarm(alarm_id: int, db: Session = Depends(database.get_db)):
     return alarm
 
 
+@router.post("/resolve-all")
+def resolve_all_alarms(
+    process_type: Optional[str] = Query('PHOTO', description="공정 타입"),
+    target_id: Optional[int] = None,
+    severity: Optional[str] = None,
+    db: Session = Depends(database.get_db)
+):
+    """현재 필터 조건의 ACTIVE 알람을 일괄 조치 완료 처리"""
+    query = db.query(models.SpcAlarm).join(
+        models.Target, models.SpcAlarm.target_id == models.Target.id
+    ).filter(models.SpcAlarm.status == 'ACTIVE')
+
+    if process_type:
+        query = query.filter(models.Target.process_type == process_type)
+    if target_id:
+        query = query.filter(models.SpcAlarm.target_id == target_id)
+    if severity:
+        query = query.filter(models.SpcAlarm.severity == severity)
+
+    now = datetime.now()
+    updated = query.update({
+        models.SpcAlarm.status: 'RESOLVED',
+        models.SpcAlarm.resolved_by: '담당자',
+        models.SpcAlarm.resolved_at: now,
+        models.SpcAlarm.resolve_note: '전체 해결 처리'
+    }, synchronize_session='fetch')
+    db.commit()
+    return {"resolved_count": updated}
+
+
 @router.patch("/{alarm_id}/resolve", response_model=schemas.SpcAlarm)
 def resolve_alarm(
     alarm_id: int,
