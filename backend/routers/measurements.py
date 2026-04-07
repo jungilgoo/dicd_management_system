@@ -16,12 +16,13 @@ router = APIRouter(
 @router.get("/check-device")
 def check_device_exists(
     device: str = Query(..., description="확인할 DEVICE명"),
+    process_type: str = Query("PHOTO", description="공정 타입 (PHOTO, ETCH)"),
     db: Session = Depends(database.get_db)
 ):
     """
     DEVICE명이 기존 측정 데이터에 존재하는지 확인합니다.
     """
-    exists = crud.check_device_exists(db, device=device)
+    exists = crud.check_device_exists(db, device=device, process_type=process_type)
     return {"exists": exists, "device": device}
 
 

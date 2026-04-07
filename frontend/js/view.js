@@ -766,6 +766,9 @@
         const editDetailBtn = document.getElementById('edit-detail-btn');
         if (editDetailBtn) {
             editDetailBtn.addEventListener('click', function() {
+                if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                    document.activeElement.blur();
+                }
                 // 상세 모달 닫기
                 $('#detail-modal').modal('hide');
 

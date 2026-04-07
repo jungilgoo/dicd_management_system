@@ -629,12 +629,15 @@ def check_duplicate_measurement(db: Session, target_id: int, lot_no: str, wafer_
     return existing is not None
 
 
-def check_device_exists(db: Session, device: str) -> bool:
+def check_device_exists(db: Session, device: str, process_type: str = 'PHOTO') -> bool:
     """
-    해당 DEVICE명이 기존 측정 데이터에 존재하는지 확인
+    해당 DEVICE명이 같은 공정 타입의 측정 데이터에 존재하는지 확인
     """
-    existing = db.query(models.Measurement).filter(
-        models.Measurement.device == device
+    existing = db.query(models.Measurement).join(
+        models.Target, models.Measurement.target_id == models.Target.id
+    ).filter(
+        models.Measurement.device == device,
+        models.Target.process_type == process_type
     ).first()
 
     return existing is not None
