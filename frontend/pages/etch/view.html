@@ -212,7 +212,15 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="keyword">키워드 검색</label>
-                                            <input type="text" class="form-control" id="keyword" placeholder="LOT NO, DEVICE 등">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="keyword" placeholder="LOT NO, DEVICE 등">
+                                                <div class="input-group-append">
+                                                    <div class="input-group-text">
+                                                        <input type="checkbox" id="exact-match" title="정확히 일치하는 항목만 검색">
+                                                        <label for="exact-match" class="mb-0 ml-1" style="font-size: 0.8rem; cursor: pointer;">정확히 일치</label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

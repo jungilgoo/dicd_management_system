@@ -232,7 +232,13 @@
         // 장비 선택 시, 세 가지 장비 타입 중 어느 것으로 필터링할지 선택 가능
         if (equipmentId) params.equipment_id = equipmentId;
 
-        if (keyword) params.keyword = keyword;
+        if (keyword) {
+            params.keyword = keyword;
+            const exactMatch = document.getElementById('exact-match');
+            if (exactMatch && exactMatch.checked) {
+                params.exact_match = true;
+            }
+        }
         if (startDate) params.start_date = startDate;
         if (endDate) params.end_date = endDate;
 

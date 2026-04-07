@@ -209,7 +209,7 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
                      product_group_id: int = None, device: str = None,
                      lot_no: str = None, start_date: datetime = None,
                      end_date: datetime = None, equipment_id: int = None,
-                     keyword: str = None, process_type: str = 'PHOTO',
+                     keyword: str = None, exact_match: bool = False, process_type: str = 'PHOTO',
                      limit: int = None, offset: int = 0):
 
     # 조인 쿼리를 위한 설정 (process_type 필터링을 위해 항상 Target과 조인)
@@ -252,11 +252,18 @@ def get_measurements(db: Session, target_id: int = None, process_id: int = None,
 
     # 키워드 검색 처리
     if keyword:
-        query = query.filter(
-            (models.Measurement.device.like(f"%{keyword}%")) |
-            (models.Measurement.lot_no.like(f"%{keyword}%")) |
-            (models.Measurement.wafer_no.like(f"%{keyword}%"))
-        )
+        if exact_match:
+            query = query.filter(
+                (models.Measurement.device == keyword) |
+                (models.Measurement.lot_no == keyword) |
+                (models.Measurement.wafer_no == keyword)
+            )
+        else:
+            query = query.filter(
+                (models.Measurement.device.like(f"%{keyword}%")) |
+                (models.Measurement.lot_no.like(f"%{keyword}%")) |
+                (models.Measurement.wafer_no.like(f"%{keyword}%"))
+            )
 
     # 최신 데이터 순으로 정렬
     query = query.order_by(models.Measurement.created_at.desc())
