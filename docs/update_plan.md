@@ -6,6 +6,21 @@
 
 ## 현재 진행 중인 업데이트
 
+### 2026-04-07 - DEVICE 검증/관리 기능
+- **목적**: 오입력된 DEVICE를 손쉽게 발견·정정하기 위한 마스터 데이터 정리 도구
+- **위치**: 설정 페이지 내 신규 탭 "DEVICE 관리"
+- **작업 내용**:
+  - [x] 백엔드 라우터 추가: `backend/routers/devices.py`
+    - `GET /api/devices/` 사용 빈도순 DEVICE 목록 (process_type 필터)
+    - `GET /api/devices/similar` Levenshtein 거리 기반 오타 의심 쌍
+    - `POST /api/devices/merge` 잘못된 DEVICE → 표준 DEVICE 일괄 변경
+    - `POST /api/devices/delete` 지정 DEVICE 측정 데이터 삭제
+  - [x] `backend/main.py`에 라우터 등록
+  - [x] `frontend/pages/settings.html`에 "DEVICE 관리" 탭 + 병합 모달 추가
+  - [x] `frontend/js/device_settings.js` 신규 작성 (목록/검색/필터/병합/삭제)
+  - [ ] 서버 배포 후 사용자 테스트 (오입력 정리 시나리오)
+- **참고**: 별도 DB 마이그레이션 없음 (기존 measurements 테이블만 사용)
+
 ### 2026-04-02 - SPC 이상치 감지 모니터링 기능
 - **목적**: 측정 데이터 입력 시 실시간 SPC 알람 자동 판정 및 관리
 - **상세 계획**: `docs/spc_alarm_plan.md` 참조

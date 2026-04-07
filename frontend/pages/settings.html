@@ -140,6 +140,7 @@
                                 <li class="nav-item"><a class="nav-link" href="#product-process-settings" data-toggle="tab">제품군/공정 관리</a></li>
                                 <li class="nav-item"><a class="nav-link active" href="#spec-settings" data-toggle="tab">SPEC 설정</a></li>
                                 <li class="nav-item"><a class="nav-link" href="#equipment-settings" data-toggle="tab">장비 관리</a></li>
+                                <li class="nav-item"><a class="nav-link" href="#device-settings" data-toggle="tab">DEVICE 관리</a></li>
                             </ul>
                         </div>
                         <div class="card-body">
@@ -308,6 +309,85 @@
                                             <li>LSL/USL은 자동 업데이트 대상이 아니며 수동으로만 변경 가능합니다</li>
                                         </ul>
                                         <small class="text-muted">수동 업데이트가 필요한 경우 위 SPEC 관리에서 직접 변경할 수 있습니다.</small>
+                                    </div>
+                                </div>
+                                <!-- DEVICE 관리 탭 -->
+                                <div class="tab-pane" id="device-settings">
+                                    <div class="row">
+                                        <!-- DEVICE 목록 -->
+                                        <div class="col-md-7">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">DEVICE 목록 (사용 빈도순)</h3>
+                                                    <div class="card-tools">
+                                                        <button type="button" class="btn btn-tool" id="device-refresh-btn" title="새로고침">
+                                                            <i class="fas fa-sync"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="form-group d-flex align-items-center">
+                                                        <input type="text" class="form-control form-control-sm mr-2" id="device-search" placeholder="DEVICE 검색...">
+                                                        <div class="custom-control custom-checkbox ml-2" style="white-space:nowrap;">
+                                                            <input type="checkbox" class="custom-control-input" id="device-only-low">
+                                                            <label class="custom-control-label" for="device-only-low">빈도 낮은 항목만</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="table-responsive" style="max-height:520px; overflow-y:auto;">
+                                                        <table class="table table-bordered table-striped table-sm" id="device-table">
+                                                            <thead class="thead-light" style="position:sticky; top:0;">
+                                                                <tr>
+                                                                    <th style="width:30px;"><input type="checkbox" id="device-check-all"></th>
+                                                                    <th>DEVICE</th>
+                                                                    <th style="width:80px;">건수</th>
+                                                                    <th style="width:130px;">최초 입력</th>
+                                                                    <th style="width:130px;">최근 입력</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="device-list">
+                                                                <tr><td colspan="5" class="text-center">로딩 중...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="mt-2 d-flex">
+                                                        <button type="button" class="btn btn-primary btn-sm mr-2" id="device-merge-btn">
+                                                            <i class="fas fa-code-branch mr-1"></i> 선택 항목 일괄 변경
+                                                        </button>
+                                                        <button type="button" class="btn btn-danger btn-sm" id="device-delete-btn">
+                                                            <i class="fas fa-trash mr-1"></i> 선택 항목 삭제
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- 유사 DEVICE 의심 쌍 -->
+                                        <div class="col-md-5">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">오타 의심 DEVICE</h3>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="text-muted small mb-2">
+                                                        편집거리 기반으로 표준 DEVICE와 비슷한 항목을 자동 탐지합니다.
+                                                        의심 DEVICE를 표준 DEVICE로 일괄 병합할 수 있습니다.
+                                                    </p>
+                                                    <div class="table-responsive" style="max-height:520px; overflow-y:auto;">
+                                                        <table class="table table-bordered table-sm" id="similar-device-table">
+                                                            <thead class="thead-light" style="position:sticky; top:0;">
+                                                                <tr>
+                                                                    <th>의심 (건수)</th>
+                                                                    <th>표준 후보 (건수)</th>
+                                                                    <th style="width:60px;">작업</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="similar-device-list">
+                                                                <tr><td colspan="3" class="text-center">로딩 중...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- 장비 관리 탭 -->
@@ -660,6 +740,37 @@
         }
     </script>
 
+    <!-- DEVICE 병합 모달 -->
+    <div class="modal fade" id="device-merge-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">DEVICE 일괄 변경</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <p>선택한 DEVICE를 아래 입력한 DEVICE 값으로 일괄 변경합니다.</p>
+                    <div class="form-group">
+                        <label>변경 대상</label>
+                        <div id="device-merge-from-list" class="border rounded p-2 bg-light small" style="max-height:120px; overflow-y:auto;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="device-merge-to">변경할 DEVICE</label>
+                        <input type="text" class="form-control" id="device-merge-to" placeholder="올바른 DEVICE 값 입력">
+                    </div>
+                    <div class="alert alert-warning small mb-0">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        해당 DEVICE의 모든 측정 데이터가 변경됩니다. 작업은 되돌릴 수 없습니다.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="device-merge-confirm-btn">변경</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 스크립트 -->
     <script src="../lib/js/jquery-3.6.0.min.js"></script>
     <script src="../lib/js/bootstrap.bundle.min.js"></script>
@@ -667,6 +778,7 @@
     <script src="../js/config.js"></script>
     <script src="../js/api.js"></script>
     <script src="../js/settings.js"></script>
+    <script src="../js/device_settings.js"></script>
     <script src="../js/auth.js"></script>
 </body>
 </html>
