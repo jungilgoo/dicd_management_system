@@ -127,24 +127,31 @@ def resolve_all_alarms(
     db: Session = Depends(database.get_db)
 ):
     """현재 필터 조건의 ACTIVE 알람을 일괄 조치 완료 처리"""
-    query = db.query(models.SpcAlarm).join(
+    # JOIN 포함 쿼리는 update() 불가 → ID 먼저 수집 후 업데이트
+    id_query = db.query(models.SpcAlarm.id).join(
         models.Target, models.SpcAlarm.target_id == models.Target.id
     ).filter(models.SpcAlarm.status == 'ACTIVE')
 
     if process_type:
-        query = query.filter(models.Target.process_type == process_type)
+        id_query = id_query.filter(models.Target.process_type == process_type)
     if target_id:
-        query = query.filter(models.SpcAlarm.target_id == target_id)
+        id_query = id_query.filter(models.SpcAlarm.target_id == target_id)
     if severity:
-        query = query.filter(models.SpcAlarm.severity == severity)
+        id_query = id_query.filter(models.SpcAlarm.severity == severity)
+
+    alarm_ids = [row[0] for row in id_query.all()]
+    if not alarm_ids:
+        return {"resolved_count": 0}
 
     now = datetime.now()
-    updated = query.update({
+    updated = db.query(models.SpcAlarm).filter(
+        models.SpcAlarm.id.in_(alarm_ids)
+    ).update({
         models.SpcAlarm.status: 'RESOLVED',
         models.SpcAlarm.resolved_by: '담당자',
         models.SpcAlarm.resolved_at: now,
         models.SpcAlarm.resolve_note: '전체 해결 처리'
-    }, synchronize_session='fetch')
+    }, synchronize_session=False)
     db.commit()
     return {"resolved_count": updated}
 
