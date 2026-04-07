@@ -721,6 +721,35 @@
             loadMeasurements(page);
         });
 
+        // 수정 모달: 제품군 변경 → 공정/타겟 캐스케이딩
+        document.getElementById('edit-product-group').addEventListener('change', async function() {
+            const productGroupId = this.value;
+            const processSelect = document.getElementById('edit-process-select');
+            const targetSelect = document.getElementById('edit-target-select');
+
+            processSelect.innerHTML = '<option value="">선택하세요</option>';
+            processSelect.disabled = !productGroupId;
+            targetSelect.innerHTML = '<option value="">선택하세요</option>';
+            targetSelect.disabled = true;
+
+            if (productGroupId) {
+                await loadEditProcesses(productGroupId);
+            }
+        });
+
+        // 수정 모달: 공정 변경 → 타겟 캐스케이딩
+        document.getElementById('edit-process-select').addEventListener('change', async function() {
+            const processId = this.value;
+            const targetSelect = document.getElementById('edit-target-select');
+
+            targetSelect.innerHTML = '<option value="">선택하세요</option>';
+            targetSelect.disabled = !processId;
+
+            if (processId) {
+                await loadEditTargets(processId);
+            }
+        });
+
         // 상세 정보에서 수정 버튼 클릭 이벤트
         document.getElementById('edit-detail-btn').addEventListener('click', function() {
             // 상세 모달 닫기
@@ -1087,7 +1116,34 @@ async function populateEditForm(measurementId) {
         // 측정 ID 설정
         document.getElementById('edit-measurement-id').value = measurementId;
         document.getElementById('edit-target-id').value = cachedMeasurement.target_id;
-        
+
+        // 제품군/공정/타겟 계층 해석 및 pre-select
+        let target, process, productGroup;
+        if (targetsCache[cachedMeasurement.target_id]) {
+            target = targetsCache[cachedMeasurement.target_id];
+        } else {
+            target = await api.get(`${API_CONFIG.ENDPOINTS.TARGETS}/${cachedMeasurement.target_id}`);
+            targetsCache[cachedMeasurement.target_id] = target;
+        }
+        if (!target.process_id) {
+            target = await api.get(`${API_CONFIG.ENDPOINTS.TARGETS}/${cachedMeasurement.target_id}`);
+            targetsCache[cachedMeasurement.target_id] = target;
+        }
+        if (processesCache[target.process_id]) {
+            process = processesCache[target.process_id];
+        } else {
+            process = await api.get(`${API_CONFIG.ENDPOINTS.PROCESSES}/${target.process_id}`);
+            processesCache[target.process_id] = process;
+        }
+        if (!process.product_group_id) {
+            process = await api.get(`${API_CONFIG.ENDPOINTS.PROCESSES}/${target.process_id}`);
+            processesCache[target.process_id] = process;
+        }
+
+        await loadEditProductGroups(process.product_group_id);
+        await loadEditProcesses(process.product_group_id, target.process_id);
+        await loadEditTargets(target.process_id, cachedMeasurement.target_id);
+
         // 폼 필드 채우기
         document.getElementById('edit-device').value = cachedMeasurement.device;
         document.getElementById('edit-lot-no').value = cachedMeasurement.lot_no;
@@ -1129,6 +1185,68 @@ async function populateEditForm(measurementId) {
     } catch (error) {
         console.error('수정 폼 초기화 실패:', error);
         alert('데이터를 불러오는 중 오류가 발생했습니다: ' + error.message);
+    }
+}
+
+// 수정 모달: 제품군 드롭다운 로드
+async function loadEditProductGroups(preselectId = null) {
+    try {
+        const productGroups = await api.getProductGroups();
+        let options = '<option value="">선택하세요</option>';
+        if (productGroups && productGroups.length > 0) {
+            productGroups.forEach(pg => {
+                options += `<option value="${pg.id}">${pg.name}</option>`;
+            });
+        }
+        const select = document.getElementById('edit-product-group');
+        select.innerHTML = options;
+        if (preselectId) {
+            select.value = preselectId;
+        }
+    } catch (error) {
+        console.error('수정 모달 제품군 로드 실패:', error);
+    }
+}
+
+// 수정 모달: 공정 드롭다운 로드
+async function loadEditProcesses(productGroupId, preselectId = null) {
+    try {
+        const processes = await api.getProcesses(productGroupId);
+        let options = '<option value="">선택하세요</option>';
+        if (processes && processes.length > 0) {
+            processes.forEach(p => {
+                options += `<option value="${p.id}">${p.name}</option>`;
+            });
+        }
+        const select = document.getElementById('edit-process-select');
+        select.innerHTML = options;
+        select.disabled = false;
+        if (preselectId) {
+            select.value = preselectId;
+        }
+    } catch (error) {
+        console.error('수정 모달 공정 로드 실패:', error);
+    }
+}
+
+// 수정 모달: 타겟 드롭다운 로드
+async function loadEditTargets(processId, preselectId = null) {
+    try {
+        const targets = await api.getTargets(processId, window.PROCESS_TYPE);
+        let options = '<option value="">선택하세요</option>';
+        if (targets && targets.length > 0) {
+            targets.forEach(t => {
+                options += `<option value="${t.id}">${t.name}</option>`;
+            });
+        }
+        const select = document.getElementById('edit-target-select');
+        select.innerHTML = options;
+        select.disabled = false;
+        if (preselectId) {
+            select.value = preselectId;
+        }
+    } catch (error) {
+        console.error('수정 모달 타겟 로드 실패:', error);
     }
 }
 
@@ -1190,9 +1308,14 @@ async function saveEditedMeasurement() {
             return;
         }
         
-        // 측정 ID 및 타겟 ID
+        // 측정 ID 및 타겟 ID (드롭다운에서 선택된 값 사용)
         const measurementId = document.getElementById('edit-measurement-id').value;
-        const targetId = document.getElementById('edit-target-id').value;
+        const targetId = document.getElementById('edit-target-select').value;
+
+        if (!targetId) {
+            alert('타겟을 선택해주세요.');
+            return;
+        }
         
         // 폼 데이터 수집
         const measurementData = {

@@ -294,9 +294,17 @@ def update_measurement(db: Session, measurement_id: int, measurement_data: measu
             import logging
             logging.getLogger(__name__).error(f"수정 이력 저장 실패: {e}")
 
+        # target_id 변경 감지를 위해 원본 저장
+        original_target_id = db_measurement.target_id
+
         # 업데이트할 필드 설정
         for key, value in measurement_data.dict(exclude_unset=True).items():
             setattr(db_measurement, key, value)
+
+        # target_id가 변경된 경우 새 타겟의 활성 스펙으로 재해석
+        if db_measurement.target_id != original_target_id:
+            new_active_spec = get_active_spec(db, db_measurement.target_id)
+            db_measurement.spec_id = new_active_spec.id if new_active_spec else None
 
         # 통계치 재계산
         values = [
