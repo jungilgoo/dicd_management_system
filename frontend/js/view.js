@@ -1148,6 +1148,7 @@ async function populateEditForm(measurementId) {
         document.getElementById('edit-device').value = cachedMeasurement.device;
         document.getElementById('edit-lot-no').value = cachedMeasurement.lot_no;
         document.getElementById('edit-wafer-no').value = cachedMeasurement.wafer_no;
+        document.getElementById('edit-exposure-time').value = cachedMeasurement.exposure_time || '';
         document.getElementById('edit-value-top').value = cachedMeasurement.value_top;
         document.getElementById('edit-value-center').value = cachedMeasurement.value_center;
         document.getElementById('edit-value-bottom').value = cachedMeasurement.value_bottom;
@@ -1323,6 +1324,7 @@ async function saveEditedMeasurement() {
             device: document.getElementById('edit-device').value,
             lot_no: document.getElementById('edit-lot-no').value,
             wafer_no: document.getElementById('edit-wafer-no').value,
+            exposure_time: parseFloat(document.getElementById('edit-exposure-time').value) || null,
             value_top: parseFloat(document.getElementById('edit-value-top').value),
             value_center: parseFloat(document.getElementById('edit-value-center').value),
             value_bottom: parseFloat(document.getElementById('edit-value-bottom').value),
