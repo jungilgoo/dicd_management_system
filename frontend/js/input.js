@@ -503,6 +503,52 @@
         return allValid;
     }
     
+    // SPEC 벗어남 확인 모달 표시
+    function showSpecConfirmModal() {
+        return new Promise((resolve) => {
+            const activeTargetBtn = document.querySelector('.target-btn.active');
+            const targetName = activeTargetBtn ? activeTargetBtn.textContent.trim() : '알 수 없음';
+            const specRange = `${currentSpec.lsl.toFixed(3)} ~ ${currentSpec.usl.toFixed(3)}`;
+
+            document.getElementById('spec-confirm-target').textContent = targetName;
+            document.getElementById('spec-confirm-range').textContent = specRange;
+
+            // 측정값 표시 (SPEC 초과 시 빨간색)
+            const values = [
+                { label: '상', value: document.getElementById('value-top').value },
+                { label: '중', value: document.getElementById('value-center').value },
+                { label: '하', value: document.getElementById('value-bottom').value },
+                { label: '좌', value: document.getElementById('value-left').value },
+                { label: '우', value: document.getElementById('value-right').value }
+            ];
+
+            let valuesHtml = '';
+            values.forEach(v => {
+                const num = parseFloat(v.value);
+                const exceeded = !isNaN(num) && (num < currentSpec.lsl || num > currentSpec.usl);
+                valuesHtml += `<td class="text-center ${exceeded ? 'text-danger font-weight-bold' : ''}">${v.value}</td>`;
+            });
+            document.getElementById('spec-confirm-values').innerHTML = valuesHtml;
+
+            $('#spec-confirm-modal').modal('show');
+
+            // 이벤트 핸들러 (한 번만 실행)
+            const proceedBtn = document.getElementById('spec-confirm-proceed');
+            const cancelBtn = document.getElementById('spec-confirm-cancel');
+
+            function cleanup() {
+                proceedBtn.removeEventListener('click', onProceed);
+                cancelBtn.removeEventListener('click', onCancel);
+                $('#spec-confirm-modal').modal('hide');
+            }
+            function onProceed() { cleanup(); resolve(true); }
+            function onCancel() { cleanup(); resolve(false); }
+
+            proceedBtn.addEventListener('click', onProceed);
+            cancelBtn.addEventListener('click', onCancel);
+        });
+    }
+
     // DEVICE 존재 여부 확인 함수
     async function checkDeviceExists(device) {
         const url = `${API_CONFIG.BASE_URL}/measurements/check-device?device=${encodeURIComponent(device)}`;
@@ -651,25 +697,8 @@
 
             // 측정값 검사
             if (!validateMeasurementValues()) {
-                const activeTargetBtn = document.querySelector('.target-btn.active');
-                const targetName = activeTargetBtn ? activeTargetBtn.textContent.trim() : '알 수 없음';
-                const vTop = document.getElementById('value-top').value;
-                const vCenter = document.getElementById('value-center').value;
-                const vBottom = document.getElementById('value-bottom').value;
-                const vLeft = document.getElementById('value-left').value;
-                const vRight = document.getElementById('value-right').value;
-
-                const specRange = `${currentSpec.lsl.toFixed(3)} ~ ${currentSpec.usl.toFixed(3)}`;
-                const confirmMsg = `⚠️ 측정값이 SPEC 범위를 벗어났습니다.\n\n` +
-                    `▶ 타겟: ${targetName}\n` +
-                    `▶ SPEC 범위: ${specRange}\n\n` +
-                    `▶ 측정값\n` +
-                    `   상: ${vTop}  |  중: ${vCenter}  |  하: ${vBottom}\n` +
-                    `   좌: ${vLeft}  |  우: ${vRight}\n\n` +
-                    `타겟과 측정값이 맞는지 다시 한번 확인하세요.\n` +
-                    `계속 진행하시겠습니까?`;
-
-                if (!confirm(confirmMsg)) {
+                const proceed = await showSpecConfirmModal();
+                if (!proceed) {
                     return;
                 }
             }

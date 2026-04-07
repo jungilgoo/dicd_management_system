@@ -420,6 +420,56 @@
                         </div>
                     </div>
 
+                    <!-- SPEC 벗어남 확인 모달 -->
+                    <div class="modal fade" id="spec-confirm-modal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger">
+                                    <h5 class="modal-title text-white">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>SPEC 범위 초과 경고
+                                    </h5>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-warning mb-3">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        <strong>타겟과 측정값이 맞는지 다시 한번 확인하세요.</strong>
+                                    </div>
+                                    <table class="table table-bordered table-sm mb-3">
+                                        <tbody>
+                                            <tr>
+                                                <th class="bg-light" style="width:30%">타겟</th>
+                                                <td id="spec-confirm-target"></td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light">SPEC 범위</th>
+                                                <td id="spec-confirm-range"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <h6><i class="fas fa-ruler mr-1"></i>측정값</h6>
+                                    <table class="table table-bordered table-sm">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th class="text-center">상</th>
+                                                <th class="text-center">중</th>
+                                                <th class="text-center">하</th>
+                                                <th class="text-center">좌</th>
+                                                <th class="text-center">우</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr id="spec-confirm-values"></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" id="spec-confirm-cancel">취소 (수정하기)</button>
+                                    <button type="button" class="btn btn-danger" id="spec-confirm-proceed">이대로 저장</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
         <!-- 푸터 -->
         <footer class="main-footer">
             <strong>Copyright &copy; 2025 <a href="#">PHOTO 공정 관리 시스템</a>.</strong>
