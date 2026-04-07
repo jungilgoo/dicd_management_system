@@ -238,6 +238,18 @@
             document.getElementById('spec-info').classList.add('alert-danger');
             currentSpec = null;
         }
+
+        // 타겟 변경 시 기존 측정값들을 새 스펙으로 재검증
+        document.querySelectorAll('.measurement-value').forEach(input => {
+            const numValue = parseFloat(input.value);
+            if (input.value === '' || isNaN(numValue) || !currentSpec) {
+                input.classList.remove('spec-exceeded');
+            } else if (numValue < currentSpec.lsl || numValue > currentSpec.usl) {
+                input.classList.add('spec-exceeded');
+            } else {
+                input.classList.remove('spec-exceeded');
+            }
+        });
     }
     
     // SPEC 정보 초기화
@@ -639,7 +651,25 @@
 
             // 측정값 검사
             if (!validateMeasurementValues()) {
-                if (!confirm('측정값이 SPEC 범위를 벗어났습니다. 계속 진행하시겠습니까?')) {
+                const activeTargetBtn = document.querySelector('.target-btn.active');
+                const targetName = activeTargetBtn ? activeTargetBtn.textContent.trim() : '알 수 없음';
+                const vTop = document.getElementById('value-top').value;
+                const vCenter = document.getElementById('value-center').value;
+                const vBottom = document.getElementById('value-bottom').value;
+                const vLeft = document.getElementById('value-left').value;
+                const vRight = document.getElementById('value-right').value;
+
+                const specRange = `${currentSpec.lsl.toFixed(3)} ~ ${currentSpec.usl.toFixed(3)}`;
+                const confirmMsg = `⚠️ 측정값이 SPEC 범위를 벗어났습니다.\n\n` +
+                    `▶ 타겟: ${targetName}\n` +
+                    `▶ SPEC 범위: ${specRange}\n\n` +
+                    `▶ 측정값\n` +
+                    `   상: ${vTop}  |  중: ${vCenter}  |  하: ${vBottom}\n` +
+                    `   좌: ${vLeft}  |  우: ${vRight}\n\n` +
+                    `타겟과 측정값이 맞는지 다시 한번 확인하세요.\n` +
+                    `계속 진행하시겠습니까?`;
+
+                if (!confirm(confirmMsg)) {
                     return;
                 }
             }
