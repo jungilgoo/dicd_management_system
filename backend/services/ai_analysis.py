@@ -520,8 +520,9 @@ def _build_distribution_prompt(dist_data: dict) -> str:
     normality = stats.get("normality_test") or {}
     norm_str = "N/A"
     if isinstance(normality, dict) and normality:
+        test_name = normality.get('test') or "D'Agostino-Pearson"
         norm_str = (
-            f"{normality.get('test', 'D\\'Agostino-Pearson')}, "
+            f"{test_name}, "
             f"통계량 {normality.get('statistic', 'N/A')}, "
             f"p-value {normality.get('p_value', 'N/A')}, "
             f"정규성 {'만족' if normality.get('is_normal') else '불만족'}"
