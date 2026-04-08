@@ -1321,7 +1321,9 @@
                 created_at: m.created_at,
                 lot_no: m.lot_no,
                 avg: m.avg_value,
-                top: m.top, center: m.center, bottom: m.bottom, left: m.left, right: m.right
+                min: m.min_value,
+                max: m.max_value,
+                range: m.range_value
             }));
 
         const trendData = {

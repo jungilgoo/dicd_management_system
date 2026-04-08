@@ -271,16 +271,20 @@ def _build_trend_prompt(trend_data: dict) -> str:
     # 측정 시계열 (최근 30개)
     measurements = trend_data.get("measurements", []) or []
     recent = measurements[-30:] if measurements else []
+    def _fmt(v):
+        try:
+            return f"{float(v):.3f}" if v is not None else "N/A"
+        except (TypeError, ValueError):
+            return str(v)
+
     recent_lines = []
     for m in recent:
         date = (m.get("created_at") or "")[:10]
         lot = m.get("lot_no", "")
-        avg = m.get("avg")
-        try:
-            avg_str = f"{float(avg):.3f}" if avg is not None else "N/A"
-        except (TypeError, ValueError):
-            avg_str = str(avg)
-        recent_lines.append(f"  - {date} | LOT {lot} | 평균 {avg_str}")
+        recent_lines.append(
+            f"  - {date} | LOT {lot} | 평균 {_fmt(m.get('avg'))} | "
+            f"min {_fmt(m.get('min'))} | max {_fmt(m.get('max'))} | range {_fmt(m.get('range'))}"
+        )
     recent_str = "\n".join(recent_lines) if recent_lines else "데이터 없음"
 
     # 추세(선형 회귀 기울기) 계산
@@ -310,6 +314,32 @@ def _build_trend_prompt(trend_data: dict) -> str:
                 trend_direction = "하락 추세"
     except Exception as e:
         logger.warning(f"추세 계산 실패: {e}")
+
+    # 산포(range) 추세
+    range_trend_str = "N/A"
+    try:
+        ranges = []
+        for m in measurements:
+            r = m.get("range")
+            if r is not None:
+                ranges.append(float(r))
+        n = len(ranges)
+        if n >= 3:
+            xs = list(range(n))
+            mx = sum(xs) / n
+            my = sum(ranges) / n
+            num = sum((xs[i] - mx) * (ranges[i] - my) for i in range(n))
+            den = sum((xs[i] - mx) ** 2 for i in range(n))
+            r_slope = num / den if den else 0.0
+            first_half = sum(ranges[:n // 2]) / max(1, n // 2)
+            second_half = sum(ranges[n // 2:]) / max(1, n - n // 2)
+            range_trend_str = (
+                f"기울기 {r_slope:+.5f}/회, 평균 range "
+                f"전반부 {first_half:.4f} → 후반부 {second_half:.4f} "
+                f"({'증가' if second_half > first_half else '감소'})"
+            )
+    except Exception as e:
+        logger.warning(f"산포 추세 계산 실패: {e}")
 
     # 위치별 통계 요약
     position_lines = []
@@ -365,8 +395,9 @@ SPC 분석과 달리 본 분석은 **시간에 따른 변화 추세, 위치별 �
 - Ppk: {capability.get('ppk', 'N/A')}
 
 [추세 분석 (선형 회귀)]
-- 방향: {trend_direction}
-- 기울기: {trend_slope_str}
+- 평균 방향: {trend_direction}
+- 평균 기울기: {trend_slope_str}
+- 산포(range) 추세: {range_trend_str}
 
 [위치별 통계 (웨이퍼 내 균일성)]
 {position_summary}
@@ -386,7 +417,7 @@ SPC 분석과 달리 본 분석은 **시간에 따른 변화 추세, 위치별 �
 ## 2. 추세 분석
 - 전체 기간에 걸친 평균값의 이동 방향과 변화량
 - SPEC 대비 여유도 변화 (목표 대비 드리프트 여부)
-- 변동성(표준편차) 변화의 시사점
+- 산포(range/min~max)의 시간적 변화 — LOT 내 산포가 확대/축소되는지, 특정 시점에 급증한 LOT이 있는지 평가
 
 ## 3. 위치별 균일성 평가
 상/중/하/좌/우 위치별 평균과 산포를 비교하여 웨이퍼 내 균일성(WIWNU) 문제를 진단하세요.
