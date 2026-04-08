@@ -551,7 +551,8 @@
 
     // DEVICE 존재 여부 확인 함수
     async function checkDeviceExists(device) {
-        const url = `${API_CONFIG.BASE_URL}/measurements/check-device?device=${encodeURIComponent(device)}`;
+        const processType = window.PROCESS_TYPE || 'PHOTO';
+        const url = `${API_CONFIG.BASE_URL}/measurements/check-device?device=${encodeURIComponent(device)}&process_type=${processType}`;
         console.log('DEVICE 확인 API 호출:', url);
 
         try {

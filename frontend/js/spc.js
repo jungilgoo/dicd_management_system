@@ -2964,24 +2964,6 @@
         }
 
         const aiBtn = document.getElementById('ai-analysis-btn');
-        const aiCard = document.getElementById('ai-analysis-card');
-        const aiContent = document.getElementById('ai-analysis-content');
-
-        // 버튼 로딩 상태
-        const originalBtnHtml = aiBtn.innerHTML;
-        aiBtn.disabled = true;
-        aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> AI 분석 중...';
-
-        // 결과 카드 표시 (로딩)
-        aiCard.style.display = 'block';
-        aiContent.innerHTML = `
-            <div class="text-center py-4">
-                <div class="spinner-border text-purple" role="status" style="color: #6f42c1 !important;">
-                    <span class="sr-only">AI 분석 중...</span>
-                </div>
-                <p class="mt-2 text-muted">AI가 SPC 데이터를 분석하고 있습니다... (약 5~10초 소요)</p>
-            </div>
-        `;
 
         // 컨텍스트 정보 수집
         const productGroupSelect = document.getElementById('product-group');
@@ -2990,6 +2972,20 @@
         const productGroup = productGroupSelect ? productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '' : '';
         const process = processSelect ? processSelect.options[processSelect.selectedIndex]?.text || '' : '';
         const target = targetSelect ? targetSelect.options[targetSelect.selectedIndex]?.text || '' : '';
+
+        // 별도 윈도우 창으로 AI 해석 표시
+        const popup = AiPopup.open({
+            type: 'spc',
+            title: 'AI SPC 공정 해석',
+            loadingText: 'AI가 SPC 데이터를 분석하고 있습니다... (약 5~10초 소요)',
+            contextHtml: `<strong>${productGroup}</strong> | ${process} | <strong>${target}</strong>`
+        });
+        if (!popup) return;
+
+        // 버튼 로딩 상태
+        const originalBtnHtml = aiBtn.innerHTML;
+        aiBtn.disabled = true;
+        aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> AI 분석 중...';
 
         try {
             const response = await fetch('/api/ai/analyze/spc', {
@@ -3011,32 +3007,13 @@
             const result = await response.json();
 
             if (result.success && result.analysis) {
-                // Markdown을 HTML로 간단 변환
-                let html = convertMarkdownToHtml(result.analysis);
-
-                // 프롬프트 보기 토글 추가
-                if (result.prompt) {
-                    html += `
-                        <hr>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                            <i class="fas fa-code mr-1"></i> 프롬프트 보기
-                        </button>
-                        <pre style="display: none; margin-top: 10px; padding: 12px; background: #f4f6f9; border-radius: 4px; font-size: 0.82rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto;">${result.prompt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-                    `;
-                }
-
-                aiContent.innerHTML = html;
+                popup.setResult(AiPopup.buildResultHtml(result.analysis, result.prompt));
             } else {
                 throw new Error(result.error || 'AI 분석 결과를 받지 못했습니다.');
             }
         } catch (error) {
             console.error('AI 분석 실패:', error);
-            aiContent.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle mr-1"></i>
-                    <strong>AI 분석 실패:</strong> ${error.message}
-                </div>
-            `;
+            popup.setError(error.message);
         } finally {
             // 버튼 복원
             aiBtn.disabled = false;

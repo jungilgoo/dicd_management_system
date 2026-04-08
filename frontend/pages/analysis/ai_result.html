@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 해석 결과</title>
+    <link rel="stylesheet" href="../../lib/css/source-sans-pro.css">
+    <link rel="stylesheet" href="../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../lib/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../css/style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+        }
+        .ai-popup-header {
+            background-color: #6f42c1;
+            color: #fff;
+            padding: 12px 18px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .ai-popup-header .title {
+            display: flex;
+            align-items: center;
+        }
+        .ai-popup-header .title i {
+            margin-right: 8px;
+        }
+        .ai-popup-context {
+            background-color: #ede9f6;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            color: #4a3978;
+            border-bottom: 1px solid #d6cce8;
+        }
+        .ai-popup-body {
+            padding: 18px 22px;
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+        .ai-popup-body h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #6f42c1;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 0.3rem;
+        }
+        .ai-popup-body ul {
+            padding-left: 1.2rem;
+        }
+        .ai-popup-body p {
+            margin-bottom: 0.5rem;
+        }
+        .ai-popup-loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .ai-popup-loading .spinner-border {
+            color: #6f42c1;
+        }
+        .ai-popup-loading p {
+            margin-top: 14px;
+            color: #6c757d;
+        }
+        .ai-popup-error {
+            margin: 20px;
+        }
+        .btn-prompt-toggle {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ai-popup-header">
+        <div class="title">
+            <i class="fas fa-robot"></i>
+            <span id="popup-title">AI 해석 결과</span>
+        </div>
+        <small id="popup-timestamp" style="opacity: 0.85;"></small>
+    </div>
+    <div class="ai-popup-context" id="popup-context" style="display: none;"></div>
+    <div class="ai-popup-body" id="popup-body">
+        <div class="ai-popup-loading">
+            <div class="spinner-border" role="status">
+                <span class="sr-only">로딩 중...</span>
+            </div>
+            <p>창을 준비 중입니다...</p>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const titleEl = document.getElementById('popup-title');
+            const contextEl = document.getElementById('popup-context');
+            const bodyEl = document.getElementById('popup-body');
+            const timestampEl = document.getElementById('popup-timestamp');
+
+            function setLoading(text) {
+                bodyEl.innerHTML = `
+                    <div class="ai-popup-loading">
+                        <div class="spinner-border" role="status">
+                            <span class="sr-only">로딩 중...</span>
+                        </div>
+                        <p>${text || 'AI가 분석하고 있습니다...'}</p>
+                    </div>
+                `;
+            }
+
+            function setResult(html) {
+                bodyEl.innerHTML = html;
+                const now = new Date();
+                timestampEl.textContent = now.toLocaleString('ko-KR');
+            }
+
+            function setError(message) {
+                bodyEl.innerHTML = `
+                    <div class="alert alert-danger ai-popup-error">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        <strong>AI 분석 실패:</strong> ${message}
+                    </div>
+                `;
+            }
+
+            window.addEventListener('message', function(event) {
+                const msg = event.data || {};
+                if (msg.type === 'init') {
+                    if (msg.title) {
+                        titleEl.textContent = msg.title;
+                        document.title = msg.title;
+                    }
+                    if (msg.contextHtml) {
+                        contextEl.innerHTML = msg.contextHtml;
+                        contextEl.style.display = 'block';
+                    }
+                    setLoading(msg.loadingText);
+                } else if (msg.type === 'result') {
+                    setResult(msg.html);
+                } else if (msg.type === 'error') {
+                    setError(msg.message);
+                }
+            });
+
+            // 부모 창에 준비 완료 알림
+            if (window.opener) {
+                try {
+                    window.opener.postMessage({ type: 'ready', popupName: window.name }, '*');
+                } catch (e) {
+                    console.error('opener postMessage 실패:', e);
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

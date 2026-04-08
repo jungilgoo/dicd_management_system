@@ -1368,22 +1368,6 @@ window.requestDistributionAiAnalysis = async function() {
     }
 
     const aiBtn = document.getElementById('ai-analysis-btn');
-    const aiCard = document.getElementById('ai-analysis-card');
-    const aiContent = document.getElementById('ai-analysis-content');
-
-    const originalBtnHtml = aiBtn.innerHTML;
-    aiBtn.disabled = true;
-    aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> AI 분석 중...';
-
-    aiCard.style.display = 'block';
-    aiContent.innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border" role="status" style="color: #6f42c1;">
-                <span class="sr-only">AI 분석 중...</span>
-            </div>
-            <p class="mt-2 text-muted">AI가 분포 데이터를 분석하고 있습니다... (약 5~10초 소요)</p>
-        </div>
-    `;
 
     // 컨텍스트 정보
     const productGroupSelect = document.getElementById('product-group');
@@ -1399,6 +1383,19 @@ window.requestDistributionAiAnalysis = async function() {
         const ed = document.getElementById('end-date')?.value || '';
         periodDesc = `${sd} ~ ${ed}`;
     }
+
+    // 별도 윈도우 창으로 AI 해석 표시
+    const popup = AiPopup.open({
+        type: 'distribution',
+        title: 'AI 분포 해석',
+        loadingText: 'AI가 분포 데이터를 분석하고 있습니다... (약 5~10초 소요)',
+        contextHtml: `<strong>${productGroup}</strong> | ${process} | <strong>${target}</strong> | ${periodDesc}`
+    });
+    if (!popup) return;
+
+    const originalBtnHtml = aiBtn.innerHTML;
+    aiBtn.disabled = true;
+    aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> AI 분석 중...';
 
     // 위치별 통계만 슬림화하여 전송 (히스토그램/PDF는 토큰 낭비)
     const slimPositionAnalysis = {};
@@ -1438,28 +1435,13 @@ window.requestDistributionAiAnalysis = async function() {
         const result = await response.json();
 
         if (result.success && result.analysis) {
-            let html = convertDistributionMarkdownToHtml(result.analysis);
-            if (result.prompt) {
-                html += `
-                    <hr>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                        <i class="fas fa-code mr-1"></i> 프롬프트 보기
-                    </button>
-                    <pre style="display: none; margin-top: 10px; padding: 12px; background: #f4f6f9; border-radius: 4px; font-size: 0.82rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto;">${result.prompt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-                `;
-            }
-            aiContent.innerHTML = html;
+            popup.setResult(AiPopup.buildResultHtml(result.analysis, result.prompt));
         } else {
             throw new Error(result.error || 'AI 분석 결과를 받지 못했습니다.');
         }
     } catch (error) {
         console.error('AI 분포 분석 실패:', error);
-        aiContent.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle mr-1"></i>
-                <strong>AI 분석 실패:</strong> ${error.message}
-            </div>
-        `;
+        popup.setError(error.message);
     } finally {
         aiBtn.disabled = false;
         aiBtn.innerHTML = originalBtnHtml;
