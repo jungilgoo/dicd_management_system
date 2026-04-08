@@ -242,11 +242,9 @@ async function runDistributionAnalysis(targetId, days) {
         
         updatePositionStatistics(data);
 
-        // AI 해석 버튼 표시 / 이전 결과 카드 숨김
+        // AI 해석 버튼 표시
         const aiBtn = document.getElementById('ai-analysis-btn');
         if (aiBtn) aiBtn.style.display = 'inline-block';
-        const aiCard = document.getElementById('ai-analysis-card');
-        if (aiCard) aiCard.style.display = 'none';
 
     } catch (error) {
         hideLoading();
@@ -1448,15 +1446,3 @@ window.requestDistributionAiAnalysis = async function() {
     }
 };
 
-function convertDistributionMarkdownToHtml(markdown) {
-    let html = markdown
-        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/^- (.+)$/gm, '<li>$1</li>')
-        .replace(/(<li>.*<\/li>\n?)+/g, function(match) {
-            return '<ul>' + match + '</ul>';
-        })
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>');
-    return '<p>' + html + '</p>';
-}

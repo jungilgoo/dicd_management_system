@@ -13,7 +13,7 @@
         .capability-gauge-container {
             margin-bottom: 10px;
         }
-        /* AI 분석 버튼/카드 스타일 */
+        /* AI 해석 버튼 스타일 */
         .btn-outline-purple {
             color: #6f42c1;
             border-color: #6f42c1;
@@ -22,29 +22,6 @@
             color: #fff;
             background-color: #6f42c1;
             border-color: #6f42c1;
-        }
-        .card-purple .card-header {
-            background-color: #6f42c1;
-            color: #fff;
-        }
-        .card-purple .card-header .btn-tool {
-            color: rgba(255,255,255,0.7);
-        }
-        #ai-analysis-content {
-            font-size: 0.95rem;
-            line-height: 1.7;
-        }
-        #ai-analysis-content h2 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-            color: #6f42c1;
-            border-bottom: 1px solid #e9ecef;
-            padding-bottom: 0.3rem;
-        }
-        #ai-analysis-content ul {
-            padding-left: 1.2rem;
         }
     </style>
 </head>
@@ -420,23 +397,6 @@
                             <div class="row mt-3">
                                 <div class="col-md-12">
                                     <div id="capability-diagnosis"></div>
-                                </div>
-                            </div>
-                            <!-- AI 분석 결과 -->
-                            <div class="row mt-3">
-                                <div class="col-md-12">
-                                    <div class="card card-outline card-purple" id="ai-analysis-card" style="display: none;">
-                                        <div class="card-header">
-                                            <h3 class="card-title"><i class="fas fa-robot mr-1"></i> AI 공정 해석</h3>
-                                            <div class="card-tools">
-                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                                    <i class="fas fa-minus"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="card-body" id="ai-analysis-content">
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                             <!-- 패턴 감지 결과 -->

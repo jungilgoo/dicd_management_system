@@ -426,11 +426,6 @@
         if (aiBtn) {
             aiBtn.style.display = 'inline-block';
         }
-        // 이전 AI 분석 결과 숨기기
-        const aiCard = document.getElementById('ai-analysis-card');
-        if (aiCard) {
-            aiCard.style.display = 'none';
-        }
     }
 
     // 차트 제목 생성 함수
@@ -3020,25 +3015,5 @@
             aiBtn.innerHTML = originalBtnHtml;
         }
     };
-
-    // 간단한 Markdown → HTML 변환
-    function convertMarkdownToHtml(markdown) {
-        let html = markdown
-            // ## 헤더
-            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-            // **볼드**
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            // - 리스트
-            .replace(/^- (.+)$/gm, '<li>$1</li>')
-            // 연속 li를 ul로 감싸기
-            .replace(/(<li>.*<\/li>\n?)+/g, function(match) {
-                return '<ul>' + match + '</ul>';
-            })
-            // 줄바꿈
-            .replace(/\n\n/g, '</p><p>')
-            .replace(/\n/g, '<br>');
-
-        return '<p>' + html + '</p>';
-    }
 
 })();
