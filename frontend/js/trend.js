@@ -313,7 +313,13 @@
             updateTrendChart(measurementsResult, statsResult, changePointsResult);
             updateStatsTable(statsResult);
             updateChartDataTable(measurementsResult);
-            
+
+            // AI 해석 버튼 표시 / 이전 결과 카드 숨김
+            const aiBtn = document.getElementById('ai-analysis-btn');
+            if (aiBtn) aiBtn.style.display = 'inline-block';
+            const aiCard = document.getElementById('ai-analysis-card');
+            if (aiCard) aiCard.style.display = 'none';
+
         } catch (error) {
             console.error('추이 분석 실패:', error);
             document.getElementById('trend-chart-container').innerHTML = `
@@ -1267,4 +1273,126 @@
         initTrendPage();
         // setupEventListeners()는 initTrendPage() 내에서 호출되므로 여기서 중복 호출하지 않음
     });
+
+    // AI 추이 해석 요청 (글로벌 노출)
+    window.requestTrendAiAnalysis = async function() {
+        if (!currentStats || !currentMeasurements) {
+            alert('먼저 추이 분석을 실행하세요.');
+            return;
+        }
+
+        const aiBtn = document.getElementById('ai-analysis-btn');
+        const aiCard = document.getElementById('ai-analysis-card');
+        const aiContent = document.getElementById('ai-analysis-content');
+
+        const originalBtnHtml = aiBtn.innerHTML;
+        aiBtn.disabled = true;
+        aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> AI 분석 중...';
+
+        aiCard.style.display = 'block';
+        aiContent.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border" role="status" style="color: #6f42c1;">
+                    <span class="sr-only">AI 분석 중...</span>
+                </div>
+                <p class="mt-2 text-muted">AI가 추이 데이터를 분석하고 있습니다... (약 5~10초 소요)</p>
+            </div>
+        `;
+
+        // 컨텍스트 정보
+        const productGroupSelect = document.getElementById('product-group');
+        const processSelect = document.getElementById('process');
+        const targetSelect = document.getElementById('target');
+        const periodSelect = document.getElementById('analysis-period');
+        const productGroup = productGroupSelect ? productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '' : '';
+        const process = processSelect ? processSelect.options[processSelect.selectedIndex]?.text || '' : '';
+        const target = targetSelect ? targetSelect.options[targetSelect.selectedIndex]?.text || '' : '';
+        let periodDesc = periodSelect ? periodSelect.options[periodSelect.selectedIndex]?.text || '' : '';
+        if (periodSelect && periodSelect.value === 'custom') {
+            const sd = document.getElementById('start-date')?.value || '';
+            const ed = document.getElementById('end-date')?.value || '';
+            periodDesc = `${sd} ~ ${ed}`;
+        }
+
+        // 측정값 슬림화 (최근 100개, 필요한 필드만)
+        const slimMeasurements = (currentMeasurements || [])
+            .slice(-100)
+            .map(m => ({
+                created_at: m.created_at,
+                lot_no: m.lot_no,
+                avg: m.avg,
+                top: m.top, center: m.center, bottom: m.bottom, left: m.left, right: m.right
+            }));
+
+        const trendData = {
+            sample_count: currentStats.sample_count,
+            overall_statistics: currentStats.overall_statistics,
+            process_capability: currentStats.process_capability,
+            spec: currentStats.spec,
+            position_statistics: currentStats.position_statistics,
+            measurements: slimMeasurements,
+            change_points: currentChangePoints || [],
+            period_desc: periodDesc
+        };
+
+        try {
+            const response = await fetch('/api/ai/analyze/trend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    trend_data: trendData,
+                    product_group: productGroup,
+                    process: process,
+                    target: target
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success && result.analysis) {
+                let html = convertTrendMarkdownToHtml(result.analysis);
+                if (result.prompt) {
+                    html += `
+                        <hr>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                            <i class="fas fa-code mr-1"></i> 프롬프트 보기
+                        </button>
+                        <pre style="display: none; margin-top: 10px; padding: 12px; background: #f4f6f9; border-radius: 4px; font-size: 0.82rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto;">${result.prompt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                    `;
+                }
+                aiContent.innerHTML = html;
+            } else {
+                throw new Error(result.error || 'AI 분석 결과를 받지 못했습니다.');
+            }
+        } catch (error) {
+            console.error('AI 추이 분석 실패:', error);
+            aiContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle mr-1"></i>
+                    <strong>AI 분석 실패:</strong> ${error.message}
+                </div>
+            `;
+        } finally {
+            aiBtn.disabled = false;
+            aiBtn.innerHTML = originalBtnHtml;
+        }
+    };
+
+    function convertTrendMarkdownToHtml(markdown) {
+        let html = markdown
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>\n?)+/g, function(match) {
+                return '<ul>' + match + '</ul>';
+            })
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+        return '<p>' + html + '</p>';
+    }
 })();

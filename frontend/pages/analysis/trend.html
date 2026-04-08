@@ -299,11 +299,27 @@
                         </div>
                     </div>
 
+                    <!-- AI 해석 결과 카드 -->
+                    <div class="card card-outline card-purple" id="ai-analysis-card" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-robot mr-1"></i> AI 추이 해석</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" id="ai-analysis-content"></div>
+                    </div>
+
                     <!-- 통계 분석 결과 카드 -->
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title"><i class="fas fa-calculator mr-1"></i> 통계 분석 결과</h3>
                             <div class="card-tools">
+                                <button type="button" class="btn btn-sm btn-outline-purple mr-2" id="ai-analysis-btn" style="display: none;" onclick="requestTrendAiAnalysis()">
+                                    <i class="fas fa-robot mr-1"></i> AI 해석
+                                </button>
                                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                     <i class="fas fa-minus"></i>
                                 </button>
