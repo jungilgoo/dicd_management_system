@@ -8,6 +8,41 @@
     <link rel="stylesheet" href="../../lib/css/all.min.css">
     <link rel="stylesheet" href="../../lib/css/adminlte.min.css">
     <link rel="stylesheet" href="../../css/style.css">
+    <style>
+        /* AI 분석 버튼/카드 스타일 (SPC/추이 페이지와 동일) */
+        .btn-outline-purple {
+            color: #6f42c1;
+            border-color: #6f42c1;
+        }
+        .btn-outline-purple:hover {
+            color: #fff;
+            background-color: #6f42c1;
+            border-color: #6f42c1;
+        }
+        .card-purple .card-header {
+            background-color: #6f42c1;
+            color: #fff;
+        }
+        .card-purple .card-header .btn-tool {
+            color: rgba(255,255,255,0.7);
+        }
+        #ai-analysis-content {
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+        #ai-analysis-content h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #6f42c1;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 0.3rem;
+        }
+        #ai-analysis-content ul {
+            padding-left: 1.2rem;
+        }
+    </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
@@ -213,6 +248,19 @@
 
                     <!-- 분석 결과 섹션 -->
                     <div id="analysis-result" style="display: none;">
+                        <!-- AI 해석 결과 카드 -->
+                        <div class="card card-outline card-purple" id="ai-analysis-card" style="display: none;">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-robot mr-1"></i> AI 분포 해석</h3>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body" id="ai-analysis-content"></div>
+                        </div>
+
                         <!-- 분포 분석 결과 카드 -->
                         <div class="card">
                             <div class="card-header">
@@ -221,6 +269,9 @@
                                     <span id="analysis-title">분포 분석 결과</span>
                                 </h3>
                                 <div class="card-tools">
+                                    <button type="button" class="btn btn-sm btn-outline-purple mr-2" id="ai-analysis-btn" style="display: none;" onclick="requestDistributionAiAnalysis()">
+                                        <i class="fas fa-robot mr-1"></i> AI 해석
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-success" id="download-distribution-chart-btn">
                                         <i class="fas fa-download mr-1"></i> 차트 다운로드
                                     </button>

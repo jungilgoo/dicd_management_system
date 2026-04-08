@@ -241,7 +241,13 @@ async function runDistributionAnalysis(targetId, days) {
         updatePositionChart();
         
         updatePositionStatistics(data);
-        
+
+        // AI 해석 버튼 표시 / 이전 결과 카드 숨김
+        const aiBtn = document.getElementById('ai-analysis-btn');
+        if (aiBtn) aiBtn.style.display = 'inline-block';
+        const aiCard = document.getElementById('ai-analysis-card');
+        if (aiCard) aiCard.style.display = 'none';
+
     } catch (error) {
         hideLoading();
         $('#initial-message').show();
@@ -1350,4 +1356,125 @@ function generateDistributionChartFileName() {
 // 알림 표시 함수
 function showNotification(message) {
     alert(message);
+}
+
+// ============================
+// AI 분포 해석 기능
+// ============================
+window.requestDistributionAiAnalysis = async function() {
+    if (!currentData) {
+        alert('먼저 분포 분석을 실행하세요.');
+        return;
+    }
+
+    const aiBtn = document.getElementById('ai-analysis-btn');
+    const aiCard = document.getElementById('ai-analysis-card');
+    const aiContent = document.getElementById('ai-analysis-content');
+
+    const originalBtnHtml = aiBtn.innerHTML;
+    aiBtn.disabled = true;
+    aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> AI 분석 중...';
+
+    aiCard.style.display = 'block';
+    aiContent.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border" role="status" style="color: #6f42c1;">
+                <span class="sr-only">AI 분석 중...</span>
+            </div>
+            <p class="mt-2 text-muted">AI가 분포 데이터를 분석하고 있습니다... (약 5~10초 소요)</p>
+        </div>
+    `;
+
+    // 컨텍스트 정보
+    const productGroupSelect = document.getElementById('product-group');
+    const processSelect = document.getElementById('process');
+    const targetSelect = document.getElementById('target');
+    const periodSelect = document.getElementById('analysis-period');
+    const productGroup = productGroupSelect ? productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '' : '';
+    const process = processSelect ? processSelect.options[processSelect.selectedIndex]?.text || '' : '';
+    const target = targetSelect ? targetSelect.options[targetSelect.selectedIndex]?.text || '' : '';
+    let periodDesc = periodSelect ? periodSelect.options[periodSelect.selectedIndex]?.text || '' : '';
+    if (periodSelect && periodSelect.value === 'custom') {
+        const sd = document.getElementById('start-date')?.value || '';
+        const ed = document.getElementById('end-date')?.value || '';
+        periodDesc = `${sd} ~ ${ed}`;
+    }
+
+    // 위치별 통계만 슬림화하여 전송 (히스토그램/PDF는 토큰 낭비)
+    const slimPositionAnalysis = {};
+    if (currentData.position_analysis) {
+        for (const [pos, pa] of Object.entries(currentData.position_analysis)) {
+            if (pa && pa.stats) {
+                slimPositionAnalysis[pos] = { stats: pa.stats };
+            }
+        }
+    }
+
+    const distributionData = {
+        sample_count: currentData.sample_count,
+        distribution_stats: currentData.distribution_stats,
+        spec: currentData.spec,
+        position_analysis: slimPositionAnalysis,
+        period_desc: periodDesc
+    };
+
+    try {
+        const response = await fetch('/api/ai/analyze/distribution', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                distribution_data: distributionData,
+                product_group: productGroup,
+                process: process,
+                target: target
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.analysis) {
+            let html = convertDistributionMarkdownToHtml(result.analysis);
+            if (result.prompt) {
+                html += `
+                    <hr>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                        <i class="fas fa-code mr-1"></i> 프롬프트 보기
+                    </button>
+                    <pre style="display: none; margin-top: 10px; padding: 12px; background: #f4f6f9; border-radius: 4px; font-size: 0.82rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto;">${result.prompt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                `;
+            }
+            aiContent.innerHTML = html;
+        } else {
+            throw new Error(result.error || 'AI 분석 결과를 받지 못했습니다.');
+        }
+    } catch (error) {
+        console.error('AI 분포 분석 실패:', error);
+        aiContent.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle mr-1"></i>
+                <strong>AI 분석 실패:</strong> ${error.message}
+            </div>
+        `;
+    } finally {
+        aiBtn.disabled = false;
+        aiBtn.innerHTML = originalBtnHtml;
+    }
+};
+
+function convertDistributionMarkdownToHtml(markdown) {
+    let html = markdown
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>\n?)+/g, function(match) {
+            return '<ul>' + match + '</ul>';
+        })
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+    return '<p>' + html + '</p>';
 }

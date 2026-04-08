@@ -502,3 +502,177 @@ async def analyze_trend_with_ai(trend_data: dict) -> dict:
             "success": False,
             "error": f"AI 분석 중 오류가 발생했습니다: {str(e)}"
         }
+
+
+def _build_distribution_prompt(dist_data: dict) -> str:
+    """분포 분석 데이터를 기반으로 프롬프트 생성"""
+
+    stats = dist_data.get("distribution_stats", {}) or {}
+    spec = dist_data.get("spec", {}) or {}
+    position_analysis = dist_data.get("position_analysis", {}) or {}
+    sample_count = dist_data.get("sample_count", 0)
+
+    product_group = dist_data.get("product_group", "")
+    process = dist_data.get("process", "")
+    target = dist_data.get("target", "")
+    period_desc = dist_data.get("period_desc", "")
+
+    normality = stats.get("normality_test") or {}
+    norm_str = "N/A"
+    if isinstance(normality, dict) and normality:
+        norm_str = (
+            f"{normality.get('test', 'D\\'Agostino-Pearson')}, "
+            f"통계량 {normality.get('statistic', 'N/A')}, "
+            f"p-value {normality.get('p_value', 'N/A')}, "
+            f"정규성 {'만족' if normality.get('is_normal') else '불만족'}"
+        )
+
+    # 위치별 분포 통계 요약
+    pos_name = {"top": "상", "center": "중", "bottom": "하", "left": "좌", "right": "우"}
+    position_lines = []
+    for pos, pa in position_analysis.items():
+        if not isinstance(pa, dict):
+            continue
+        ps = pa.get("stats", {}) or {}
+        pn = ps.get("normality_test") or {}
+        is_normal = pn.get("is_normal") if isinstance(pn, dict) else None
+        position_lines.append(
+            f"  - {pos_name.get(pos, pos)}: 평균 {ps.get('mean', 'N/A')}, "
+            f"중앙값 {ps.get('median', 'N/A')}, 표준편차 {ps.get('std_dev', 'N/A')}, "
+            f"왜도 {ps.get('skewness', 'N/A')}, 첨도 {ps.get('kurtosis', 'N/A')}, "
+            f"정규성 {'만족' if is_normal else '불만족' if is_normal is not None else 'N/A'}"
+        )
+    position_summary = "\n".join(position_lines) if position_lines else "데이터 없음"
+
+    # SPEC 정보
+    spec_str = "정보 없음"
+    if spec:
+        spec_str = (
+            f"LSL {spec.get('lsl', 'N/A')} / USL {spec.get('usl', 'N/A')} / "
+            f"Target {spec.get('target', 'N/A')} / "
+            f"규격 내 비율 {spec.get('in_spec_percent', 'N/A')}%"
+        )
+
+    prompt = f"""당신은 반도체/디스플레이 공정의 분포(Distribution) 분석 전문가입니다.
+DICD(Developed Image Critical Dimension)는 포토리소그래피 공정에서 현상 후 패턴의 임계 치수를 측정한 값입니다.
+
+아래 분포 분석 데이터를 해석하고, 공정 엔지니어가 즉시 활용할 수 있는 실용적인 분석 결과를 제공하세요.
+SPC/추이 분석과 달리 본 분석은 **데이터의 분포 형태(정규성, 왜도, 첨도), SPEC 대비 분포 위치, 위치별 분포 차이**에 집중합니다.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[분석 대상]
+- 제품군: {product_group}
+- 공정: {process}
+- 타겟: {target}
+- 분석 기간: {period_desc}
+- 총 측정 수: {sample_count}개
+
+[SPEC 정보]
+- {spec_str}
+
+[분포 통계]
+- 평균: {stats.get('mean', 'N/A')}
+- 중앙값: {stats.get('median', 'N/A')}
+- 표준편차: {stats.get('std_dev', 'N/A')}
+- 왜도(Skewness): {stats.get('skewness', 'N/A')}
+- 첨도(Kurtosis, excess): {stats.get('kurtosis', 'N/A')}
+- 정규성 검정: {norm_str}
+
+[위치별 분포 통계 (웨이퍼 내 균일성)]
+{position_summary}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+아래 형식으로 분석 결과를 작성하세요:
+
+## 1. 분포 핵심 요약
+데이터 분포의 핵심 특성을 한 문장으로 요약하세요. (정규/치우침/이중봉/뾰족/평탄 등)
+
+## 2. 분포 형상 해석
+- 평균과 중앙값 비교를 통한 비대칭성
+- 왜도(Skewness): 부호와 크기에 따른 분포 치우침 해석 (|왜도| > 0.5 주의, > 1 명백한 치우침)
+- 첨도(Kurtosis): 분포의 뾰족함/평탄도 해석 (양수=뾰족, 음수=평탄)
+- 정규성 검정 결과의 의미와 신뢰도
+
+## 3. SPEC 대비 분포 평가
+분포 중심이 SPEC Target에 정렬되어 있는지, 분포 폭(±3σ)이 SPEC 한계 내에 들어가는지 평가하세요.
+규격 외 발생 가능성과 그 방향(USL/LSL 어느 쪽 위험)을 명시하세요.
+
+## 4. 위치별 분포 균일성
+상/중/하/좌/우 위치별 평균/표준편차/왜도/첨도를 비교하여 웨이퍼 내 분포 균일성을 진단하세요.
+특정 위치에서 분포 형태가 다르다면 그 의미를 설명하세요.
+
+## 5. 원인 추정
+관찰된 분포 비정규성/편향의 가능한 공정적 원인을 가능성 높음/낮음으로 구분하여 제시하세요.
+(노광 균일성, 현상 균일성, PR 도포 두께 편차, 핫플레이트 온도 분포, 측정 노이즈, 이상치 혼입 등)
+
+## 6. 조치 권고
+구체적이고 실행 가능한 모니터링/개선 조치를 우선순위별로 제시하세요.
+
+## 7. 위험도 평가
+🟢 양호 / 🟡 주의 / 🔴 위험 중 하나로 평가하고 근거를 간단히 설명하세요.
+
+한국어로 답변하세요.
+결과는 역피라미드 구조(가장 중요한 결론이 맨 앞)로 작성할 것.
+수치 해석에 매몰되지 말고, 실제 물리적 공정과의 연결고리를 강화할 것.
+공정 엔지니어가 이해할 수 있도록 전문 용어를 적절히 사용하되, 명확하게 설명하세요."""
+
+    return prompt
+
+
+async def analyze_distribution_with_ai(dist_data: dict) -> dict:
+    """분포 분석 데이터를 Gemini API로 분석"""
+
+    api_key = _load_api_key()
+    if not api_key:
+        return {
+            "success": False,
+            "error": "Gemini API 키가 설정되지 않았습니다. config.json에 GEMINI_API_KEY를 추가하세요."
+        }
+
+    try:
+        import google.generativeai as genai
+    except ImportError:
+        return {
+            "success": False,
+            "error": "google-generativeai 패키지가 설치되지 않았습니다. pip install google-generativeai 를 실행하세요."
+        }
+
+    prompt = _build_distribution_prompt(dist_data)
+
+    logger.info("=" * 60)
+    logger.info("[AI 분석] 분포 분석 프롬프트:")
+    logger.info("=" * 60)
+    logger.info(prompt)
+    logger.info("=" * 60)
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+
+        response = await model.generate_content_async(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.3,
+                top_p=0.9,
+                top_k=40,
+                max_output_tokens=8192,
+            )
+        )
+
+        logger.info("[AI 분석] 분포 분석 응답:")
+        logger.info("=" * 60)
+        logger.info(response.text)
+        logger.info("=" * 60)
+
+        return {
+            "success": True,
+            "analysis": response.text,
+            "prompt": prompt
+        }
+
+    except Exception as e:
+        logger.error(f"Gemini API 호출 실패(분포): {e}")
+        return {
+            "success": False,
+            "error": f"AI 분석 중 오류가 발생했습니다: {str(e)}"
+        }

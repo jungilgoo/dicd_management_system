@@ -2,7 +2,11 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 
-from ..services.ai_analysis import analyze_spc_with_ai, analyze_trend_with_ai
+from ..services.ai_analysis import (
+    analyze_spc_with_ai,
+    analyze_trend_with_ai,
+    analyze_distribution_with_ai,
+)
 
 router = APIRouter(
     prefix="/api/ai",
@@ -53,6 +57,30 @@ async def analyze_trend(request: TrendAnalysisRequest):
     trend_data["target"] = request.target
 
     result = await analyze_trend_with_ai(trend_data)
+
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    return result
+
+
+class DistributionAnalysisRequest(BaseModel):
+    """분포 분석 AI 요청 스키마"""
+    distribution_data: Dict[str, Any]
+    product_group: Optional[str] = ""
+    process: Optional[str] = ""
+    target: Optional[str] = ""
+
+
+@router.post("/analyze/distribution")
+async def analyze_distribution(request: DistributionAnalysisRequest):
+    """분포 분석 데이터를 AI로 해석"""
+    dist_data = request.distribution_data
+    dist_data["product_group"] = request.product_group
+    dist_data["process"] = request.process
+    dist_data["target"] = request.target
+
+    result = await analyze_distribution_with_ai(dist_data)
 
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
