@@ -1320,7 +1320,7 @@
             .map(m => ({
                 created_at: m.created_at,
                 lot_no: m.lot_no,
-                avg: m.avg,
+                avg: m.avg_value,
                 top: m.top, center: m.center, bottom: m.bottom, left: m.left, right: m.right
             }));
 
