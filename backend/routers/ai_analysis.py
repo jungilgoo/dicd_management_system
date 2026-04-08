@@ -6,6 +6,7 @@ from ..services.ai_analysis import (
     analyze_spc_with_ai,
     analyze_trend_with_ai,
     analyze_distribution_with_ai,
+    analyze_boxplot_with_ai,
 )
 
 router = APIRouter(
@@ -81,6 +82,30 @@ async def analyze_distribution(request: DistributionAnalysisRequest):
     dist_data["target"] = request.target
 
     result = await analyze_distribution_with_ai(dist_data)
+
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    return result
+
+
+class BoxplotAnalysisRequest(BaseModel):
+    """박스플롯 분석 AI 요청 스키마"""
+    boxplot_data: Dict[str, Any]
+    product_group: Optional[str] = ""
+    process: Optional[str] = ""
+    target: Optional[str] = ""
+
+
+@router.post("/analyze/boxplot")
+async def analyze_boxplot(request: BoxplotAnalysisRequest):
+    """박스플롯 분석 데이터를 AI로 해석"""
+    bp_data = request.boxplot_data
+    bp_data["product_group"] = request.product_group
+    bp_data["process"] = request.process
+    bp_data["target"] = request.target
+
+    result = await analyze_boxplot_with_ai(bp_data)
 
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])

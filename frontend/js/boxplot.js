@@ -1,5 +1,7 @@
 // 전역 변수
 let boxplotChart = null;
+let currentBoxplotData = null;
+let currentGroupBy = 'equipment';
 
 // 페이지 로드 시 초기화
 $(document).ready(function() {
@@ -233,17 +235,30 @@ async function performAnalysis() {
         
         // 박스플롯 API 호출
         const boxplotData = await api.getBoxplotData(targetId, groupBy, params);
-        
+
+        // 현재 데이터 저장 (AI 해석용)
+        currentBoxplotData = boxplotData;
+        currentGroupBy = groupBy;
+
         // 차트 렌더링
         renderSimpleBoxPlot(boxplotData);
-        
+
         // 통계 테이블 렌더링
         renderStatsTable(boxplotData);
-        
+
+        // AI 해석 버튼 표시
+        const aiBtn = document.getElementById('ai-analysis-btn');
+        if (aiBtn) {
+            aiBtn.style.display = (boxplotData && boxplotData.groups && boxplotData.groups.length > 0) ? '' : 'none';
+        }
+
         // 로딩 숨기기
         hideLoading();
     } catch (error) {
         hideLoading();
+        currentBoxplotData = null;
+        const aiBtn = document.getElementById('ai-analysis-btn');
+        if (aiBtn) aiBtn.style.display = 'none';
         console.error('박스플롯 분석 오류:', error);
         
         let errorMessage = '박스플롯 분석 중 오류가 발생했습니다.';
@@ -738,3 +753,105 @@ function generateBoxplotChartFileName() {
 function showNotification(message) {
     alert(message);
 }
+
+// ============================
+// AI 박스플롯 해석 기능
+// ============================
+window.requestBoxplotAiAnalysis = async function() {
+    if (!currentBoxplotData || !currentBoxplotData.groups || currentBoxplotData.groups.length === 0) {
+        alert('먼저 박스플롯 분석을 실행하세요.');
+        return;
+    }
+
+    const aiBtn = document.getElementById('ai-analysis-btn');
+
+    // 컨텍스트 정보
+    const productGroupSelect = document.getElementById('product-group-select');
+    const processSelect = document.getElementById('process-select');
+    const targetSelect = document.getElementById('target-select');
+    const daysSelect = document.getElementById('days-select');
+    const productGroup = productGroupSelect ? productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '' : '';
+    const process = processSelect ? processSelect.options[processSelect.selectedIndex]?.text || '' : '';
+    const target = targetSelect ? targetSelect.options[targetSelect.selectedIndex]?.text || '' : '';
+
+    let periodDesc = '';
+    const periodValue = daysSelect ? daysSelect.value : '';
+    if (periodValue === 'custom') {
+        const sd = document.getElementById('start-date')?.value || '';
+        const ed = document.getElementById('end-date')?.value || '';
+        periodDesc = `${sd} ~ ${ed}`;
+    } else {
+        const periodMap = {'7':'최근 7일','14':'최근 14일','30':'최근 30일','60':'최근 60일','90':'최근 90일'};
+        periodDesc = periodMap[periodValue] || `최근 ${periodValue}일`;
+    }
+
+    const groupByLabel = currentGroupBy === 'equipment' ? '장비 기준' : '디바이스 기준';
+
+    // 별도 윈도우 창으로 AI 해석 표시
+    const popup = AiPopup.open({
+        type: 'boxplot',
+        title: 'AI 박스플롯 해석',
+        loadingText: 'AI가 박스플롯 데이터를 분석하고 있습니다... (약 5~10초 소요)',
+        contextHtml: `<strong>${productGroup}</strong> | ${process} | <strong>${target}</strong> | ${periodDesc} | ${groupByLabel}`
+    });
+    if (!popup) return;
+
+    const originalBtnHtml = aiBtn.innerHTML;
+    aiBtn.disabled = true;
+    aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> AI 분석 중...';
+
+    // 그룹 데이터 슬림화 (원시 측정값은 제외, 요약 통계만 전송)
+    const slimGroups = (currentBoxplotData.groups || []).map(g => ({
+        name: g.name,
+        count: g.count,
+        min: g.min,
+        q1: g.q1,
+        median: g.median,
+        q3: g.q3,
+        max: g.max,
+        whisker_min: g.whisker_min,
+        whisker_max: g.whisker_max,
+        outlier_count: g.outliers ? g.outliers.length : 0,
+        outliers: g.outliers ? g.outliers.slice(0, 10) : []
+    }));
+
+    const boxplotPayload = {
+        group_by: currentGroupBy,
+        groups: slimGroups,
+        spec: currentBoxplotData.spec || {},
+        period_desc: periodDesc,
+        sample_count: slimGroups.reduce((s, g) => s + (g.count || 0), 0)
+    };
+
+    try {
+        const response = await fetch('/api/ai/analyze/boxplot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                boxplot_data: boxplotPayload,
+                product_group: productGroup,
+                process: process,
+                target: target
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.analysis) {
+            popup.setResult(AiPopup.buildResultHtml(result.analysis, result.prompt));
+        } else {
+            throw new Error(result.error || 'AI 분석 결과를 받지 못했습니다.');
+        }
+    } catch (error) {
+        console.error('AI 박스플롯 분석 실패:', error);
+        popup.setError(error.message);
+    } finally {
+        aiBtn.disabled = false;
+        aiBtn.innerHTML = originalBtnHtml;
+    }
+};

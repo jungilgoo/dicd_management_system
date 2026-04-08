@@ -8,6 +8,18 @@
     <link rel="stylesheet" href="../../lib/css/all.min.css">
     <link rel="stylesheet" href="../../lib/css/adminlte.min.css">
     <link rel="stylesheet" href="../../css/style.css">
+    <style>
+        /* AI 해석 버튼 스타일 */
+        .btn-outline-purple {
+            color: #6f42c1;
+            border-color: #6f42c1;
+        }
+        .btn-outline-purple:hover {
+            color: #fff;
+            background-color: #6f42c1;
+            border-color: #6f42c1;
+        }
+    </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
@@ -231,6 +243,9 @@
                             <i class="fas fa-chart-bar mr-1"></i> 박스플롯 분석 결과
                         </h3>
                         <div class="card-tools">
+                            <button type="button" class="btn btn-sm btn-outline-purple mr-2" id="ai-analysis-btn" style="display: none;" onclick="requestBoxplotAiAnalysis()">
+                                <i class="fas fa-robot mr-1"></i> AI 해석
+                            </button>
                             <button type="button" class="btn btn-sm btn-success" id="download-boxplot-chart-btn">
                                 <i class="fas fa-download mr-1"></i> 차트 다운로드
                             </button>
@@ -326,6 +341,7 @@
 <script src="../../lib/js/chart.min.js"></script>
 <script src="../../js/config.js"></script>
 <script src="../../js/api.js"></script>
+<script src="../../js/ai_popup.js"></script>
 <script src="../../js/boxplot.js"></script>
 <script src="../../js/utils.js"></script>
 </body>

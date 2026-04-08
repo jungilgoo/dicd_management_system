@@ -677,3 +677,246 @@ async def analyze_distribution_with_ai(dist_data: dict) -> dict:
             "success": False,
             "error": f"AI 분석 중 오류가 발생했습니다: {str(e)}"
         }
+
+
+def _build_boxplot_prompt(bp_data: dict) -> str:
+    """박스플롯 분석 데이터를 기반으로 프롬프트 생성"""
+
+    group_by = bp_data.get("group_by", "equipment")
+    groups = bp_data.get("groups", []) or []
+    spec = bp_data.get("spec", {}) or {}
+    sample_count = bp_data.get("sample_count", 0)
+    period_desc = bp_data.get("period_desc", "")
+
+    product_group = bp_data.get("product_group", "")
+    process = bp_data.get("process", "")
+    target = bp_data.get("target", "")
+
+    group_by_label = "장비(Equipment)" if group_by == "equipment" else "디바이스(Device)"
+
+    usl = spec.get("usl")
+    lsl = spec.get("lsl")
+    target_val = spec.get("target")
+
+    def _num(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    # 그룹별 요약 라인
+    group_lines = []
+    medians = []
+    iqrs = []
+    for g in groups:
+        name = g.get("name", "")
+        cnt = g.get("count", 0)
+        gmin = g.get("min", "N/A")
+        q1 = g.get("q1", "N/A")
+        med = g.get("median", "N/A")
+        q3 = g.get("q3", "N/A")
+        gmax = g.get("max", "N/A")
+        outlier_count = g.get("outlier_count", 0)
+
+        q1n, q3n, medn = _num(q1), _num(q3), _num(med)
+        iqr_str = "N/A"
+        if q1n is not None and q3n is not None:
+            iqr_val = q3n - q1n
+            iqr_str = f"{iqr_val:.4f}"
+            iqrs.append(iqr_val)
+        if medn is not None:
+            medians.append(medn)
+
+        # SPEC 밖 여부 표시
+        spec_flag = ""
+        uslv, lslv = _num(usl), _num(lsl)
+        gmaxn, gminn = _num(gmax), _num(gmin)
+        if uslv is not None and gmaxn is not None and gmaxn > uslv:
+            spec_flag += " [USL 초과]"
+        if lslv is not None and gminn is not None and gminn < lslv:
+            spec_flag += " [LSL 미만]"
+
+        outliers_preview = g.get("outliers") or []
+        outliers_str = ""
+        if outliers_preview:
+            outliers_str = " / 이상치 샘플: " + ", ".join(
+                f"{_num(v):.3f}" if _num(v) is not None else str(v) for v in outliers_preview[:5]
+            )
+
+        group_lines.append(
+            f"  - {name} (n={cnt}): min={gmin}, Q1={q1}, median={med}, Q3={q3}, max={gmax}, "
+            f"IQR={iqr_str}, 이상치={outlier_count}건{spec_flag}{outliers_str}"
+        )
+    group_summary = "\n".join(group_lines) if group_lines else "데이터 없음"
+
+    # 그룹 간 비교 요약
+    compare_lines = []
+    if len(medians) >= 2:
+        med_min, med_max = min(medians), max(medians)
+        compare_lines.append(
+            f"- 중앙값 범위: {med_min:.4f} ~ {med_max:.4f} (그룹 간 중앙값 격차 {med_max - med_min:.4f})"
+        )
+    if len(iqrs) >= 2:
+        iqr_min, iqr_max = min(iqrs), max(iqrs)
+        compare_lines.append(
+            f"- IQR 범위: {iqr_min:.4f} ~ {iqr_max:.4f} (최대 IQR / 최소 IQR 비 ≈ "
+            f"{(iqr_max / iqr_min) if iqr_min > 0 else float('inf'):.2f})"
+        )
+    compare_summary = "\n".join(compare_lines) if compare_lines else "비교 불가"
+
+    spec_str = (
+        f"LSL {lsl if lsl is not None else 'N/A'} / "
+        f"USL {usl if usl is not None else 'N/A'} / "
+        f"Target {target_val if target_val is not None else 'N/A'}"
+    )
+
+    # group_by에 따라 관점별 지침 문구 변경
+    if group_by == "equipment":
+        perspective_note = (
+            "본 분석은 **장비(Equipment) 간 편차**에 초점을 둡니다. "
+            "같은 공정/타겟 조건에서 장비별 중앙값·산포(IQR)·이상치 차이를 비교하여 "
+            "장비 간 편차(machine-to-machine variation), 특정 호기의 치우침/산포 확대, "
+            "장비 캘리브레이션 상태, 챔버/스테이지/노광원의 건전성을 진단합니다."
+        )
+        cause_hint = (
+            "(노광 장비 광량/포커스 드리프트, 현상 장비 노즐/온도 편차, 스테이지 정렬, "
+            "장비 간 캘리브레이션 차이, 특정 호기의 PM 필요성, 챔버 컨디션 등)"
+        )
+        section3_title = "## 3. 장비 간 편차 평가"
+        section3_desc = (
+            "장비별 중앙값 편차와 IQR 차이를 비교하여 장비 간 편차의 크기와 방향을 평가하세요. "
+            "특정 호기가 타 호기 대비 뚜렷이 높거나 낮거나 산포가 큰 경우 그 의미를 설명하세요."
+        )
+    else:
+        perspective_note = (
+            "본 분석은 **디바이스(Device) 간 편차**에 초점을 둡니다. "
+            "같은 공정/타겟 조건에서 디바이스(제품 모델/레이아웃)별 중앙값·산포(IQR)·이상치 차이를 비교하여 "
+            "디바이스별 공정 윈도우 차이, 레이아웃/패턴 의존성, 특정 디바이스의 공정 최적화 필요성을 진단합니다."
+        )
+        cause_hint = (
+            "(디바이스별 패턴 밀도/레이아웃 차이, OPC 보정 차이, "
+            "디바이스별 PR 두께/현상 시간 최적화 차이, 마스크 품질 차이 등)"
+        )
+        section3_title = "## 3. 디바이스 간 편차 평가"
+        section3_desc = (
+            "디바이스별 중앙값 편차와 IQR 차이를 비교하여 디바이스 간 공정 편차를 평가하세요. "
+            "특정 디바이스가 SPEC 여유도 측면에서 취약한지, 공정 윈도우 재설정이 필요한지 판단하세요."
+        )
+
+    prompt = f"""당신은 반도체/디스플레이 포토리소그래피 공정의 박스플롯(Boxplot) 비교 분석 전문가입니다.
+DICD(Developed Image Critical Dimension)는 포토리소그래피 공정에서 현상 후 패턴의 임계 치수를 측정한 값입니다.
+
+{perspective_note}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[분석 대상]
+- 제품군: {product_group}
+- 공정: {process}
+- 타겟: {target}
+- 분석 기간: {period_desc}
+- 그룹화 기준: {group_by_label}
+- 총 측정 수: {sample_count}개
+- 그룹 수: {len(groups)}개
+
+[SPEC 정보]
+- {spec_str}
+
+[그룹별 박스플롯 통계]
+{group_summary}
+
+[그룹 간 비교 요약]
+{compare_summary}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+아래 형식으로 분석 결과를 작성하세요:
+
+## 1. 박스플롯 핵심 요약
+{group_by_label} 간 비교의 핵심을 한 문장으로 요약하세요. (그룹 간 일관성/편차/이상치 집중 등)
+
+## 2. 그룹별 중심·산포 해석
+각 그룹의 중앙값 위치와 IQR(박스 높이)을 SPEC 및 Target 대비 해석하세요.
+중앙값이 Target에서 얼마나 벗어나 있는지, 어떤 그룹이 산포가 크고 작은지 구체적으로 기술하세요.
+
+{section3_title}
+{section3_desc}
+
+## 4. 이상치 및 SPEC 위반 분석
+이상치가 집중된 그룹과 그 수량을 평가하고, 위스커가 SPEC(USL/LSL)을 초과한 그룹을 명시하세요.
+단순 이상치인지 구조적 문제인지 구분하여 해석하세요.
+
+## 5. 원인 추정
+관찰된 그룹 간 편차·이상치·치우침의 가능한 공정적 원인을 가능성 높음/낮음으로 구분하여 제시하세요.
+{cause_hint}
+
+## 6. 조치 권고
+구체적이고 실행 가능한 모니터링/개선 조치를 우선순위별로 제시하세요.
+(예: 특정 그룹 집중 모니터링, 캘리브레이션/PM 권고, 공정 조건 재설정, 이상치 LOT 재분석 등)
+
+## 7. 위험도 평가
+🟢 양호 / 🟡 주의 / 🔴 위험 중 하나로 평가하고 근거를 간단히 설명하세요.
+
+한국어로 답변하세요.
+결과는 역피라미드 구조(가장 중요한 결론이 맨 앞)로 작성할 것.
+수치 해석에 매몰되지 말고, 실제 물리적 공정({('장비' if group_by == 'equipment' else '디바이스/레이아웃')} 관점)과의 연결고리를 강화할 것.
+공정 엔지니어가 이해할 수 있도록 전문 용어를 적절히 사용하되, 명확하게 설명하세요."""
+
+    return prompt
+
+
+async def analyze_boxplot_with_ai(bp_data: dict) -> dict:
+    """박스플롯 분석 데이터를 Gemini API로 분석"""
+
+    api_key = _load_api_key()
+    if not api_key:
+        return {
+            "success": False,
+            "error": "Gemini API 키가 설정되지 않았습니다. config.json에 GEMINI_API_KEY를 추가하세요."
+        }
+
+    try:
+        import google.generativeai as genai
+    except ImportError:
+        return {
+            "success": False,
+            "error": "google-generativeai 패키지가 설치되지 않았습니다. pip install google-generativeai 를 실행하세요."
+        }
+
+    prompt = _build_boxplot_prompt(bp_data)
+
+    logger.info("=" * 60)
+    logger.info("[AI 분석] 박스플롯 분석 프롬프트:")
+    logger.info("=" * 60)
+    logger.info(prompt)
+    logger.info("=" * 60)
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+
+        response = await model.generate_content_async(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.3,
+                top_p=0.9,
+                top_k=40,
+                max_output_tokens=8192,
+            )
+        )
+
+        logger.info("[AI 분석] 박스플롯 분석 응답:")
+        logger.info("=" * 60)
+        logger.info(response.text)
+        logger.info("=" * 60)
+
+        return {
+            "success": True,
+            "analysis": response.text,
+            "prompt": prompt
+        }
+
+    except Exception as e:
+        logger.error(f"Gemini API 호출 실패(박스플롯): {e}")
+        return {
+            "success": False,
+            "error": f"AI 분석 중 오류가 발생했습니다: {str(e)}"
+        }
