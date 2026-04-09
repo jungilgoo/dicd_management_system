@@ -54,10 +54,10 @@
             startDate: moment().subtract(7, 'days'),
             endDate: moment(),
             ranges: {
-               '오늘': [moment(), moment()],
-               '어제': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
                '최근 7일': [moment().subtract(6, 'days'), moment()],
                '최근 30일': [moment().subtract(29, 'days'), moment()],
+               '최근 3개월': [moment().subtract(3, 'month'), moment()],
+               '최근 6개월': [moment().subtract(6, 'month'), moment()],
                '이번 달': [moment().startOf('month'), moment().endOf('month')],
                '지난 달': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
             },
