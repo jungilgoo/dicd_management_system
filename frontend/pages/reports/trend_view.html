@@ -188,33 +188,64 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <!-- 날짜 선택 -->
-                            <div class="col-md-4">
+                            <!-- 필터 모드 선택 -->
+                            <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>날짜 범위</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text">
-                                                <i class="far fa-calendar-alt"></i>
-                                            </span>
+                                    <label>필터 모드</label>
+                                    <div class="btn-group btn-group-toggle btn-group-sm" data-toggle="buttons" id="filter-mode-toggle">
+                                        <label class="btn btn-outline-primary active">
+                                            <input type="radio" name="filterMode" value="date" checked> 날짜
+                                        </label>
+                                        <label class="btn btn-outline-primary">
+                                            <input type="radio" name="filterMode" value="points"> 포인트
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 날짜 필터 섹션 -->
+                            <div id="date-filter-section">
+                                <!-- 날짜 선택 -->
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>날짜 범위</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    <i class="far fa-calendar-alt"></i>
+                                                </span>
+                                            </div>
+                                            <input type="text" class="form-control" id="date-range">
                                         </div>
-                                        <input type="text" class="form-control" id="date-range">
+                                    </div>
+                                </div>
+
+                                <!-- 빠른 날짜 선택 -->
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>빠른 선택</label>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary" data-range="7">1주일</button>
+                                            <button type="button" class="btn btn-outline-secondary" data-range="30">1개월</button>
+                                            <button type="button" class="btn btn-outline-secondary" data-range="90">3개월</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- 빠른 날짜 선택 -->
-                            <div class="col-md-3">
+
+                            <!-- 포인트 수 선택 (포인트 모드에서만 표시) -->
+                            <div class="col-md-3" id="point-count-section" style="display: none;">
                                 <div class="form-group">
-                                    <label>빠른 선택</label>
+                                    <label>데이터 포인트 수</label>
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-secondary" data-range="7">1주일</button>
-                                        <button type="button" class="btn btn-outline-secondary" data-range="30">1개월</button>
-                                        <button type="button" class="btn btn-outline-secondary" data-range="90">3개월</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-points="30">30개</button>
+                                        <button type="button" class="btn btn-outline-secondary active" data-points="50">50개</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-points="100">100개</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-points="200">200개</button>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- 버튼 -->
                             <div class="col-md-5 text-right">
                                 <div class="form-group">

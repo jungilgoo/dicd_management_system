@@ -112,19 +112,23 @@ def calculate_process_capability(
         "cpl": round(cpl, 3)
     }
 
-def get_process_statistics(db: Session, target_id: int, start_date=None, end_date=None) -> Dict[str, Any]:
+def get_process_statistics(db: Session, target_id: int, start_date=None, end_date=None, last_n=None) -> Dict[str, Any]:
     """
     특정 타겟에 대한 공정 통계 계산
     """
     # 쿼리 설정
     query = db.query(models.Measurement).filter(models.Measurement.target_id == target_id)
-    
-    if start_date:
-        query = query.filter(models.Measurement.created_at >= start_date)
-    if end_date:
-        query = query.filter(models.Measurement.created_at <= end_date)
-    
-    measurements = query.all()
+
+    if last_n:
+        # 최근 N개 포인트 모드
+        query = query.order_by(models.Measurement.created_at.desc()).limit(last_n)
+        measurements = list(reversed(query.all()))
+    else:
+        if start_date:
+            query = query.filter(models.Measurement.created_at >= start_date)
+        if end_date:
+            query = query.filter(models.Measurement.created_at <= end_date)
+        measurements = query.all()
     
     # 측정값 추출
     all_values = []

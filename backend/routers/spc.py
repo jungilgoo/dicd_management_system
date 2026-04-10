@@ -17,30 +17,31 @@ def analyze_spc_data(
     days: Optional[int] = Query(30, description="분석할 기간(일)"),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    last_n: Optional[int] = Query(None, description="최근 N개 데이터 포인트"),
     db: Session = Depends(database.get_db)
 ):
     """
     특정 타겟에 대한 SPC 분석 수행
     """
-    # 사용자 지정 날짜 처리
+    # last_n 모드일 경우 날짜 필터 건너뜀
     custom_start_date = None
     custom_end_date = None
-    
-    if start_date and end_date:
+
+    if not last_n and start_date and end_date:
         try:
             custom_start_date = datetime.strptime(start_date, "%Y-%m-%d")
             custom_end_date = datetime.strptime(end_date, "%Y-%m-%d")
-            # 종료일은 해당 일자의 마지막 시간으로 설정
             custom_end_date = custom_end_date.replace(hour=23, minute=59, second=59)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
-    
+
     result = spc.analyze_spc(
-        db, 
-        target_id=target_id, 
+        db,
+        target_id=target_id,
         days=days,
         start_date=custom_start_date,
-        end_date=custom_end_date
+        end_date=custom_end_date,
+        last_n=last_n
     )
     
     if result["sample_count"] == 0:

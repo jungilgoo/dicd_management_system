@@ -44,6 +44,7 @@ def read_measurements(
     days: Optional[int] = Query(7, description="최근 일수 (기본 1주)"),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    last_n: Optional[int] = Query(None, description="최근 N개 데이터 포인트"),
     equipment_id: Optional[int] = None,
     keyword: Optional[str] = None,
     exact_match: bool = Query(False, description="키워드 정확히 일치 여부"),
@@ -57,7 +58,10 @@ def read_measurements(
         start_datetime = None
         end_datetime = None
 
-        if start_date and end_date:
+        if last_n:
+            # 최근 N개 포인트 모드: 날짜 필터 건너뜀, limit으로 처리
+            limit = last_n
+        elif start_date and end_date:
             try:
                 start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
                 end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
@@ -169,6 +173,10 @@ def read_measurements(
                 "spec_usl": spec.usl if spec else None,
             }
             result.append(item)
+
+        # last_n 모드: DB가 desc 정렬이므로 시간순(asc)으로 뒤집기
+        if last_n:
+            result.reverse()
 
         return {"items": result, "total_count": total_count}
 

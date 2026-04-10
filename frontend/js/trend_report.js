@@ -1,3 +1,7 @@
+// 필터 모드 상태 관리
+let currentFilterMode = 'date'; // 'date' or 'points'
+let currentPointCount = 50;     // 기본 포인트 수
+
 // 선택된 타겟 목록을 관리하는 클래스
 class TargetManager {
     constructor() {
@@ -613,59 +617,60 @@ class DataLoader {
     }
     
     // 측정 데이터 로드
-    async loadMeasurementData(targetId, startDate, endDate) {
+    async loadMeasurementData(targetId, startDate, endDate, lastN) {
         try {
-            const cacheKey = this.getCacheKey(targetId, startDate, endDate);
-            
+            const cacheKey = lastN
+                ? `${targetId}_lastN_${lastN}`
+                : this.getCacheKey(targetId, startDate, endDate);
+
             // 캐시 확인
-            if (this.cache[cacheKey] && 
+            if (this.cache[cacheKey] &&
                 (Date.now() - this.cache[cacheKey].timestamp) < this.cacheTimeout) {
                 return this.cache[cacheKey].data;
             }
-            
+
             // 데이터 가져오기
             const params = {
                 target_id: targetId,
                 process_type: window.PROCESS_TYPE || 'PHOTO'
             };
-            
-            // 날짜 범위 처리
-            if (startDate && endDate) {
+
+            if (lastN) {
+                // 포인트 모드: last_n만 전송, 날짜 파라미터 생략
+                params.last_n = lastN;
+            } else if (startDate && endDate) {
+                // 날짜 모드: 기존 로직
                 params.start_date = startDate;
                 params.end_date = endDate;
-                
-                // days 계산 (백엔드가 days 파라미터를 사용하는 경우를 위해)
+
                 const start = new Date(startDate);
-                const end = new Date(endDate);
                 const today = new Date();
-                
                 const diffTime = Math.abs(today - start);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
-                params.days = diffDays + 1; // 오늘을 포함하기 위해 +1
+                params.days = diffDays + 1;
             }
-            
+
             const response = await api.getMeasurements(params);
-            
-            // 날짜 필터링 (백엔드가 직접 필터링을 지원하지 않는 경우)
+
+            // 날짜 필터링 (포인트 모드에서는 건너뜀)
             let filteredResponse = response;
-            
-            if (startDate && endDate) {
+
+            if (!lastN && startDate && endDate) {
                 const startDateTime = new Date(startDate).getTime();
-                const endDateTime = new Date(endDate).getTime() + 86400000; // 끝 날짜를 포함하기 위해 하루 추가
-                
+                const endDateTime = new Date(endDate).getTime() + 86400000;
+
                 filteredResponse = response.filter(item => {
                     const itemDate = new Date(item.created_at).getTime();
                     return itemDate >= startDateTime && itemDate <= endDateTime;
                 });
             }
-            
+
             // 데이터 캐싱
             this.cache[cacheKey] = {
                 data: filteredResponse,
                 timestamp: Date.now()
             };
-            
+
             return filteredResponse;
         } catch (error) {
             console.error('측정 데이터 로드 오류:', error);
@@ -674,26 +679,30 @@ class DataLoader {
     }
     
     // Spec 데이터 로드
-    async loadSpecData(targetId, startDate, endDate) {
+    async loadSpecData(targetId, startDate, endDate, lastN) {
         try {
-            const cacheKey = `spec_${targetId}_${startDate}_${endDate}`;
-            
+            const cacheKey = lastN
+                ? `spec_${targetId}_lastN_${lastN}`
+                : `spec_${targetId}_${startDate}_${endDate}`;
+
             // 캐시 확인
-            if (this.cache[cacheKey] && 
+            if (this.cache[cacheKey] &&
                 (Date.now() - this.cache[cacheKey].timestamp) < this.cacheTimeout) {
                 return this.cache[cacheKey].data;
             }
-            
+
             // 활성 SPEC 가져오기
             const response = await api.getActiveSpec(targetId);
-            
+
             // SPEC이 있는 경우에만 통계 정보 가져오기
             if (response) {
                 try {
                     // SPC API를 사용하여 동일한 방식으로 Cp 계산
                     let apiParams = {};
-                    
-                    if (startDate && endDate) {
+
+                    if (lastN) {
+                        apiParams.last_n = lastN;
+                    } else if (startDate && endDate) {
                         apiParams.start_date = startDate;
                         apiParams.end_date = endDate;
                     } else {
@@ -787,7 +796,36 @@ async function initialize() {
 
 // 이벤트 리스너 설정
 function setupEventListeners() {
-    
+
+    // 필터 모드 토글
+    document.querySelectorAll('#filter-mode-toggle input[name="filterMode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            currentFilterMode = e.target.value;
+            const dateSection = document.getElementById('date-filter-section');
+            const pointSection = document.getElementById('point-count-section');
+            if (currentFilterMode === 'points') {
+                dateSection.style.display = 'none';
+                pointSection.style.display = '';
+            } else {
+                dateSection.style.display = '';
+                pointSection.style.display = 'none';
+            }
+            dataLoader.invalidateCache();
+            refreshAllCharts();
+        });
+    });
+
+    // 포인트 수 선택 버튼
+    document.querySelectorAll('[data-points]').forEach(button => {
+        button.addEventListener('click', (e) => {
+            document.querySelectorAll('[data-points]').forEach(b => b.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            currentPointCount = parseInt(e.currentTarget.dataset.points);
+            dataLoader.invalidateCache();
+            refreshAllCharts();
+        });
+    });
+
     // 빠른 날짜 선택 버튼 클릭
     document.querySelectorAll('[data-range]').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -1302,19 +1340,20 @@ $(document).on('change', '#targets-checklist-body input[type="checkbox"]', funct
 }
 
 // 단일 차트 로드
-async function loadChart(targetInfo, startDate, endDate) {
+async function loadChart(targetInfo, startDate, endDate, lastN) {
     try {
-        // 측정 데이터 로드 - 날짜 범위 명시적 전달
-        const measurements = await dataLoader.loadMeasurementData(targetInfo.targetId, startDate, endDate);
-        
-        // SPEC 데이터 로드 - 날짜 범위 전달
-        const specData = await dataLoader.loadSpecData(targetInfo.targetId, startDate, endDate);
-        
+        // 측정 데이터 로드
+        const measurements = await dataLoader.loadMeasurementData(targetInfo.targetId, startDate, endDate, lastN);
+
+        // SPEC 데이터 로드
+        const specData = await dataLoader.loadSpecData(targetInfo.targetId, startDate, endDate, lastN);
+
         // 데이터가 없는 경우 빈 차트 표시
         if (!measurements || measurements.length === 0) {
-            console.warn(`타겟 ID ${targetInfo.targetId}에 대한 측정 데이터가 없습니다. (${startDate} ~ ${endDate})`);
+            const filterDesc = lastN ? `최근 ${lastN}개` : `${startDate} ~ ${endDate}`;
+            console.warn(`타겟 ID ${targetInfo.targetId}에 대한 측정 데이터가 없습니다. (${filterDesc})`);
         }
-        
+
         // 차트 생성
         chartManager.createChart(targetInfo, measurements || [], specData);
     } catch (error) {
@@ -1326,22 +1365,28 @@ async function loadChart(targetInfo, startDate, endDate) {
  async function loadAllCharts() {
     try {
         const targets = targetManager.getAllTargets();
-        
+
         if (targets.length === 0) {
             document.getElementById('empty-charts-message').style.display = 'block';
             return;
         }
-        
-        // 현재 선택된 날짜 범위 가져오기
-        const dateRangeValue = document.getElementById('date-range').value;
-        const [startDateStr, endDateStr] = dateRangeValue.split(' - ');
-        
+
         // 로딩 표시
         document.getElementById('loading-indicator').style.display = 'block';
-        
-        // 모든 차트 로드
-        for (const target of targets) {
-            await loadChart(target, startDateStr, endDateStr);
+
+        if (currentFilterMode === 'points') {
+            // 포인트 모드: 최근 N개 데이터
+            for (const target of targets) {
+                await loadChart(target, null, null, currentPointCount);
+            }
+        } else {
+            // 날짜 모드: 기존 로직
+            const dateRangeValue = document.getElementById('date-range').value;
+            const [startDateStr, endDateStr] = dateRangeValue.split(' - ');
+
+            for (const target of targets) {
+                await loadChart(target, startDateStr, endDateStr, null);
+            }
         }
     } catch (error) {
         console.error('차트 로드 오류:', error);
