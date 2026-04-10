@@ -801,13 +801,13 @@ function setupEventListeners() {
     document.querySelectorAll('#filter-mode-toggle input[name="filterMode"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             currentFilterMode = e.target.value;
-            const dateSection = document.getElementById('date-filter-section');
+            const dateSections = document.querySelectorAll('.date-filter-section');
             const pointSection = document.getElementById('point-count-section');
             if (currentFilterMode === 'points') {
-                dateSection.style.display = 'none';
+                dateSections.forEach(el => el.style.display = 'none');
                 pointSection.style.display = '';
             } else {
-                dateSection.style.display = '';
+                dateSections.forEach(el => el.style.display = '');
                 pointSection.style.display = 'none';
             }
             dataLoader.invalidateCache();
