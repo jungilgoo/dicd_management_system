@@ -824,6 +824,8 @@ window.requestBoxplotAiAnalysis = async function() {
     };
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000);
         const response = await fetch('/api/ai/analyze/boxplot', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -832,8 +834,10 @@ window.requestBoxplotAiAnalysis = async function() {
                 product_group: productGroup,
                 process: process,
                 target: target
-            })
+            }),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));

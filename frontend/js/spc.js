@@ -2983,6 +2983,8 @@
         aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> AI 분석 중...';
 
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 180000);
             const response = await fetch('/api/ai/analyze/spc', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2991,8 +2993,10 @@
                     product_group: productGroup,
                     process: process,
                     target: target
-                })
+                }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
