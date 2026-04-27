@@ -441,6 +441,46 @@ class API {
         }
     }
     
+    // 위치별 편차 분석 통계 조회
+    async getSiteAnalysis(targetId, params = {}) {
+        const baseUrl = this.baseUrl.replace('/api', '');
+        const url = `${baseUrl}/api${this.endpoints.DISTRIBUTION}/site-analysis/${targetId}`;
+        try {
+            const queryParams = new URLSearchParams();
+            Object.keys(params).forEach(key => {
+                if (params[key] !== null && params[key] !== undefined) {
+                    queryParams.append(key, params[key]);
+                }
+            });
+            const response = await fetch(`${url}?${queryParams.toString()}`);
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('위치별 편차 분석 API 요청 오류:', error);
+            throw error;
+        }
+    }
+
+    // 위치별 편차 추이 데이터 조회
+    async getSiteTrend(targetId, params = {}) {
+        const baseUrl = this.baseUrl.replace('/api', '');
+        const url = `${baseUrl}/api${this.endpoints.DISTRIBUTION}/site-trend/${targetId}`;
+        try {
+            const queryParams = new URLSearchParams();
+            Object.keys(params).forEach(key => {
+                if (params[key] !== null && params[key] !== undefined) {
+                    queryParams.append(key, params[key]);
+                }
+            });
+            const response = await fetch(`${url}?${queryParams.toString()}`);
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('위치별 편차 추이 API 요청 오류:', error);
+            throw error;
+        }
+    }
+
     // 박스플롯 분석용 메서드
     async getBoxplotData(targetId, groupBy, params = { days: 30 }) {
         // 호환성을 위해 숫자 타입 처리

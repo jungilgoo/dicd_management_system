@@ -20,6 +20,8 @@ $(document).ready(function() {
 function initDistributionPage() {
     // 제품군 목록 가져오기
     fetchProductGroups();
+    // 장비 필터 드롭다운 초기화
+    loadEquipmentFilters();
 }
 
 // 이벤트 리스너 등록 함수
@@ -87,6 +89,14 @@ function setupEventListeners() {
     // 차트 다운로드 버튼 클릭 이벤트
     $('#download-distribution-chart-btn').on('click', function() {
         downloadDistributionChart();
+    });
+
+    // 장비 필터 변경 시 편차 분석 섹션 재로드 (PHOTO: 코팅/노광/현상, ETCH: 코팅/에칭)
+    $('#coating-equipment, #exposure-equipment, #development-equipment, #etch-equipment').on('change', function() {
+        const targetId = $('#target').val();
+        if (targetId && $('#site-deviation-card').is(':visible')) {
+            loadSiteDeviationSection(targetId);
+        }
     });
 }
 
@@ -245,6 +255,9 @@ async function runDistributionAnalysis(targetId, days) {
         // AI 해석 버튼 표시
         const aiBtn = document.getElementById('ai-analysis-btn');
         if (aiBtn) aiBtn.style.display = 'inline-block';
+
+        // 위치별 편차 분석 섹션 로드
+        loadSiteDeviationSection(targetId);
 
     } catch (error) {
         hideLoading();
@@ -1354,6 +1367,408 @@ function generateDistributionChartFileName() {
 // 알림 표시 함수
 function showNotification(message) {
     alert(message);
+}
+
+// ============================
+// 위치별 편차 분석 기능
+// ============================
+
+// 차트 인스턴스 보관
+let siteDeviationChart = null;
+let siteRangeChart = null;
+let siteBoxplotChart = null;
+
+// 5-point 위치 색상 (명세서 4.2 ③)
+const SITE_COLORS = {
+    T: { border: '#E74C3C', bg: 'rgba(231,76,60,0.15)' },
+    C: { border: '#2C3E50', bg: 'rgba(44,62,80,0.15)'  },
+    B: { border: '#3498DB', bg: 'rgba(52,152,219,0.15)' },
+    L: { border: '#27AE60', bg: 'rgba(39,174,96,0.15)'  },
+    R: { border: '#F39C12', bg: 'rgba(243,156,18,0.15)' },
+};
+const SITE_ORDER = ['T', 'L', 'C', 'R', 'B'];
+const SITE_NAMES = { T: '상(T)', C: '중(C)', B: '하(B)', L: '좌(L)', R: '우(R)' };
+
+// 장비 필터 셀렉트 초기화 (PHOTO: 코팅/노광/현상, ETCH: 코팅/에칭)
+async function loadEquipmentFilters() {
+    try {
+        const equipments = await api.getEquipments();
+        const fillSelect = (selector, list) => {
+            const $sel = $(selector);
+            if ($sel.length === 0) return; // 해당 페이지에 없는 셀렉터는 무시
+            $sel.find('option:not(:first)').remove();
+            list.forEach(e => $sel.append(`<option value="${e.id}">${e.name}</option>`));
+        };
+        fillSelect('#coating-equipment',     equipments.filter(e => e.type === '코팅'));
+        fillSelect('#exposure-equipment',    equipments.filter(e => e.type === '노광'));
+        fillSelect('#development-equipment', equipments.filter(e => e.type === '현상'));
+        fillSelect('#etch-equipment',        equipments.filter(e => e.type === '에칭'));
+    } catch (e) {
+        console.warn('장비 목록 로드 실패:', e);
+    }
+}
+
+// 편차 분석 섹션 메인 진입점
+async function loadSiteDeviationSection(targetId) {
+    $('#site-deviation-card').show();
+
+    const days       = $('#analysis-period').val();
+    const startDate  = $('#start-date').val();
+    const endDate    = $('#end-date').val();
+    const params     = utils.prepareApiDateParams(days, startDate, endDate);
+
+    // 장비 필터 추가 (PHOTO: 코팅/노광/현상, ETCH: 코팅/에칭)
+    const coatingId     = $('#coating-equipment').val()     || undefined;
+    const exposureId    = $('#exposure-equipment').val()    || undefined;
+    const developmentId = $('#development-equipment').val() || undefined;
+    const etchEqId      = $('#etch-equipment').val()        || undefined;
+    if (coatingId)     params.coating_equipment_id     = coatingId;
+    if (exposureId)    params.exposure_equipment_id    = exposureId;
+    if (developmentId) params.development_equipment_id = developmentId;
+    if (etchEqId)      params.etch_equipment_id        = etchEqId;
+
+    try {
+        const [analysisData, trendData] = await Promise.all([
+            api.getSiteAnalysis(targetId, params),
+            api.getSiteTrend(targetId, params),
+        ]);
+
+        renderWaferMap(analysisData.site_statistics);
+        renderSiteBoxplot(analysisData.site_statistics);
+        renderSiteDeviationChart(trendData);
+        renderSiteRangeChart(trendData);
+        renderSiteSummaryTable(analysisData.site_statistics);
+        renderPatternResult(analysisData.pattern_analysis, analysisData.range_statistics);
+    } catch (e) {
+        console.error('위치별 편차 분석 로드 실패:', e);
+        $('#site-deviation-card').hide();
+    }
+}
+
+// ① Wafer Map (D3.js)
+function renderWaferMap(siteStats) {
+    const svg = d3.select('#wafer-map');
+    svg.selectAll('*').remove();
+
+    const W = 270, CX = W / 2, CY = W / 2, R = 110;
+
+    // 편차 범위 계산
+    const devs   = siteStats.map(s => s.deviation_mean);
+    const maxAbs = Math.max(Math.abs(Math.min(...devs)), Math.abs(Math.max(...devs))) || 0.01;
+    const colorScale = d3.scaleLinear()
+        .domain([-maxAbs, 0, maxAbs])
+        .range(['#3498DB', '#ffffff', '#E74C3C']);
+
+    // Wafer 원
+    svg.append('circle').attr('cx', CX).attr('cy', CY).attr('r', R)
+        .attr('fill', '#f8f9fa').attr('stroke', '#6c757d').attr('stroke-width', 2);
+
+    // Notch (하단 삼각형)
+    svg.append('polygon')
+        .attr('points', `${CX - 7},${CY + R - 2} ${CX + 7},${CY + R - 2} ${CX},${CY + R + 10}`)
+        .attr('fill', '#6c757d');
+
+    // 위치 좌표
+    const POS = {
+        T: { x: CX,       y: CY - 65 },
+        C: { x: CX,       y: CY      },
+        B: { x: CX,       y: CY + 65 },
+        L: { x: CX - 65,  y: CY      },
+        R: { x: CX + 65,  y: CY      },
+    };
+
+    const tooltip = d3.select('body').select('#wafer-tooltip').empty()
+        ? d3.select('body').append('div').attr('id', 'wafer-tooltip')
+              .style('position', 'absolute').style('background', 'rgba(0,0,0,0.75)')
+              .style('color', '#fff').style('padding', '6px 10px').style('border-radius', '4px')
+              .style('font-size', '12px').style('pointer-events', 'none').style('display', 'none')
+        : d3.select('#wafer-tooltip');
+
+    siteStats.forEach(s => {
+        const pos = POS[s.site];
+        if (!pos) return;
+        const g = svg.append('g').attr('transform', `translate(${pos.x},${pos.y})`);
+
+        g.append('circle').attr('r', 22)
+            .attr('fill', colorScale(s.deviation_mean))
+            .attr('stroke', '#495057').attr('stroke-width', 1.5);
+
+        g.append('text').attr('text-anchor', 'middle').attr('dy', '0.35em')
+            .attr('font-size', '11px').attr('font-weight', 'bold')
+            .text(s.deviation_mean >= 0 ? `+${s.deviation_mean.toFixed(3)}` : s.deviation_mean.toFixed(3));
+
+        g.on('mouseover', function(event) {
+            const cpkText = s.cpk !== null ? s.cpk.toFixed(2) : 'N/A';
+            tooltip.style('display', 'block')
+                .html(`<b>${s.site_name}</b><br>평균: ${s.mean.toFixed(4)}<br>σ: ${s.std.toFixed(4)}<br>Cpk: ${cpkText}`);
+        }).on('mousemove', function(event) {
+            tooltip.style('left', (event.pageX + 12) + 'px').style('top', (event.pageY - 28) + 'px');
+        }).on('mouseout', function() {
+            tooltip.style('display', 'none');
+        });
+    });
+
+    // 범례
+    const lg = svg.append('g').attr('transform', `translate(${CX - 60}, ${W - 18})`);
+    ['#3498DB', '#ffffff', '#E74C3C'].forEach((c, i) => {
+        lg.append('rect').attr('x', i * 40).attr('width', 40).attr('height', 8)
+            .attr('fill', c).attr('stroke', '#aaa').attr('stroke-width', 0.5);
+    });
+    lg.append('text').attr('x', 0).attr('y', 20).attr('font-size', '9px').text('음수');
+    lg.append('text').attr('x', 55).attr('y', 20).attr('font-size', '9px').attr('text-anchor', 'middle').text('0');
+    lg.append('text').attr('x', 120).attr('y', 20).attr('font-size', '9px').attr('text-anchor', 'end').text('양수');
+}
+
+// ② 위치별 박스플롯 (Chart.js scatter 커스텀)
+function renderSiteBoxplot(siteStats) {
+    const ctx = document.getElementById('site-boxplot-chart');
+    if (!ctx) return;
+    if (siteBoxplotChart) { siteBoxplotChart.destroy(); siteBoxplotChart = null; }
+
+    // 전체 평균 (모든 위치 mean의 평균)
+    const overallMean = siteStats.reduce((s, d) => s + d.mean, 0) / siteStats.length;
+
+    const datasets = SITE_ORDER.map(site => {
+        const s = siteStats.find(x => x.site === site);
+        if (!s) return null;
+        const q1 = s.mean - s.std;
+        const q3 = s.mean + s.std;
+        const idx = SITE_ORDER.indexOf(site);
+        return {
+            label: SITE_NAMES[site],
+            data: [{ x: idx, y: s.mean, q1, q3, min: s.min, max: s.max, median: s.median }],
+            backgroundColor: SITE_COLORS[site].bg,
+            borderColor: SITE_COLORS[site].border,
+            borderWidth: 2,
+            pointRadius: 0,
+        };
+    }).filter(Boolean);
+
+    siteBoxplotChart = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const d = ctx.raw;
+                            return [`평균: ${d.y.toFixed(4)}`, `Q1(μ-σ): ${d.q1.toFixed(4)}`, `Q3(μ+σ): ${d.q3.toFixed(4)}`, `Min: ${d.min.toFixed(4)}`, `Max: ${d.max.toFixed(4)}`];
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        meanLine: { type: 'line', yMin: overallMean, yMax: overallMean, borderColor: '#888', borderWidth: 1, borderDash: [5, 3], label: { content: '전체평균', display: true, position: 'start', font: { size: 10 } } }
+                    }
+                }
+            },
+            scales: {
+                x: { type: 'linear', min: -0.5, max: SITE_ORDER.length - 0.5, ticks: { callback: (v) => SITE_NAMES[SITE_ORDER[Math.round(v)]] || '' } },
+                y: { title: { display: true, text: window.PROCESS_TYPE === 'ETCH' ? 'FICD (㎛)' : 'DICD (㎛)' } },
+            },
+        },
+        plugins: [{
+            id: 'boxDrawer',
+            afterDatasetsDraw(chart) {
+                const { ctx: c, scales: { x, y } } = chart;
+                chart.data.datasets.forEach((ds, di) => {
+                    const meta = chart.getDatasetMeta(di);
+                    if (!meta.visible) return;
+                    const d = ds.data[0];
+                    const px = x.getPixelForValue(d.x);
+                    const bw = 30;
+                    c.save();
+                    c.strokeStyle = ds.borderColor;
+                    c.fillStyle   = ds.backgroundColor;
+                    c.lineWidth   = ds.borderWidth;
+                    // 박스
+                    const yQ1 = y.getPixelForValue(d.q1), yQ3 = y.getPixelForValue(d.q3);
+                    c.fillRect(px - bw / 2, yQ3, bw, yQ1 - yQ3);
+                    c.strokeRect(px - bw / 2, yQ3, bw, yQ1 - yQ3);
+                    // 중앙값 선
+                    const yMed = y.getPixelForValue(d.median);
+                    c.beginPath(); c.moveTo(px - bw / 2, yMed); c.lineTo(px + bw / 2, yMed); c.stroke();
+                    // 위스커
+                    [d.min, d.max].forEach(v => {
+                        const yv = y.getPixelForValue(v);
+                        c.beginPath(); c.moveTo(px, yv); c.lineTo(px, v === d.min ? yQ1 : yQ3); c.stroke();
+                        c.beginPath(); c.moveTo(px - bw / 4, yv); c.lineTo(px + bw / 4, yv); c.stroke();
+                    });
+                    c.restore();
+                });
+            }
+        }]
+    });
+}
+
+// ③ Site Deviation 추이 차트
+function renderSiteDeviationChart(trendData) {
+    const ctx = document.getElementById('site-deviation-chart');
+    if (!ctx) return;
+    if (siteDeviationChart) { siteDeviationChart.destroy(); siteDeviationChart = null; }
+
+    const { trend_data, control_limits } = trendData;
+    if (!trend_data || trend_data.length === 0) return;
+
+    const labels = trend_data.map(d => `${d.lot_no}-${d.wafer_no}`);
+    const datasets = SITE_ORDER.map(site => ({
+        label: SITE_NAMES[site],
+        data: trend_data.map(d => d.deviations[site]),
+        borderColor: SITE_COLORS[site].border,
+        backgroundColor: SITE_COLORS[site].bg,
+        borderWidth: 1.5,
+        pointRadius: 2,
+        tension: 0.3,
+        fill: false,
+    }));
+
+    // UCL/LCL annotation
+    const annotations = {};
+    if (control_limits) {
+        SITE_ORDER.forEach(site => {
+            const cl = control_limits[site];
+            if (!cl || cl.ucl === null) return;
+            annotations[`ucl_${site}`] = { type: 'line', yMin: cl.ucl, yMax: cl.ucl, borderColor: SITE_COLORS[site].border, borderWidth: 1, borderDash: [4, 3] };
+            annotations[`lcl_${site}`] = { type: 'line', yMin: cl.lcl, yMax: cl.lcl, borderColor: SITE_COLORS[site].border, borderWidth: 1, borderDash: [4, 3] };
+        });
+        annotations['zeroline'] = { type: 'line', yMin: 0, yMax: 0, borderColor: '#999', borderWidth: 1 };
+    }
+
+    siteDeviationChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'top' },
+                annotation: { annotations },
+                tooltip: {
+                    callbacks: {
+                        afterBody: (items) => {
+                            const idx = items[0]?.dataIndex;
+                            if (idx === undefined) return [];
+                            const d = trend_data[idx];
+                            const lines = [`Lot: ${d.lot_no} / Wafer: ${d.wafer_no}`];
+                            if (d.equipments) {
+                                if (d.equipments.coating)     lines.push(`코팅: ${d.equipments.coating}`);
+                                if (d.equipments.exposure)    lines.push(`노광: ${d.equipments.exposure}`);
+                                if (d.equipments.development) lines.push(`현상: ${d.equipments.development}`);
+                                if (d.equipments.etch)        lines.push(`에칭: ${d.equipments.etch}`);
+                            }
+                            return lines;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { ticks: { maxTicksLimit: 20, maxRotation: 45 } },
+                y: { title: { display: true, text: 'Site Deviation (㎛)' } },
+            },
+        }
+    });
+}
+
+// ④ Range 추이 차트
+function renderSiteRangeChart(trendData) {
+    const ctx = document.getElementById('site-range-chart');
+    if (!ctx) return;
+    if (siteRangeChart) { siteRangeChart.destroy(); siteRangeChart = null; }
+
+    const { trend_data, control_limits } = trendData;
+    if (!trend_data || trend_data.length === 0) return;
+
+    const labels    = trend_data.map(d => `${d.lot_no}-${d.wafer_no}`);
+    const rangeVals = trend_data.map(d => d.range_value);
+    const ucl       = control_limits?.range?.ucl ?? null;
+
+    const pointColors = rangeVals.map(v => (ucl !== null && v > ucl) ? '#E74C3C' : '#3498DB');
+
+    const annotations = {};
+    if (ucl !== null) {
+        annotations['range_ucl'] = { type: 'line', yMin: ucl, yMax: ucl, borderColor: '#E74C3C', borderWidth: 2, borderDash: [5, 3], label: { content: `UCL: ${ucl.toFixed(4)}`, display: true, position: 'end', font: { size: 10 } } };
+    }
+
+    siteRangeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Range (㎛)',
+                data: rangeVals,
+                borderColor: '#3498DB',
+                backgroundColor: 'rgba(52,152,219,0.1)',
+                borderWidth: 1.5,
+                pointRadius: rangeVals.map(v => (ucl !== null && v > ucl) ? 5 : 2),
+                pointBackgroundColor: pointColors,
+                tension: 0.2,
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, annotation: { annotations } },
+            scales: {
+                x: { ticks: { maxTicksLimit: 20, maxRotation: 45 } },
+                y: { beginAtZero: true, title: { display: true, text: 'Range (㎛)' } },
+            },
+        }
+    });
+}
+
+// ⑤ 요약 테이블
+function renderSiteSummaryTable(siteStats) {
+    const tbody = $('#site-summary-tbody');
+    tbody.empty();
+    SITE_ORDER.forEach(site => {
+        const s = siteStats.find(x => x.site === site);
+        if (!s) return;
+        const dot   = s.status === 'NORMAL' ? '🟢' : s.status === 'INSUFFICIENT_DATA' ? '🟡' : '🔴';
+        const label = s.status === 'NORMAL' ? '정상' : s.status === 'INSUFFICIENT_DATA' ? '데이터 부족' : '이상';
+        const cpk   = s.cpk !== null ? s.cpk.toFixed(2) : '-';
+        const devSign = s.deviation_mean >= 0 ? '+' : '';
+        tbody.append(`
+            <tr>
+                <td><span style="color:${SITE_COLORS[site].border}; font-weight:bold;">${s.site_name}</span></td>
+                <td>${s.mean.toFixed(4)}</td>
+                <td>${s.std.toFixed(4)}</td>
+                <td>${cpk}</td>
+                <td>${devSign}${s.deviation_mean.toFixed(4)}</td>
+                <td>${s.deviation_std.toFixed(4)}</td>
+                <td>${dot} ${label}</td>
+            </tr>
+        `);
+    });
+}
+
+// 패턴 판정 결과
+function renderPatternResult(patternAnalysis, rangeStatistics) {
+    const $el = $('#pattern-result');
+    if (!patternAnalysis) { $el.html('<p class="text-muted text-center mb-0">데이터 없음</p>'); return; }
+
+    const patterns = patternAnalysis.detected_patterns || [];
+    const isNormal = patterns.length === 1 && patterns[0].type === 'NORMAL';
+    const isInsuff = patterns.length === 1 && patterns[0].type === 'INSUFFICIENT_DATA';
+
+    let patternHtml = '';
+    if (isNormal) {
+        patternHtml = '<p class="text-success mb-1"><i class="fas fa-check-circle mr-1"></i>정상 범위 — 특이 패턴 없음</p>';
+    } else if (isInsuff) {
+        patternHtml = '<p class="text-warning mb-1"><i class="fas fa-exclamation-circle mr-1"></i>' + patterns[0].description + '</p>';
+    } else {
+        patternHtml = patterns.map(p => `<p class="text-danger mb-1"><i class="fas fa-exclamation-triangle mr-1"></i><strong>${p.type}</strong>: ${p.description}</p>`).join('');
+    }
+
+    let rangeHtml = '';
+    if (rangeStatistics) {
+        const rStatus = rangeStatistics.ucl !== null && rangeStatistics.max_observed > rangeStatistics.ucl ? '🔴 초과' : '🟢 정상';
+        const uclText = rangeStatistics.ucl !== null ? rangeStatistics.ucl.toFixed(4) : 'N/A';
+        rangeHtml = `<hr class="my-2"><p class="mb-0 small text-muted">Range 평균: <strong>${rangeStatistics.mean.toFixed(4)}㎛</strong> (UCL: ${uclText}㎛) ${rStatus}</p>`;
+    }
+
+    $el.html(`<h6 class="mb-2"><i class="fas fa-chart-pie mr-1"></i>공간 패턴 분석 결과</h6>${patternHtml}${rangeHtml}`);
 }
 
 // ============================

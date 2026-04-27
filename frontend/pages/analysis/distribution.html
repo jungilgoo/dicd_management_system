@@ -213,6 +213,33 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- 장비 필터 행 -->
+                            <div class="row" id="equipment-filter-row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="coating-equipment">코팅 장비</label>
+                                        <select class="form-control" id="coating-equipment">
+                                            <option value="">전체</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="exposure-equipment">노광 장비</label>
+                                        <select class="form-control" id="exposure-equipment">
+                                            <option value="">전체</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="development-equipment">현상 장비</label>
+                                        <select class="form-control" id="development-equipment">
+                                            <option value="">전체</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="row">
                                 <div class="col-12 text-right">
                                     <button type="button" class="btn btn-primary" id="analyze-btn">
@@ -430,7 +457,84 @@
                             </div>
                         </div>
                     </div>
-                    
+
+                    <!-- [신규] 위치별 편차 분석 카드 -->
+                    <div class="card mt-3" id="site-deviation-card" style="display:none;">
+                        <div class="card-header bg-dark">
+                            <h3 class="card-title text-white">
+                                <i class="fas fa-bullseye mr-1"></i> 위치별 편차 분석
+                            </h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool text-white" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- ① Wafer Map + ② 위치별 박스플롯 -->
+                            <div class="row">
+                                <div class="col-md-4 text-center">
+                                    <h6 class="text-muted mb-2">Wafer 편차 맵</h6>
+                                    <svg id="wafer-map" width="270" height="270"></svg>
+                                </div>
+                                <div class="col-md-8">
+                                    <h6 class="text-muted mb-2">위치별 박스플롯 (T / L / C / R / B)</h6>
+                                    <div style="height:260px;">
+                                        <canvas id="site-boxplot-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ③ Site Deviation 추이 -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h6 class="text-muted mb-2">Site Deviation 추이</h6>
+                                    <div style="height:350px;">
+                                        <canvas id="site-deviation-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ④ Range 추이 -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6 class="text-muted mb-2">Range 추이</h6>
+                                    <div style="height:250px;">
+                                        <canvas id="site-range-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ⑤ 요약 테이블 + 패턴 판정 -->
+                            <div class="row mt-4">
+                                <div class="col-md-8">
+                                    <h6 class="text-muted mb-2">위치별 통계 요약</h6>
+                                    <table class="table table-bordered table-sm text-center" id="site-summary-table">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>위치</th>
+                                                <th>평균(㎛)</th>
+                                                <th>σ(㎛)</th>
+                                                <th>Cpk</th>
+                                                <th>Dev 평균(㎛)</th>
+                                                <th>Dev σ(㎛)</th>
+                                                <th>상태</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="site-summary-tbody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6 class="text-muted mb-2">공간 패턴 분석 결과</h6>
+                                    <div id="pattern-result" class="card card-outline card-secondary p-3">
+                                        <p class="text-muted text-center mb-0">분석 후 표시됩니다.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 초기 안내 메시지 -->
                     <div id="initial-message" class="card">
                         <div class="card-body">
@@ -460,6 +564,7 @@
     <script src="../../lib/js/bootstrap.bundle.min.js"></script>
     <script src="../../lib/js/adminlte.min.js"></script>
     <script src="../../lib/js/chart.min.js"></script>
+    <script src="../../lib/js/chartjs-plugin-annotation.min.js"></script>
     <script src="../../lib/js/d3.min.js"></script>
     <script src="../../js/config.js"></script>
     <script src="../../js/api.js"></script>

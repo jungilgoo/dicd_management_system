@@ -6,6 +6,71 @@ from ..database import models
 from .spec_segments import build_spec_segments
 import math
 
+# 위치별 편차 분석에서 사용하는 5-point 위치 설정
+_SITE_CONFIG = [
+    {"site": "T", "site_name": "상(Top)",    "column": "value_top"},
+    {"site": "C", "site_name": "중(Center)", "column": "value_center"},
+    {"site": "B", "site_name": "하(Bottom)", "column": "value_bottom"},
+    {"site": "L", "site_name": "좌(Left)",   "column": "value_left"},
+    {"site": "R", "site_name": "우(Right)",  "column": "value_right"},
+]
+
+def _convert_numpy_types(obj):
+    """NumPy 타입을 Python 내장 타입으로 변환"""
+    if isinstance(obj, dict):
+        return {k: _convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_numpy_types(i) for i in obj]
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return _convert_numpy_types(obj.tolist())
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
+    return obj
+
+def _calculate_cpk(values: List[float], lsl: Optional[float], usl: Optional[float]) -> Optional[float]:
+    if not values or lsl is None or usl is None:
+        return None
+    mean = np.mean(values)
+    std = np.std(values, ddof=1)
+    if std == 0:
+        return None
+    return float(min((usl - mean) / (3 * std), (mean - lsl) / (3 * std)))
+
+def _build_measurement_query(
+    db: Session,
+    target_id: int,
+    days: int,
+    start_date: Optional[datetime],
+    end_date: Optional[datetime],
+    coating_equipment_id: Optional[int] = None,
+    exposure_equipment_id: Optional[int] = None,
+    development_equipment_id: Optional[int] = None,
+    etch_equipment_id: Optional[int] = None,
+):
+    if not start_date:
+        start_date = datetime.now() - timedelta(days=days)
+
+    query = db.query(models.Measurement).filter(
+        models.Measurement.target_id == target_id,
+        models.Measurement.created_at >= start_date,
+    )
+    if end_date:
+        query = query.filter(models.Measurement.created_at <= end_date)
+    if coating_equipment_id:
+        query = query.filter(models.Measurement.coating_equipment_id == coating_equipment_id)
+    if exposure_equipment_id:
+        query = query.filter(models.Measurement.exposure_equipment_id == exposure_equipment_id)
+    if development_equipment_id:
+        query = query.filter(models.Measurement.development_equipment_id == development_equipment_id)
+    if etch_equipment_id:
+        query = query.filter(models.Measurement.etch_equipment_id == etch_equipment_id)
+
+    return query.order_by(models.Measurement.created_at.asc())
+
 def calculate_histogram(values: List[float], bins: int = None) -> Dict[str, Any]:
     """
     히스토그램 데이터 계산 (최적의 bin 크기 사용)
@@ -248,3 +313,313 @@ def get_distribution_analysis(
     result = convert_numpy_types(result)
 
     return result
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 위치별 편차 분석 함수
+# ─────────────────────────────────────────────────────────────────────────────
+
+def detect_spatial_pattern(
+    ce_diff: float,
+    lr_asym: float,
+    tb_asym: float,
+    thresholds: Dict[str, float],
+) -> List[Dict[str, str]]:
+    """공간 패턴 자동 판정 (명세서 3.3)"""
+    patterns = []
+
+    if ce_diff > thresholds.get("ce_diff_ucl", float("inf")):
+        patterns.append({"type": "CENTER_HIGH", "description": "Center 측정값이 Edge 대비 유의하게 높음"})
+    elif ce_diff < thresholds.get("ce_diff_lcl", float("-inf")):
+        patterns.append({"type": "CENTER_LOW", "description": "Center 측정값이 Edge 대비 유의하게 낮음"})
+
+    if abs(lr_asym) > thresholds.get("lr_asym_3sigma", float("inf")):
+        direction = "Left > Right" if lr_asym > 0 else "Right > Left"
+        patterns.append({"type": "LR_ASYMMETRY", "description": f"좌우 비대칭 발생 ({direction})"})
+
+    if abs(tb_asym) > thresholds.get("tb_asym_3sigma", float("inf")):
+        direction = "Top > Bottom" if tb_asym > 0 else "Bottom > Top"
+        patterns.append({"type": "TB_ASYMMETRY", "description": f"상하 비대칭 발생 ({direction})"})
+
+    return patterns if patterns else [{"type": "NORMAL", "description": "정상 범위"}]
+
+
+def get_site_analysis(
+    db: Session,
+    target_id: int,
+    days: int = 30,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    coating_equipment_id: Optional[int] = None,
+    exposure_equipment_id: Optional[int] = None,
+    development_equipment_id: Optional[int] = None,
+    etch_equipment_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """위치별 편차 분석 통계 반환 (명세서 3.1)"""
+
+    measurements = _build_measurement_query(
+        db, target_id, days, start_date, end_date,
+        coating_equipment_id, exposure_equipment_id,
+        development_equipment_id, etch_equipment_id,
+    ).all()
+
+    if not measurements:
+        return {
+            "target_id": target_id,
+            "summary": {"total_wafers": 0, "message": "데이터 없음"},
+            "site_statistics": [],
+            "range_statistics": None,
+            "pattern_analysis": None,
+        }
+
+    active_spec = db.query(models.Spec).filter(
+        models.Spec.target_id == target_id,
+        models.Spec.is_active == True,
+    ).first()
+    lsl = active_spec.lsl if active_spec else None
+    usl = active_spec.usl if active_spec else None
+
+    all_avgs = [m.avg_value for m in measurements]
+    summary = {
+        "total_wafers": len(measurements),
+        "date_range": {
+            "start": min(m.created_at for m in measurements).strftime("%Y-%m-%d"),
+            "end":   max(m.created_at for m in measurements).strftime("%Y-%m-%d"),
+        },
+        "overall_mean": round(float(np.mean(all_avgs)), 4),
+        "overall_std":  round(float(np.std(all_avgs, ddof=1)) if len(all_avgs) > 1 else 0.0, 4),
+    }
+
+    insufficient = len(measurements) < 30
+
+    site_statistics = []
+    for cfg in _SITE_CONFIG:
+        col = cfg["column"]
+        vals = [v for v in (getattr(m, col) for m in measurements) if v is not None]
+        devs = [getattr(m, col) - m.avg_value for m in measurements
+                if getattr(m, col) is not None and m.avg_value is not None]
+
+        mean_v   = float(np.mean(vals))
+        std_v    = float(np.std(vals, ddof=1)) if len(vals) > 1 else 0.0
+        dev_mean = float(np.mean(devs))
+        dev_std  = float(np.std(devs, ddof=1)) if len(devs) > 1 else 0.0
+
+        if insufficient:
+            ucl = lcl = None
+            status = "INSUFFICIENT_DATA"
+        else:
+            ucl    = round(dev_mean + 3 * dev_std, 4)
+            lcl    = round(dev_mean - 3 * dev_std, 4)
+            status = "NORMAL"
+
+        site_statistics.append({
+            "site":           cfg["site"],
+            "site_name":      cfg["site_name"],
+            "column_name":    col,
+            "count":          len(vals),
+            "mean":           round(mean_v, 4),
+            "std":            round(std_v, 4),
+            "min":            round(float(min(vals)), 4),
+            "max":            round(float(max(vals)), 4),
+            "median":         round(float(np.median(vals)), 4),
+            "deviation_mean": round(dev_mean, 4),
+            "deviation_std":  round(dev_std, 4),
+            "cpk":            _calculate_cpk(vals, lsl, usl),
+            "deviation_ucl":  ucl,
+            "deviation_lcl":  lcl,
+            "status":         status,
+        })
+
+    range_vals = [m.range_value for m in measurements if m.range_value is not None]
+    range_mean = float(np.mean(range_vals)) if range_vals else 0.0
+    range_std  = float(np.std(range_vals, ddof=1)) if len(range_vals) > 1 else 0.0
+    range_statistics = {
+        "mean":         round(range_mean, 4),
+        "std":          round(range_std, 4),
+        "ucl":          None if insufficient else round(range_mean + 3 * range_std, 4),
+        "max_observed": round(float(max(range_vals)), 4),
+    }
+
+    ce_diffs = [
+        m.value_center - float(np.mean([m.value_top, m.value_bottom, m.value_left, m.value_right]))
+        for m in measurements
+        if None not in (m.value_center, m.value_top, m.value_bottom, m.value_left, m.value_right)
+    ]
+    lr_asyms = [m.value_left - m.value_right for m in measurements
+                if m.value_left is not None and m.value_right is not None]
+    tb_asyms = [m.value_top  - m.value_bottom for m in measurements
+                if m.value_top  is not None and m.value_bottom is not None]
+
+    ce_mean = float(np.mean(ce_diffs)); ce_std = float(np.std(ce_diffs, ddof=1)) if len(ce_diffs) > 1 else 0.0
+    lr_mean = float(np.mean(lr_asyms)); lr_std = float(np.std(lr_asyms, ddof=1)) if len(lr_asyms) > 1 else 0.0
+    tb_mean = float(np.mean(tb_asyms)); tb_std = float(np.std(tb_asyms, ddof=1)) if len(tb_asyms) > 1 else 0.0
+
+    thresholds = {
+        "ce_diff_ucl":   ce_mean + 3 * ce_std if not insufficient else float("inf"),
+        "ce_diff_lcl":   ce_mean - 3 * ce_std if not insufficient else float("-inf"),
+        "lr_asym_3sigma": 3 * lr_std if not insufficient else float("inf"),
+        "tb_asym_3sigma": 3 * tb_std if not insufficient else float("inf"),
+    }
+    last = measurements[-1]
+    last_ce = float(last.value_center - np.mean([last.value_top, last.value_bottom, last.value_left, last.value_right]))
+    last_lr = float(last.value_left - last.value_right)
+    last_tb = float(last.value_top  - last.value_bottom)
+
+    if insufficient:
+        detected = [{"type": "INSUFFICIENT_DATA", "description": "데이터 부족 — 관리한계 미설정 (30 Wafer 이상 필요)"}]
+        ce_status = lr_status = tb_status = "INSUFFICIENT_DATA"
+    else:
+        detected = detect_spatial_pattern(last_ce, last_lr, last_tb, thresholds)
+        detected_types = {p["type"] for p in detected}
+        ce_status = "CENTER_HIGH" if "CENTER_HIGH" in detected_types else \
+                    "CENTER_LOW"  if "CENTER_LOW"  in detected_types else "NORMAL"
+        lr_status = "LR_ASYMMETRY" if "LR_ASYMMETRY" in detected_types else "NORMAL"
+        tb_status = "TB_ASYMMETRY" if "TB_ASYMMETRY" in detected_types else "NORMAL"
+
+    pattern_analysis = {
+        "ce_diff":      {"mean": round(ce_mean, 4), "std": round(ce_std, 4), "status": ce_status},
+        "lr_asymmetry": {"mean": round(lr_mean, 4), "std": round(lr_std, 4), "status": lr_status},
+        "tb_asymmetry": {"mean": round(tb_mean, 4), "std": round(tb_std, 4), "status": tb_status},
+        "detected_patterns": detected,
+    }
+
+    return _convert_numpy_types({
+        "target_id":        target_id,
+        "summary":          summary,
+        "site_statistics":  site_statistics,
+        "range_statistics": range_statistics,
+        "pattern_analysis": pattern_analysis,
+    })
+
+
+def get_site_trend(
+    db: Session,
+    target_id: int,
+    days: int = 30,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    coating_equipment_id: Optional[int] = None,
+    exposure_equipment_id: Optional[int] = None,
+    development_equipment_id: Optional[int] = None,
+    etch_equipment_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """위치별 편차 추이 데이터 반환 (명세서 3.2)"""
+
+    measurements = _build_measurement_query(
+        db, target_id, days, start_date, end_date,
+        coating_equipment_id, exposure_equipment_id,
+        development_equipment_id, etch_equipment_id,
+    ).all()
+
+    if not measurements:
+        return {"target_id": target_id, "trend_data": [], "control_limits": None}
+
+    # 장비 이름 조회 (일괄 쿼리)
+    eq_ids = {
+        eid for m in measurements
+        for eid in [m.coating_equipment_id, m.exposure_equipment_id,
+                    m.development_equipment_id, m.etch_equipment_id]
+        if eid
+    }
+    eq_map: Dict[int, str] = {}
+    if eq_ids:
+        equipments = db.query(models.Equipment).filter(models.Equipment.id.in_(eq_ids)).all()
+        eq_map = {e.id: e.name for e in equipments}
+
+    insufficient = len(measurements) < 30
+
+    # 위치별 관리한계 산출
+    control_limits: Dict[str, Any] = {}
+    for cfg in _SITE_CONFIG:
+        col = cfg["column"]
+        devs = [getattr(m, col) - m.avg_value for m in measurements
+                if getattr(m, col) is not None and m.avg_value is not None]
+        dev_mean = float(np.mean(devs)) if devs else 0.0
+        dev_std  = float(np.std(devs, ddof=1)) if len(devs) > 1 else 0.0
+        control_limits[cfg["site"]] = {
+            "ucl":  None if insufficient else round(dev_mean + 3 * dev_std, 4),
+            "lcl":  None if insufficient else round(dev_mean - 3 * dev_std, 4),
+            "mean": round(dev_mean, 4),
+        }
+
+    range_vals = [m.range_value for m in measurements if m.range_value is not None]
+    range_mean = float(np.mean(range_vals)) if range_vals else 0.0
+    range_std  = float(np.std(range_vals, ddof=1)) if len(range_vals) > 1 else 0.0
+    control_limits["range"] = {
+        "ucl":  None if insufficient else round(range_mean + 3 * range_std, 4),
+        "mean": round(range_mean, 4),
+    }
+
+    # 패턴 판정용 임계값 (전체 데이터 기준)
+    ce_diffs_all = [
+        m.value_center - float(np.mean([m.value_top, m.value_bottom, m.value_left, m.value_right]))
+        for m in measurements
+        if None not in (m.value_center, m.value_top, m.value_bottom, m.value_left, m.value_right)
+    ]
+    lr_asyms_all = [m.value_left - m.value_right for m in measurements
+                    if m.value_left is not None and m.value_right is not None]
+    tb_asyms_all = [m.value_top  - m.value_bottom for m in measurements
+                    if m.value_top  is not None and m.value_bottom is not None]
+    ce_mean_all = float(np.mean(ce_diffs_all)) if ce_diffs_all else 0.0
+    ce_std_all  = float(np.std(ce_diffs_all, ddof=1)) if len(ce_diffs_all) > 1 else 0.0
+    lr_std_all  = float(np.std(lr_asyms_all, ddof=1)) if len(lr_asyms_all) > 1 else 0.0
+    tb_std_all  = float(np.std(tb_asyms_all, ddof=1)) if len(tb_asyms_all) > 1 else 0.0
+    thresholds = {
+        "ce_diff_ucl":    ce_mean_all + 3 * ce_std_all if not insufficient else float("inf"),
+        "ce_diff_lcl":    ce_mean_all - 3 * ce_std_all if not insufficient else float("-inf"),
+        "lr_asym_3sigma": 3 * lr_std_all if not insufficient else float("inf"),
+        "tb_asym_3sigma": 3 * tb_std_all if not insufficient else float("inf"),
+    }
+
+    # 측정별 추이 데이터 생성
+    trend_data = []
+    for m in measurements:
+        edge_vals = [v for v in [m.value_top, m.value_bottom, m.value_left, m.value_right] if v is not None]
+        edge_mean = float(np.mean(edge_vals)) if edge_vals else None
+        ce_diff   = round(float(m.value_center - edge_mean), 4) if (m.value_center is not None and edge_mean is not None) else None
+        lr_asym   = round(float(m.value_left - m.value_right), 4) if (m.value_left is not None and m.value_right is not None) else None
+        tb_asym   = round(float(m.value_top  - m.value_bottom), 4) if (m.value_top  is not None and m.value_bottom is not None) else None
+
+        alerts = []
+        if not insufficient and ce_diff is not None and lr_asym is not None and tb_asym is not None:
+            raw = detect_spatial_pattern(ce_diff, lr_asym, tb_asym, thresholds)
+            alerts = [a for a in raw if a["type"] != "NORMAL"]
+
+        avg_v   = m.avg_value   if m.avg_value   is not None else None
+        range_v = m.range_value if m.range_value is not None else None
+
+        def _dev(val):
+            return round(val - avg_v, 4) if (val is not None and avg_v is not None) else None
+
+        trend_data.append({
+            "measurement_id": m.id,
+            "datetime":   m.created_at.isoformat(),
+            "lot_no":     m.lot_no,
+            "wafer_no":   m.wafer_no,
+            "equipments": {
+                "coating":     eq_map.get(m.coating_equipment_id),
+                "exposure":    eq_map.get(m.exposure_equipment_id),
+                "development": eq_map.get(m.development_equipment_id),
+                "etch":        eq_map.get(m.etch_equipment_id),
+            },
+            "values": {"T": m.value_top, "C": m.value_center, "B": m.value_bottom, "L": m.value_left, "R": m.value_right},
+            "avg_value":   round(avg_v, 4) if avg_v is not None else None,
+            "range_value": round(range_v, 4) if range_v is not None else None,
+            "deviations": {
+                "T": _dev(m.value_top),
+                "C": _dev(m.value_center),
+                "B": _dev(m.value_bottom),
+                "L": _dev(m.value_left),
+                "R": _dev(m.value_right),
+            },
+            "ce_diff": ce_diff,
+            "lr_asym": lr_asym,
+            "tb_asym": tb_asym,
+            "alerts":  alerts,
+        })
+
+    return _convert_numpy_types({
+        "target_id":      target_id,
+        "trend_data":     trend_data,
+        "control_limits": control_limits,
+    })
