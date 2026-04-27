@@ -460,27 +460,39 @@ def get_site_analysis(
         "lr_asym_3sigma": 3 * lr_std if not insufficient else float("inf"),
         "tb_asym_3sigma": 3 * tb_std if not insufficient else float("inf"),
     }
-    last = measurements[-1]
-    last_ce = float(last.value_center - np.mean([last.value_top, last.value_bottom, last.value_left, last.value_right]))
-    last_lr = float(last.value_left - last.value_right)
-    last_tb = float(last.value_top  - last.value_bottom)
 
-    if insufficient:
-        detected = [{"type": "INSUFFICIENT_DATA", "description": "데이터 부족 — 관리한계 미설정 (30 Wafer 이상 필요)"}]
-        ce_status = lr_status = tb_status = "INSUFFICIENT_DATA"
-    else:
-        detected = detect_spatial_pattern(last_ce, last_lr, last_tb, thresholds)
-        detected_types = {p["type"] for p in detected}
-        ce_status = "CENTER_HIGH" if "CENTER_HIGH" in detected_types else \
-                    "CENTER_LOW"  if "CENTER_LOW"  in detected_types else "NORMAL"
-        lr_status = "LR_ASYMMETRY" if "LR_ASYMMETRY" in detected_types else "NORMAL"
-        tb_status = "TB_ASYMMETRY" if "TB_ASYMMETRY" in detected_types else "NORMAL"
+    # 전체 Wafer 패턴 비율 집계
+    ptype_keys = ["CENTER_HIGH", "CENTER_LOW", "LR_ASYMMETRY", "TB_ASYMMETRY", "NORMAL"]
+    pattern_counts = {k: 0 for k in ptype_keys}
+    valid_count = 0
+
+    if not insufficient:
+        for m in measurements:
+            if None in (m.value_center, m.value_top, m.value_bottom, m.value_left, m.value_right):
+                continue
+            valid_count += 1
+            m_ce = float(m.value_center - np.mean([m.value_top, m.value_bottom, m.value_left, m.value_right]))
+            m_lr = float(m.value_left  - m.value_right)  if (m.value_left  is not None and m.value_right  is not None) else 0.0
+            m_tb = float(m.value_top   - m.value_bottom) if (m.value_top   is not None and m.value_bottom is not None) else 0.0
+            for p in detect_spatial_pattern(m_ce, m_lr, m_tb, thresholds):
+                if p["type"] in pattern_counts:
+                    pattern_counts[p["type"]] += 1
+
+    pattern_rates = {
+        k: {
+            "count": pattern_counts[k],
+            "rate":  round(pattern_counts[k] / valid_count * 100, 1) if valid_count > 0 else 0.0,
+        }
+        for k in ptype_keys
+    } if not insufficient else None
 
     pattern_analysis = {
-        "ce_diff":      {"mean": round(ce_mean, 4), "std": round(ce_std, 4), "status": ce_status},
-        "lr_asymmetry": {"mean": round(lr_mean, 4), "std": round(lr_std, 4), "status": lr_status},
-        "tb_asymmetry": {"mean": round(tb_mean, 4), "std": round(tb_std, 4), "status": tb_status},
-        "detected_patterns": detected,
+        "insufficient_data": insufficient,
+        "total_wafers":      valid_count if not insufficient else len(measurements),
+        "pattern_rates":     pattern_rates,
+        "ce_diff":           {"mean": round(ce_mean, 4), "std": round(ce_std, 4)},
+        "lr_asymmetry":      {"mean": round(lr_mean, 4), "std": round(lr_std, 4)},
+        "tb_asymmetry":      {"mean": round(tb_mean, 4), "std": round(tb_std, 4)},
     }
 
     return _convert_numpy_types({

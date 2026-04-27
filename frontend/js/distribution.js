@@ -1746,17 +1746,46 @@ function renderPatternResult(patternAnalysis, rangeStatistics) {
     const $el = $('#pattern-result');
     if (!patternAnalysis) { $el.html('<p class="text-muted text-center mb-0">데이터 없음</p>'); return; }
 
-    const patterns = patternAnalysis.detected_patterns || [];
-    const isNormal = patterns.length === 1 && patterns[0].type === 'NORMAL';
-    const isInsuff = patterns.length === 1 && patterns[0].type === 'INSUFFICIENT_DATA';
-
     let patternHtml = '';
-    if (isNormal) {
-        patternHtml = '<p class="text-success mb-1"><i class="fas fa-check-circle mr-1"></i>정상 범위 — 특이 패턴 없음</p>';
-    } else if (isInsuff) {
-        patternHtml = '<p class="text-warning mb-1"><i class="fas fa-exclamation-circle mr-1"></i>' + patterns[0].description + '</p>';
+
+    if (patternAnalysis.insufficient_data) {
+        patternHtml = `<p class="text-warning mb-0">
+            <i class="fas fa-exclamation-circle mr-1"></i>
+            데이터 부족 — 관리한계 미설정 (30 Wafer 이상 필요, 현재 ${patternAnalysis.total_wafers}장)
+        </p>`;
     } else {
-        patternHtml = patterns.map(p => `<p class="text-danger mb-1"><i class="fas fa-exclamation-triangle mr-1"></i><strong>${p.type}</strong>: ${p.description}</p>`).join('');
+        const rates  = patternAnalysis.pattern_rates || {};
+        const total  = patternAnalysis.total_wafers;
+
+        const PATTERN_META = [
+            { key: 'CENTER_HIGH',  label: 'Center High',  desc: '중앙 > 가장자리', colorClass: 'bg-danger'  },
+            { key: 'CENTER_LOW',   label: 'Center Low',   desc: '중앙 < 가장자리', colorClass: 'bg-warning' },
+            { key: 'LR_ASYMMETRY', label: 'LR 비대칭',   desc: '좌우 불균일',     colorClass: 'bg-warning' },
+            { key: 'TB_ASYMMETRY', label: 'TB 비대칭',   desc: '상하 불균일',     colorClass: 'bg-warning' },
+            { key: 'NORMAL',       label: '정상',         desc: '특이 패턴 없음',  colorClass: 'bg-success' },
+        ];
+
+        const bars = PATTERN_META.map(m => {
+            const r = rates[m.key];
+            if (!r) return '';
+            const isAlert = m.key !== 'NORMAL' && r.rate > 10;
+            const textColor = isAlert ? 'text-danger font-weight-bold' : 'text-muted';
+            return `
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between small mb-0">
+                        <span>${m.label} <span class="text-muted">(${m.desc})</span></span>
+                        <span class="${textColor}">${r.count}장 / ${r.rate}%</span>
+                    </div>
+                    <div class="progress" style="height:7px;">
+                        <div class="${m.colorClass}" style="width:${Math.min(r.rate, 100)}%;height:100%;border-radius:4px;"></div>
+                    </div>
+                </div>`;
+        }).join('');
+
+        patternHtml = `
+            <p class="small text-muted mb-2">분석 기간 전체 <strong>${total}장</strong> 기준 (중복 집계 가능)</p>
+            ${bars}
+            <p class="small text-muted mt-1 mb-0">※ 판정 기준: 각 지표의 기간 분포 ±3σ 초과 시 해당 패턴으로 집계</p>`;
     }
 
     let rangeHtml = '';
