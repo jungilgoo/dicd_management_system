@@ -1790,9 +1790,34 @@ function renderPatternResult(patternAnalysis, rangeStatistics) {
 
     let rangeHtml = '';
     if (rangeStatistics) {
-        const rStatus = rangeStatistics.ucl !== null && rangeStatistics.max_observed > rangeStatistics.ucl ? '🔴 초과' : '🟢 정상';
-        const uclText = rangeStatistics.ucl !== null ? rangeStatistics.ucl.toFixed(4) : 'N/A';
-        rangeHtml = `<hr class="my-2"><p class="mb-0 small text-muted">Range 평균: <strong>${rangeStatistics.mean.toFixed(4)}㎛</strong> (UCL: ${uclText}㎛) ${rStatus}</p>`;
+        const ucl      = rangeStatistics.ucl;
+        const uclText  = ucl !== null ? ucl.toFixed(4) : 'N/A';
+        const exCount  = rangeStatistics.exceed_count ?? 0;
+        const exRate   = rangeStatistics.exceed_rate  ?? 0;
+        const total    = rangeStatistics.total_count  ?? 0;
+        const isInsuff = ucl === null;
+        const isAlert  = !isInsuff && exRate > 10;
+        const barColor = isAlert ? 'bg-danger' : 'bg-warning';
+        const textColor = isAlert ? 'text-danger font-weight-bold' : 'text-muted';
+
+        const barHtml = isInsuff ? '' : `
+            <div class="progress mt-1" style="height:7px;">
+                <div class="${barColor}" style="width:${Math.min(exRate, 100)}%;height:100%;border-radius:4px;"></div>
+            </div>`;
+
+        const exceedText = isInsuff
+            ? '<span class="text-warning">데이터 부족 (UCL 미산출)</span>'
+            : `<span class="${textColor}">${exCount}장 / ${exRate}% UCL 초과</span>`;
+
+        rangeHtml = `
+            <hr class="my-2">
+            <p class="small text-muted mb-1">Range (UCL: ${uclText}㎛ / 평균: ${rangeStatistics.mean.toFixed(4)}㎛)</p>
+            <div class="d-flex justify-content-between small mb-0">
+                <span class="text-muted">UCL 초과 Wafer <span class="text-muted">(전체 ${total}장)</span></span>
+                ${exceedText}
+            </div>
+            ${barHtml}
+            <p class="small text-muted mt-1 mb-0">※ 판정 기준: Range 평균 + 3σ 초과 시 집계</p>`;
     }
 
     $el.html(`<h6 class="mb-2"><i class="fas fa-chart-pie mr-1"></i>공간 패턴 분석 결과</h6>${patternHtml}${rangeHtml}`);

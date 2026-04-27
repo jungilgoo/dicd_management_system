@@ -433,11 +433,16 @@ def get_site_analysis(
     range_vals = [m.range_value for m in measurements if m.range_value is not None]
     range_mean = float(np.mean(range_vals)) if range_vals else 0.0
     range_std  = float(np.std(range_vals, ddof=1)) if len(range_vals) > 1 else 0.0
+    range_ucl  = None if insufficient else round(range_mean + 3 * range_std, 4)
+    range_exceed_count = sum(1 for v in range_vals if range_ucl is not None and v > range_ucl)
     range_statistics = {
-        "mean":         round(range_mean, 4),
-        "std":          round(range_std, 4),
-        "ucl":          None if insufficient else round(range_mean + 3 * range_std, 4),
-        "max_observed": round(float(max(range_vals)), 4),
+        "mean":          round(range_mean, 4),
+        "std":           round(range_std, 4),
+        "ucl":           range_ucl,
+        "max_observed":  round(float(max(range_vals)), 4) if range_vals else None,
+        "total_count":   len(range_vals),
+        "exceed_count":  range_exceed_count,
+        "exceed_rate":   round(range_exceed_count / len(range_vals) * 100, 1) if range_vals else 0.0,
     }
 
     ce_diffs = [
