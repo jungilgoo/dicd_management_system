@@ -1386,7 +1386,7 @@ const SITE_COLORS = {
     L: { border: '#27AE60', bg: 'rgba(39,174,96,0.15)'  },
     R: { border: '#F39C12', bg: 'rgba(243,156,18,0.15)' },
 };
-const SITE_ORDER = ['T', 'L', 'C', 'R', 'B'];
+const SITE_ORDER = ['T', 'C', 'B', 'L', 'R'];
 const SITE_NAMES = { T: '상(T)', C: '중(C)', B: '하(B)', L: '좌(L)', R: '우(R)' };
 
 // 장비 필터 셀렉트 초기화 (PHOTO: 코팅/노광/현상, ETCH: 코팅/에칭)
@@ -1508,15 +1508,6 @@ function renderWaferMap(siteStats) {
         });
     });
 
-    // 범례
-    const lg = svg.append('g').attr('transform', `translate(${CX - 60}, ${W - 18})`);
-    ['#3498DB', '#ffffff', '#E74C3C'].forEach((c, i) => {
-        lg.append('rect').attr('x', i * 40).attr('width', 40).attr('height', 8)
-            .attr('fill', c).attr('stroke', '#aaa').attr('stroke-width', 0.5);
-    });
-    lg.append('text').attr('x', 0).attr('y', 20).attr('font-size', '9px').text('음수');
-    lg.append('text').attr('x', 55).attr('y', 20).attr('font-size', '9px').attr('text-anchor', 'middle').text('0');
-    lg.append('text').attr('x', 120).attr('y', 20).attr('font-size', '9px').attr('text-anchor', 'end').text('양수');
 }
 
 // ② 위치별 박스플롯 (Chart.js scatter 커스텀)
@@ -1527,6 +1518,13 @@ function renderSiteBoxplot(siteStats) {
 
     // 전체 평균 (모든 위치 mean의 평균)
     const overallMean = siteStats.reduce((s, d) => s + d.mean, 0) / siteStats.length;
+
+    // Y축 범위: 전체 min/max + 10% 여백
+    const allMin = Math.min(...siteStats.map(s => s.min));
+    const allMax = Math.max(...siteStats.map(s => s.max));
+    const yPad   = (allMax - allMin) * 0.1 || 0.01;
+    const yMin   = allMin - yPad;
+    const yMax   = allMax + yPad;
 
     const datasets = SITE_ORDER.map(site => {
         const s = siteStats.find(x => x.site === site);
@@ -1567,7 +1565,7 @@ function renderSiteBoxplot(siteStats) {
             },
             scales: {
                 x: { type: 'linear', min: -0.5, max: SITE_ORDER.length - 0.5, ticks: { callback: (v) => SITE_NAMES[SITE_ORDER[Math.round(v)]] || '' } },
-                y: { title: { display: true, text: window.PROCESS_TYPE === 'ETCH' ? 'FICD (㎛)' : 'DICD (㎛)' } },
+                y: { min: yMin, max: yMax, title: { display: true, text: window.PROCESS_TYPE === 'ETCH' ? 'FICD (㎛)' : 'DICD (㎛)' } },
             },
         },
         plugins: [{
