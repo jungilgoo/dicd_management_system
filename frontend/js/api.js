@@ -347,11 +347,16 @@ class API {
     }
     
     // 새 메서드 추가
-    checkDuplicateMeasurement(targetId, lotNo, waferNo) {
+    checkDuplicateMeasurement(targetId, lotNo, waferNo, values = {}) {
         return this.get(`${this.endpoints.DUPLICATE_CHECK}`, {
             target_id: targetId,
             lot_no: lotNo,
-            wafer_no: waferNo
+            wafer_no: waferNo,
+            value_top: values.value_top,
+            value_center: values.value_center,
+            value_bottom: values.value_bottom,
+            value_left: values.value_left,
+            value_right: values.value_right,
         });
     }
     

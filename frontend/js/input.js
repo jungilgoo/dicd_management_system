@@ -577,11 +577,18 @@
     // 실제 저장 처리 함수
     async function performSave(formData) {
         try {
-            // 중복 체크
+            // 중복 체크 (타겟+LOT+WAFER+측정값 모두 동일한 경우만 차단, 재작업은 허용)
             const checkResult = await api.checkDuplicateMeasurement(
                 formData.target_id,
                 formData.lot_no,
-                formData.wafer_no
+                formData.wafer_no,
+                {
+                    value_top: formData.value_top,
+                    value_center: formData.value_center,
+                    value_bottom: formData.value_bottom,
+                    value_left: formData.value_left,
+                    value_right: formData.value_right,
+                }
             );
 
             if (checkResult.isDuplicate) {

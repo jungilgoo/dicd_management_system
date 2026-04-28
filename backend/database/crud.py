@@ -659,17 +659,39 @@ def get_duplicate_measurements(db: Session, process_type: str = 'PHOTO'):
     return measurements
 
 
-def check_duplicate_measurement(db: Session, target_id: int, lot_no: str, wafer_no: str) -> bool:
+def check_duplicate_measurement(
+    db: Session,
+    target_id: int,
+    lot_no: str,
+    wafer_no: str,
+    value_top: float = None,
+    value_center: float = None,
+    value_bottom: float = None,
+    value_left: float = None,
+    value_right: float = None,
+) -> bool:
     """
-    동일한 타겟, LOT NO, WAFER NO 조합의 측정 데이터가 이미 존재하는지 확인
+    동일한 타겟, LOT NO, WAFER NO + 측정값까지 모두 일치하는 데이터가 이미 존재하는지 확인.
+    재작업으로 동일 LOT/WAFER를 재측정하는 경우는 값이 다르므로 통과.
     """
-    existing = db.query(models.Measurement).filter(
+    query = db.query(models.Measurement).filter(
         models.Measurement.target_id == target_id,
         models.Measurement.lot_no == lot_no,
-        models.Measurement.wafer_no == wafer_no
-    ).first()
+        models.Measurement.wafer_no == wafer_no,
+    )
 
-    return existing is not None
+    if value_top is not None:
+        query = query.filter(models.Measurement.value_top == value_top)
+    if value_center is not None:
+        query = query.filter(models.Measurement.value_center == value_center)
+    if value_bottom is not None:
+        query = query.filter(models.Measurement.value_bottom == value_bottom)
+    if value_left is not None:
+        query = query.filter(models.Measurement.value_left == value_left)
+    if value_right is not None:
+        query = query.filter(models.Measurement.value_right == value_right)
+
+    return query.first() is not None
 
 
 def check_device_exists(db: Session, device: str, process_type: str = 'PHOTO') -> bool:

@@ -13,11 +13,23 @@ async def check_duplicate_measurement(
     target_id: int = Query(...),
     lot_no: str = Query(...),
     wafer_no: str = Query(...),
+    value_top: float = Query(None),
+    value_center: float = Query(None),
+    value_bottom: float = Query(None),
+    value_left: float = Query(None),
+    value_right: float = Query(None),
     db: Session = Depends(database.get_db)
 ):
-    print(f"Received params: target_id={target_id}, lot_no={lot_no}, wafer_no={wafer_no}")
     existing = crud.check_duplicate_measurement(
-        db, target_id=target_id, lot_no=lot_no, wafer_no=wafer_no
+        db,
+        target_id=target_id,
+        lot_no=lot_no,
+        wafer_no=wafer_no,
+        value_top=value_top,
+        value_center=value_center,
+        value_bottom=value_bottom,
+        value_left=value_left,
+        value_right=value_right,
     )
     return {"isDuplicate": existing}
 
