@@ -1564,7 +1564,7 @@ function renderSiteBoxplot(siteStats) {
                 }
             },
             scales: {
-                x: { type: 'linear', min: -0.5, max: SITE_ORDER.length - 0.5, ticks: { stepSize: 1, callback: (v) => Number.isInteger(v) ? (SITE_NAMES[SITE_ORDER[v]] || '') : '' } },
+                x: { type: 'linear', min: -0.5, max: SITE_ORDER.length - 0.5, afterBuildTicks: (axis) => { axis.ticks = SITE_ORDER.map((_, i) => ({ value: i })); }, ticks: { callback: (v) => SITE_NAMES[SITE_ORDER[v]] || '' } },
                 y: { min: yMin, max: yMax, title: { display: true, text: window.PROCESS_TYPE === 'ETCH' ? 'FICD (㎛)' : 'DICD (㎛)' } },
             },
         },
