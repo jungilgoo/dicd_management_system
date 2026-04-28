@@ -1564,7 +1564,7 @@ function renderSiteBoxplot(siteStats) {
                 }
             },
             scales: {
-                x: { type: 'linear', min: -0.5, max: SITE_ORDER.length - 0.5, ticks: { callback: (v) => SITE_NAMES[SITE_ORDER[Math.round(v)]] || '' } },
+                x: { type: 'linear', min: -0.5, max: SITE_ORDER.length - 0.5, ticks: { stepSize: 1, callback: (v) => Number.isInteger(v) ? (SITE_NAMES[SITE_ORDER[v]] || '') : '' } },
                 y: { min: yMin, max: yMax, title: { display: true, text: window.PROCESS_TYPE === 'ETCH' ? 'FICD (㎛)' : 'DICD (㎛)' } },
             },
         },
@@ -1662,7 +1662,7 @@ function renderSiteDeviationChart(trendData) {
                 }
             },
             scales: {
-                x: { ticks: { maxTicksLimit: 20, maxRotation: 45 } },
+                x: { ticks: { display: false } },
                 y: { title: { display: true, text: 'Site Deviation (㎛)' } },
             },
         }
@@ -1709,7 +1709,7 @@ function renderSiteRangeChart(trendData) {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false }, annotation: { annotations } },
             scales: {
-                x: { ticks: { maxTicksLimit: 20, maxRotation: 45 } },
+                x: { ticks: { display: false } },
                 y: { beginAtZero: true, title: { display: true, text: 'Range (㎛)' } },
             },
         }
