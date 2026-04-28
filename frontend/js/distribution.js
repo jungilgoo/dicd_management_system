@@ -1723,9 +1723,7 @@ function renderSiteSummaryTable(siteStats) {
     SITE_ORDER.forEach(site => {
         const s = siteStats.find(x => x.site === site);
         if (!s) return;
-        const dot   = s.status === 'NORMAL' ? '🟢' : s.status === 'INSUFFICIENT_DATA' ? '🟡' : '🔴';
-        const label = s.status === 'NORMAL' ? '정상' : s.status === 'INSUFFICIENT_DATA' ? '데이터 부족' : '이상';
-        const cpk   = s.cpk !== null ? s.cpk.toFixed(2) : '-';
+        const cpk     = s.cpk !== null ? s.cpk.toFixed(2) : '-';
         const devSign = s.deviation_mean >= 0 ? '+' : '';
         tbody.append(`
             <tr>
@@ -1735,7 +1733,6 @@ function renderSiteSummaryTable(siteStats) {
                 <td>${cpk}</td>
                 <td>${devSign}${s.deviation_mean.toFixed(4)}</td>
                 <td>${s.deviation_std.toFixed(4)}</td>
-                <td>${dot} ${label}</td>
             </tr>
         `);
     });

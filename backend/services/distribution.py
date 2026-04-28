@@ -406,11 +406,9 @@ def get_site_analysis(
 
         if insufficient:
             ucl = lcl = None
-            status = "INSUFFICIENT_DATA"
         else:
-            ucl    = round(dev_mean + 3 * dev_std, 4)
-            lcl    = round(dev_mean - 3 * dev_std, 4)
-            status = "NORMAL"
+            ucl = round(dev_mean + 3 * dev_std, 4)
+            lcl = round(dev_mean - 3 * dev_std, 4)
 
         site_statistics.append({
             "site":           cfg["site"],
@@ -427,7 +425,6 @@ def get_site_analysis(
             "cpk":            _calculate_cpk(vals, lsl, usl),
             "deviation_ucl":  ucl,
             "deviation_lcl":  lcl,
-            "status":         status,
         })
 
     range_vals = [m.range_value for m in measurements if m.range_value is not None]
