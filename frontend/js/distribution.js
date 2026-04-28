@@ -1611,7 +1611,8 @@ function renderSiteDeviationChart(trendData) {
     const { trend_data, control_limits } = trendData;
     if (!trend_data || trend_data.length === 0) return;
 
-    const labels = trend_data.map(d => `${d.lot_no}-${d.wafer_no}`);
+    const labels = trend_data.map((d, i) =>
+        (i === 0 || trend_data[i - 1].lot_no !== d.lot_no) ? d.lot_no : '');
     const datasets = SITE_ORDER.map(site => ({
         label: SITE_NAMES[site],
         data: trend_data.map(d => d.deviations[site]),
@@ -1662,7 +1663,7 @@ function renderSiteDeviationChart(trendData) {
                 }
             },
             scales: {
-                x: { ticks: { display: false } },
+                x: { ticks: { maxRotation: 45, autoSkip: false } },
                 y: { title: { display: true, text: 'Site Deviation (㎛)' } },
             },
         }
@@ -1678,7 +1679,8 @@ function renderSiteRangeChart(trendData) {
     const { trend_data, control_limits } = trendData;
     if (!trend_data || trend_data.length === 0) return;
 
-    const labels    = trend_data.map(d => `${d.lot_no}-${d.wafer_no}`);
+    const labels    = trend_data.map((d, i) =>
+        (i === 0 || trend_data[i - 1].lot_no !== d.lot_no) ? d.lot_no : '');
     const rangeVals = trend_data.map(d => d.range_value);
     const ucl       = control_limits?.range?.ucl ?? null;
 
@@ -1709,7 +1711,7 @@ function renderSiteRangeChart(trendData) {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false }, annotation: { annotations } },
             scales: {
-                x: { ticks: { display: false } },
+                x: { ticks: { maxRotation: 45, autoSkip: false } },
                 y: { beginAtZero: true, title: { display: true, text: 'Range (㎛)' } },
             },
         }
