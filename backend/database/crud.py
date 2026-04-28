@@ -616,6 +616,49 @@ def delete_equipment(db: Session, equipment_id: int):
         return True
     return False
 
+def get_duplicate_measurements(db: Session, process_type: str = 'PHOTO'):
+    """
+    동일한 (target_id, lot_no, wafer_no) 조합이 2개 이상인 측정 데이터를 모두 반환
+    """
+    from sqlalchemy import func
+
+    duplicate_groups = (
+        db.query(
+            models.Measurement.target_id,
+            models.Measurement.lot_no,
+            models.Measurement.wafer_no
+        )
+        .join(models.Target, models.Measurement.target_id == models.Target.id)
+        .filter(models.Target.process_type == process_type)
+        .group_by(
+            models.Measurement.target_id,
+            models.Measurement.lot_no,
+            models.Measurement.wafer_no
+        )
+        .having(func.count(models.Measurement.id) > 1)
+        .subquery()
+    )
+
+    measurements = (
+        db.query(models.Measurement)
+        .join(
+            duplicate_groups,
+            (models.Measurement.target_id == duplicate_groups.c.target_id) &
+            (models.Measurement.lot_no == duplicate_groups.c.lot_no) &
+            (models.Measurement.wafer_no == duplicate_groups.c.wafer_no)
+        )
+        .order_by(
+            models.Measurement.target_id,
+            models.Measurement.lot_no,
+            models.Measurement.wafer_no,
+            models.Measurement.created_at
+        )
+        .all()
+    )
+
+    return measurements
+
+
 def check_duplicate_measurement(db: Session, target_id: int, lot_no: str, wafer_no: str) -> bool:
     """
     동일한 타겟, LOT NO, WAFER NO 조합의 측정 데이터가 이미 존재하는지 확인

@@ -585,10 +585,17 @@
             );
 
             if (checkResult.isDuplicate) {
-                // 중복 데이터가 있을 경우 사용자에게 확인
-                if (!confirm('이미 동일한 타겟에 대한 LOT NO와 WAFER NO를 가진 측정 데이터가 존재합니다. 그래도 저장하시겠습니까?')) {
-                    return false; // 저장 취소
-                }
+                const activeTargetBtn = document.querySelector('.target-btn.active');
+                const targetName = activeTargetBtn ? activeTargetBtn.textContent.trim() : '선택된 타겟';
+                alert(
+                    `중복 데이터 저장 불가\n\n` +
+                    `타겟: ${targetName}\n` +
+                    `LOT NO: ${formData.lot_no}\n` +
+                    `WAFER NO: ${formData.wafer_no}\n\n` +
+                    `이미 동일한 측정 데이터가 존재합니다.\n` +
+                    `수정이 필요하면 [데이터 조회] 화면에서 해당 데이터를 수정해주세요.`
+                );
+                return false;
             }
 
             // 제출 버튼 비활성화

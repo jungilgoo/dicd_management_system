@@ -812,6 +812,16 @@
             });
         }
 
+        // 중복 찾기 버튼 클릭 이벤트
+        document.getElementById('find-duplicates-btn').addEventListener('click', function() {
+            findAndShowDuplicates();
+        });
+
+        // 중복 보기 해제 버튼 클릭 이벤트
+        document.getElementById('clear-duplicates-btn').addEventListener('click', function() {
+            clearDuplicateMode();
+        });
+
         // 일괄 삭제 버튼 클릭 이벤트
         document.getElementById('bulk-delete-btn').addEventListener('click', function() {
             showBulkDeletePasswordModal();
@@ -867,6 +877,111 @@
     }
     
     
+    // 중복 데이터 조회 및 표시
+    let isDuplicateMode = false;
+
+    async function findAndShowDuplicates() {
+        const btn = document.getElementById('find-duplicates-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> 조회 중...';
+
+        try {
+            const processType = window.PROCESS_TYPE || 'PHOTO';
+            const response = await fetch(`${API_CONFIG.BASE_URL}/duplicate-check/list?process_type=${processType}`);
+            if (!response.ok) throw new Error('중복 조회 실패');
+            const data = await response.json();
+
+            if (data.total_count === 0) {
+                alert('중복 데이터가 없습니다.');
+                return;
+            }
+
+            // 중복 모드 활성화
+            isDuplicateMode = true;
+            document.getElementById('clear-duplicates-btn').style.display = '';
+            document.getElementById('find-duplicates-btn').style.display = 'none';
+
+            // 카드 타이틀 업데이트
+            document.querySelector('.card-title').innerHTML =
+                `<i class="fas fa-copy mr-1 text-warning"></i> 중복 데이터 <span class="badge badge-warning ml-2">${data.group_count}그룹 / ${data.total_count}건</span>`;
+
+            // 중복 데이터를 테이블에 표시 (is_original 정보 포함)
+            measurementsCache = data.items;
+            totalCount = data.total_count;
+            renderDuplicateTable(data.items);
+            renderPagination();
+
+        } catch (error) {
+            console.error('중복 조회 오류:', error);
+            alert('중복 데이터 조회 중 오류가 발생했습니다.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-copy mr-1"></i> 중복 찾기';
+        }
+    }
+
+    function renderDuplicateTable(measurements) {
+        if (!measurements || measurements.length === 0) {
+            document.getElementById('data-table-body').innerHTML =
+                '<tr><td colspan="13" class="text-center">중복 데이터가 없습니다.</td></tr>';
+            return;
+        }
+
+        let tableHtml = '';
+        measurements.forEach(m => {
+            const checkboxStyle = isBulkDeleteMode ? '' : 'display: none;';
+            const isChecked = selectedMeasurementIds.has(m.id) ? 'checked' : '';
+            const rowClass = m.is_original ? '' : 'table-danger';
+            const dupBadge = m.is_original
+                ? '<span class="badge badge-secondary">원본</span>'
+                : '<span class="badge badge-danger">중복</span>';
+
+            tableHtml += `
+            <tr class="${rowClass}">
+                <td class="bulk-delete-checkbox-col text-center" style="${checkboxStyle}">
+                    <input type="checkbox" class="measurement-checkbox" data-id="${m.id}" ${isChecked}>
+                </td>
+                <td>${UTILS.formatDate(m.created_at)}</td>
+                <td>${m.product_group_name || '-'}</td>
+                <td>${m.process_name || '-'}</td>
+                <td>${m.target_name || '-'}</td>
+                <td class="equipment-cell text-center">-</td>
+                <td>${m.device}</td>
+                <td>${m.lot_no}</td>
+                <td>${m.wafer_no}</td>
+                <td>${UTILS.formatNumber(m.avg_value)}</td>
+                <td>${UTILS.formatNumber(m.std_dev)}</td>
+                <td>${dupBadge}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-info view-detail" data-id="${m.id}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>`;
+        });
+
+        document.getElementById('data-table-body').innerHTML = tableHtml;
+
+        document.querySelectorAll('.view-detail').forEach(button => {
+            button.addEventListener('click', function() {
+                showMeasurementDetail(this.dataset.id);
+            });
+        });
+
+        if (isBulkDeleteMode) {
+            setupCheckboxEvents();
+        }
+    }
+
+    function clearDuplicateMode() {
+        isDuplicateMode = false;
+        document.getElementById('clear-duplicates-btn').style.display = 'none';
+        document.getElementById('find-duplicates-btn').style.display = '';
+        document.querySelector('.card-title').innerHTML =
+            '<i class="fas fa-table mr-1"></i> 측정 데이터';
+        loadMeasurements(1);
+    }
+
     // 데이터 내보내기
     function exportData(format) {
         // 현재 필터 조건 가져오기
