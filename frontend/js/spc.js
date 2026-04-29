@@ -349,6 +349,26 @@
                 currentAlarms = null;
             }
 
+            // SPC 메모 컨텍스트 갱신 (뱃지/알림 바)
+            try {
+                if (window.SpcMemos) {
+                    const productGroupSelect = document.getElementById('product-group');
+                    const processSelect = document.getElementById('process');
+                    const targetSelect = document.getElementById('target');
+                    window.SpcMemos.setContext({
+                        productGroupId: productGroupSelect ? parseInt(productGroupSelect.value, 10) || null : null,
+                        processId: processSelect ? parseInt(processSelect.value, 10) || null : null,
+                        targetId: parseInt(selectedTargetId, 10) || null,
+                        productGroupName: productGroupSelect ? (productGroupSelect.options[productGroupSelect.selectedIndex]?.text || '') : '',
+                        processName: processSelect ? (processSelect.options[processSelect.selectedIndex]?.text || '') : '',
+                        targetName: targetSelect ? (targetSelect.options[targetSelect.selectedIndex]?.text || '') : '',
+                        processType: window.PROCESS_TYPE || 'PHOTO'
+                    });
+                }
+            } catch (memoErr) {
+                console.warn('SPC 메모 컨텍스트 갱신 실패 (무시):', memoErr);
+            }
+
             // 차트 데이터 섹션 숨기기
             hideChartDataSection();
             

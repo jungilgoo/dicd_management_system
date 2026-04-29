@@ -6,6 +6,33 @@
 
 ## 현재 진행 중인 업데이트
 
+### 2026-04-29 - SPC 분석 페이지 메모 기능
+- **목적**: 제품군/공정/타겟 조합별로 특이사항(장비 교체, 이상 패턴, 조치 기록 등)을 메모로 남기고 SPC 분석 시 즉시 확인
+- **위치**: SPC 분석 페이지 (PHOTO `frontend/pages/analysis/spc.html`, ETCH `frontend/pages/etch/analysis/spc.html`)
+- **작업 내용**:
+  - [x] DB 모델 추가: `backend/database/models.py`의 `SpcMemo`
+    - 컬럼: id, product_group_id, process_id, target_id, process_type, title, content, created_at, updated_at
+    - 복합 인덱스: `(product_group_id, process_id, target_id)`
+  - [x] Pydantic 스키마: `backend/schemas/spc_memo.py` (Base/Create/Update/SpcMemo/Summary)
+  - [x] 백엔드 라우터: `backend/routers/spc_memos.py`
+    - `GET /api/spc-memos/summary` 카드 헤더 뱃지·알림 바용 요약 (개수 + 최신 1건)
+    - `GET /api/spc-memos/` 메모 목록 (target_id 필수)
+    - `GET /api/spc-memos/{id}` 단건 조회
+    - `POST /api/spc-memos/` 메모 생성
+    - `PUT /api/spc-memos/{id}` 메모 수정
+    - `DELETE /api/spc-memos/{id}` 메모 삭제
+  - [x] `backend/main.py`에 라우터 등록
+  - [x] 테이블 생성 스크립트: `backend/utils/create_spc_memo_tables.py`
+  - [x] PHOTO SPC 페이지 UI: 메모 버튼(개수 뱃지) + 최신 메모 알림 바 + 메모 모달(목록/작성/수정/삭제)
+  - [x] ETCH SPC 페이지 UI: 동일 구조 적용
+  - [x] `frontend/js/spc_memos.js` 신규 작성 (CRUD, 뱃지/알림 바 갱신, 모달 제어)
+  - [x] `frontend/js/spc.js` 분석 실행 시 `SpcMemos.setContext()` 호출로 컨텍스트 전달
+  - [ ] 서버 배포 후 테이블 생성 (`python backend/utils/create_spc_memo_tables.py`)
+  - [ ] 서버 사용자 테스트 (메모 생성/수정/삭제, 뱃지 갱신, 알림 바 노출, PHOTO/ETCH 양쪽 동작)
+- **참고**:
+  - 중요도/작성자 필드는 의도적으로 제외(단순화)
+  - DB 마이그레이션 불필요(create_all로 신규 테이블만 추가)
+
 ### 2026-04-07 - DEVICE 검증/관리 기능
 - **목적**: 오입력된 DEVICE를 손쉽게 발견·정정하기 위한 마스터 데이터 정리 도구
 - **위치**: 설정 페이지 내 신규 탭 "DEVICE 관리"

@@ -374,7 +374,31 @@ class ChangePoint(Base):
     description = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
+    # 관계 설정
+    product_group = relationship("ProductGroup")
+    process = relationship("Process")
+    target = relationship("Target")
+
+
+# SPC 메모 테이블 (제품군/공정/타겟별 특이사항 기록)
+class SpcMemo(Base):
+    __tablename__ = "spc_memos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_group_id = Column(Integer, ForeignKey("product_groups.id"), nullable=False)
+    process_id = Column(Integer, ForeignKey("processes.id"), nullable=False)
+    target_id = Column(Integer, ForeignKey("targets.id"), nullable=False)
+    process_type = Column(String(20), nullable=False, server_default='PHOTO', index=True)  # PHOTO, ETCH
+    title = Column(String(200), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    __table_args__ = (
+        Index('ix_spc_memos_pgt', 'product_group_id', 'process_id', 'target_id'),
+    )
+
     # 관계 설정
     product_group = relationship("ProductGroup")
     process = relationship("Process")
