@@ -1,6 +1,6 @@
 // SPC 메모 관리 모듈
 // 카드 헤더의 메모 버튼/뱃지/알림 바와 메모 모달의 CRUD를 담당.
-// 외부 의존성: window.api (api.js), window.PROCESS_TYPE, jQuery (Bootstrap 4 modal)
+// 외부 의존성: api (api.js), window.PROCESS_TYPE, jQuery (Bootstrap 4 modal)
 (function () {
     'use strict';
 
@@ -55,7 +55,7 @@
                     process_id: this.ctx.processId,
                     process_type: this.ctx.processType || 'PHOTO'
                 };
-                const summary = await window.api.get('/spc-memos/summary', params);
+                const summary = await api.get('/spc-memos/summary', params);
                 if (badge) badge.textContent = String(summary.count || 0);
 
                 if (alertBar) {
@@ -124,10 +124,10 @@
                     limit: 200
                 };
                 // 캐시 우회를 위해 clearCache 후 요청
-                if (window.api && window.api.clearCache) {
-                    window.api.clearCache('/spc-memos/');
+                if (api && api.clearCache) {
+                    api.clearCache('/spc-memos/');
                 }
-                const memos = await window.api.get('/spc-memos/', params);
+                const memos = await api.get('/spc-memos/', params);
                 this._renderList(memos);
             } catch (err) {
                 console.error('SPC 메모 목록 로드 실패:', err);
@@ -204,7 +204,7 @@
         async _deleteMemo(id) {
             if (!confirm('이 메모를 삭제하시겠습니까?')) return;
             try {
-                await window.api.delete(`/spc-memos/${id}`);
+                await api.delete(`/spc-memos/${id}`);
                 await this._loadList();
                 await this._refreshSummary();
             } catch (err) {
@@ -230,10 +230,10 @@
             try {
                 if (idVal) {
                     // 수정
-                    await window.api.put(`/spc-memos/${idVal}`, { title, content });
+                    await api.put(`/spc-memos/${idVal}`, { title, content });
                 } else {
                     // 생성
-                    await window.api.post('/spc-memos/', {
+                    await api.post('/spc-memos/', {
                         product_group_id: this.ctx.productGroupId,
                         process_id: this.ctx.processId,
                         target_id: this.ctx.targetId,
