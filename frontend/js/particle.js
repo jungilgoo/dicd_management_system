@@ -94,8 +94,184 @@
     async function initParticlePage() {
         setupEventListeners();
         renderBeforeDraftStatus();
+        initAuthorManagement();
         await loadRecentData();
         console.log('Particle 페이지 초기화 완료');
+    }
+
+    // 작성자 관리 기능 (데이터 입력 페이지와 동일)
+    function initAuthorManagement() {
+        const processType = window.PROCESS_TYPE || 'PHOTO';
+
+        const loadAuthors = async () => {
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/authors?process_type=${processType}&is_active=true`);
+                if (!response.ok) {
+                    throw new Error('작성자 목록 조회 실패');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('작성자 목록 로드 오류:', error);
+                return [];
+            }
+        };
+
+        const updateAuthorDropdown = async () => {
+            const authors = await loadAuthors();
+            const authorSelect = document.getElementById('author');
+            if (!authorSelect) return;
+
+            const currentValue = authorSelect.value;
+
+            while (authorSelect.options.length > 1) {
+                authorSelect.remove(1);
+            }
+
+            authors.forEach(author => {
+                const option = document.createElement('option');
+                option.value = author.name;
+                option.textContent = author.name;
+                option.dataset.id = author.id;
+                authorSelect.appendChild(option);
+            });
+
+            if (currentValue) {
+                authorSelect.value = currentValue;
+            }
+        };
+
+        const updateAuthorList = async () => {
+            const authors = await loadAuthors();
+            const authorList = document.getElementById('author-list');
+            if (!authorList) return;
+
+            authorList.innerHTML = '';
+
+            if (authors.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item text-muted';
+                li.textContent = '등록된 작성자가 없습니다.';
+                authorList.appendChild(li);
+                return;
+            }
+
+            authors.forEach(author => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.textContent = author.name;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-sm btn-outline-danger';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.onclick = function() {
+                    removeAuthor(author.id, author.name);
+                };
+
+                li.appendChild(deleteBtn);
+                authorList.appendChild(li);
+            });
+        };
+
+        const addAuthor = async (newAuthorName) => {
+            if (!newAuthorName || newAuthorName.trim() === '') {
+                return false;
+            }
+
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/authors`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: newAuthorName.trim(),
+                        process_type: processType,
+                        is_active: true
+                    })
+                });
+
+                if (!response.ok) {
+                    if (response.status === 400) {
+                        alert('이미 존재하는 작성자입니다.');
+                    } else {
+                        alert('작성자 추가에 실패했습니다.');
+                    }
+                    return false;
+                }
+
+                await updateAuthorDropdown();
+                await updateAuthorList();
+                return true;
+            } catch (error) {
+                console.error('작성자 추가 오류:', error);
+                alert('작성자 추가 중 오류가 발생했습니다.');
+                return false;
+            }
+        };
+
+        const removeAuthor = async (authorId, authorName) => {
+            if (!confirm(`'${authorName}' 작성자를 삭제하시겠습니까?`)) {
+                return false;
+            }
+
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/authors/${authorId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    alert('작성자 삭제에 실패했습니다.');
+                    return false;
+                }
+
+                await updateAuthorDropdown();
+                await updateAuthorList();
+                return true;
+            } catch (error) {
+                console.error('작성자 삭제 오류:', error);
+                alert('작성자 삭제 중 오류가 발생했습니다.');
+                return false;
+            }
+        };
+
+        const addAuthorBtn = document.getElementById('add-author-btn');
+        if (addAuthorBtn) {
+            addAuthorBtn.addEventListener('click', () => {
+                $('#author-modal').modal('show');
+            });
+        }
+
+        const addAuthorModalBtn = document.getElementById('add-author-modal-btn');
+        if (addAuthorModalBtn) {
+            addAuthorModalBtn.addEventListener('click', async () => {
+                const newAuthorInput = document.getElementById('new-author');
+                const newAuthor = newAuthorInput.value;
+
+                if (await addAuthor(newAuthor)) {
+                    newAuthorInput.value = '';
+                    const authorSelect = document.getElementById('author');
+                    if (authorSelect) {
+                        authorSelect.value = newAuthor.trim();
+                    }
+                }
+            });
+        }
+
+        $('#author-modal').on('shown.bs.modal', function () {
+            const newAuthorEl = document.getElementById('new-author');
+            if (newAuthorEl) newAuthorEl.focus();
+            updateAuthorList();
+        });
+
+        const newAuthorEl = document.getElementById('new-author');
+        if (newAuthorEl) {
+            newAuthorEl.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('add-author-modal-btn').click();
+                }
+            });
+        }
+
+        updateAuthorDropdown();
     }
 
     // PNG pHYs 청크 삽입 (DPI 메타데이터 → PPT/Word에서 정확한 물리 크기)
