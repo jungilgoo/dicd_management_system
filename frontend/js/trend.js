@@ -39,6 +39,8 @@
     let customEndDate = null;
     let currentChangePoints = null; // 변경점 데이터
     let showChangePoints = true; // 변경점 표시 여부
+    let currentViewMode = 'measurement'; // 'measurement', 'weekly', 'monthly'
+    let currentAggregated = null; // 집계 데이터 캐시
     
     // 페이지 초기화
     async function initTrendPage() {
@@ -173,6 +175,9 @@
 
             title = `${cdType} 추이 분석 (제품군:${productGroupName}, 공정:${processName}, 타겟:${targetName}, 기간:${periodText})`;
         }
+
+        if (currentViewMode === 'weekly') title += ' [주별]';
+        else if (currentViewMode === 'monthly') title += ' [월별]';
 
         return title;
     }
@@ -367,7 +372,15 @@
         
         // 데이터 정렬 (날짜순)
         measurements.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        
+
+        // 집계 모드(주별/월별)일 때 별도 렌더링
+        if (currentViewMode !== 'measurement') {
+            const aggregated = aggregateMeasurements(measurements, currentViewMode);
+            currentAggregated = aggregated;
+            renderAggregatedChart(aggregated, stats, changePoints, cdType);
+            return;
+        }
+
         // 차트 데이터 준비
         const labels = measurements.map(m => {
             const date = new Date(m.created_at);
@@ -882,24 +895,71 @@
         document.getElementById('stats-container').innerHTML = statsHtml;
     }
     
-    // 차트 데이터 테이블 업데이트
+    // 차트 데이터 테이블 업데이트 (회차별/주별/월별 모드 대응)
     function updateChartDataTable(measurements) {
         const tbody = document.querySelector('#chart-data-table tbody');
-        if (!tbody) return;
+        const thead = document.querySelector('#chart-data-table thead tr');
+        if (!tbody || !thead) return;
 
-        // 테이블 초기화
-        tbody.innerHTML = '';
-
-        // ETCH 공정 여부 확인
         const isEtch = window.PROCESS_TYPE === 'ETCH';
 
-        // 데이터가 있으면 테이블 업데이트
+        // 집계 모드 처리
+        if (currentViewMode !== 'measurement') {
+            const aggregated = aggregateMeasurements(measurements, currentViewMode);
+            currentAggregated = aggregated;
+            const periodLabel = currentViewMode === 'weekly' ? '주' : '월';
+
+            thead.innerHTML = `
+                <th>${periodLabel}</th>
+                <th>측정 횟수</th>
+                <th>최솟값</th>
+                <th>평균값</th>
+                <th>최댓값</th>
+                <th>범위</th>
+            `;
+            tbody.innerHTML = '';
+            aggregated.forEach(group => {
+                const range = (group.maxValue != null && group.minValue != null)
+                    ? (group.maxValue - group.minValue).toFixed(3) : '-';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${group.label}</td>
+                        <td>${group.count}</td>
+                        <td>${group.minValue != null ? group.minValue.toFixed(3) : '-'}</td>
+                        <td>${group.avgValue != null ? group.avgValue.toFixed(3) : '-'}</td>
+                        <td>${group.maxValue != null ? group.maxValue.toFixed(3) : '-'}</td>
+                        <td>${range}</td>
+                    </tr>
+                `;
+            });
+            return;
+        }
+
+        // 회차별 모드: 원래 헤더 복원
+        const exposureTimeHeader = isEtch ? '' : '<th>Exposure Time</th>';
+        thead.innerHTML = `
+            <th>날짜</th>
+            <th>작성자</th>
+            <th>DEVICE</th>
+            <th>LOT NO</th>
+            ${exposureTimeHeader}
+            <th>상</th>
+            <th>중</th>
+            <th>하</th>
+            <th>좌</th>
+            <th>우</th>
+            <th>최소값</th>
+            <th>평균값</th>
+            <th>최대값</th>
+            <th>범위</th>
+        `;
+        tbody.innerHTML = '';
+
         if (measurements && measurements.length > 0) {
             measurements.forEach(measurement => {
                 const date = new Date(measurement.created_at).toLocaleDateString();
-                // ETCH 공정에서는 Exposure Time 컬럼 제외
                 const exposureTimeCell = isEtch ? '' : `<td>${measurement.exposure_time || '-'}</td>`;
-                const row = `
+                tbody.innerHTML += `
                     <tr>
                         <td>${date}</td>
                         <td>${measurement.author || '-'}</td>
@@ -917,7 +977,6 @@
                         <td>${measurement.range_value ? measurement.range_value.toFixed(3) : '-'}</td>
                     </tr>
                 `;
-                tbody.innerHTML += row;
             });
         }
     }
@@ -941,6 +1000,331 @@
         if (showBtn) {
             showBtn.style.display = 'inline-block';
         }
+    }
+
+    // 측정 데이터를 주별/월별로 집계
+    function aggregateMeasurements(measurements, mode) {
+        if (!measurements || measurements.length === 0) return [];
+
+        const groups = new Map();
+
+        measurements.forEach((m, index) => {
+            const date = new Date(m.created_at);
+            let key, label;
+
+            if (mode === 'weekly') {
+                const d = new Date(date);
+                d.setHours(0, 0, 0, 0);
+                const day = d.getDay();
+                const diff = day === 0 ? -6 : 1 - day; // 월요일 기준
+                d.setDate(d.getDate() + diff);
+                key = d.toISOString().split('T')[0];
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                label = `${mm}/${dd} 주`;
+            } else {
+                const yr = date.getFullYear();
+                const mo = date.getMonth() + 1;
+                key = `${yr}-${String(mo).padStart(2, '0')}`;
+                label = `${yr}년 ${mo}월`;
+            }
+
+            if (!groups.has(key)) {
+                groups.set(key, { key, label, measurements: [], indices: [] });
+            }
+            const group = groups.get(key);
+            group.measurements.push(m);
+            group.indices.push(index);
+        });
+
+        return Array.from(groups.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([, group]) => {
+                const ms = group.measurements;
+                const avgVals = ms.map(m => m.avg_value).filter(v => v != null);
+                const minVals = ms.map(m => m.min_value).filter(v => v != null);
+                const maxVals = ms.map(m => m.max_value).filter(v => v != null);
+
+                const periodAvg = avgVals.length > 0
+                    ? avgVals.reduce((a, b) => a + b, 0) / avgVals.length : null;
+                const periodMin = minVals.length > 0 ? Math.min(...minVals) : null;
+                const periodMax = maxVals.length > 0 ? Math.max(...maxVals) : null;
+
+                return {
+                    key: group.key,
+                    label: group.label,
+                    avgValue: periodAvg,
+                    minValue: periodMin,
+                    maxValue: periodMax,
+                    count: ms.length,
+                    measurements: ms,
+                    indices: group.indices
+                };
+            });
+    }
+
+    // 집계 데이터에 대한 SPEC 배열 생성
+    function getSpecForAggregatedData(aggregatedData, stats) {
+        const lslArr = [], uslArr = [], targetArr = [];
+
+        aggregatedData.forEach(group => {
+            let lsl = null, usl = null, target = null;
+
+            if (stats && stats.spec_segments && stats.spec_segments.length > 0) {
+                const lastIndex = group.indices[group.indices.length - 1];
+                let seg = stats.spec_segments.find(s =>
+                    lastIndex >= s.start_index && lastIndex <= s.end_index
+                );
+                if (!seg) {
+                    let minDist = Infinity;
+                    stats.spec_segments.forEach(s => {
+                        const dist = Math.min(
+                            Math.abs(lastIndex - s.start_index),
+                            Math.abs(lastIndex - s.end_index)
+                        );
+                        if (dist < minDist) { minDist = dist; seg = s; }
+                    });
+                }
+                if (seg) { lsl = seg.lsl; usl = seg.usl; target = seg.target; }
+            } else if (stats && stats.spec) {
+                lsl = stats.spec.lsl;
+                usl = stats.spec.usl;
+                target = stats.spec.target ||
+                    (stats.spec.lsl != null && stats.spec.usl != null
+                        ? (stats.spec.lsl + stats.spec.usl) / 2 : null);
+            }
+
+            lslArr.push(lsl);
+            uslArr.push(usl);
+            targetArr.push(target);
+        });
+
+        return { lsl: lslArr, usl: uslArr, target: targetArr };
+    }
+
+    // 집계 차트 렌더링 (주별/월별)
+    function renderAggregatedChart(aggregatedData, stats, changePoints, cdType) {
+        if (!aggregatedData || aggregatedData.length === 0) {
+            document.getElementById('trend-chart-container').innerHTML = `
+            <div class="text-center py-5">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> 집계할 데이터가 없습니다.
+                </div>
+            </div>
+            `;
+            return;
+        }
+
+        const labels = aggregatedData.map(g => g.label);
+        const avgValues = aggregatedData.map(g => g.avgValue);
+        const minValues = aggregatedData.map(g => g.minValue);
+        const maxValues = aggregatedData.map(g => g.maxValue);
+        const modeLabel = currentViewMode === 'weekly' ? '주' : '월';
+
+        const datasets = [
+            {
+                label: '최댓값',
+                data: maxValues,
+                borderColor: 'rgba(243, 156, 18, 0.7)',
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                fill: false,
+                tension: 0.3
+            },
+            {
+                label: '최솟값',
+                data: minValues,
+                borderColor: 'rgba(0, 192, 239, 0.7)',
+                backgroundColor: 'rgba(60, 141, 188, 0.1)',
+                borderWidth: 1,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                fill: '-1',
+                tension: 0.3
+            },
+            {
+                label: `${modeLabel}평균`,
+                data: avgValues,
+                borderColor: '#3c8dbc',
+                backgroundColor: 'rgba(60, 141, 188, 0.15)',
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: false,
+                tension: 0.3
+            }
+        ];
+
+        // SPEC 라인 추가
+        const specData = getSpecForAggregatedData(aggregatedData, stats);
+        if (specData.lsl.some(v => v != null)) {
+            datasets.push({
+                label: 'LSL',
+                data: specData.lsl,
+                borderColor: '#3366ff',
+                borderWidth: 1,
+                pointRadius: 0,
+                fill: false,
+                borderDash: [5, 5],
+                spanGaps: false
+            });
+        }
+        if (specData.usl.some(v => v != null)) {
+            datasets.push({
+                label: 'USL',
+                data: specData.usl,
+                borderColor: '#3366ff',
+                borderWidth: 1,
+                pointRadius: 0,
+                fill: false,
+                borderDash: [5, 5],
+                spanGaps: false
+            });
+        }
+        if (specData.target.some(v => v != null)) {
+            datasets.push({
+                label: '타겟',
+                data: specData.target,
+                borderColor: '#ff9900',
+                borderWidth: 1,
+                pointRadius: 0,
+                fill: false,
+                spanGaps: false
+            });
+        }
+
+        const ctx = document.getElementById('trend-chart').getContext('2d');
+        if (trendChart) trendChart.destroy();
+
+        // 변경점 annotation (집계 구간에 매핑)
+        const annotations = {};
+        if (changePoints && changePoints.length > 0 && showChangePoints) {
+            changePoints.forEach((cp, index) => {
+                const cpDate = new Date(cp.change_date);
+                let cpKey;
+
+                if (currentViewMode === 'weekly') {
+                    const d = new Date(cpDate);
+                    d.setHours(0, 0, 0, 0);
+                    const day = d.getDay();
+                    d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+                    cpKey = d.toISOString().split('T')[0];
+                } else {
+                    const yr = cpDate.getFullYear();
+                    const mo = cpDate.getMonth() + 1;
+                    cpKey = `${yr}-${String(mo).padStart(2, '0')}`;
+                }
+
+                let bucketIndex = aggregatedData.findIndex(g => g.key === cpKey);
+                if (bucketIndex === -1) {
+                    for (let i = 0; i < aggregatedData.length; i++) {
+                        if (aggregatedData[i].key >= cpKey) { bucketIndex = i; break; }
+                    }
+                }
+                if (bucketIndex === -1 && aggregatedData.length > 0) {
+                    bucketIndex = aggregatedData.length - 1;
+                }
+
+                if (bucketIndex >= 0) {
+                    const aKey = `changePoint${index}`;
+                    annotations[aKey] = {
+                        type: 'line',
+                        id: aKey,
+                        xMin: bucketIndex,
+                        xMax: bucketIndex,
+                        borderColor: '#dc3545',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        label: {
+                            display: true,
+                            content: '▶',
+                            position: 'start',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            font: { size: 14, weight: 'bold' },
+                            padding: { x: 6, y: 4 },
+                            borderRadius: 4,
+                            yAdjust: -10
+                        },
+                        changePointData: cp
+                    };
+                }
+            });
+        }
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: generateChartTitle()
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            filter: function(tooltipItem) {
+                                const lbl = tooltipItem.dataset.label;
+                                return lbl !== 'USL' && lbl !== 'LSL' && lbl !== '타겟';
+                            },
+                            label: function(context) {
+                                const lbl = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                if (value == null) return null;
+                                return `${lbl}: ${value.toFixed(3)}`;
+                            },
+                            footer: function(tooltipItems) {
+                                if (!tooltipItems || tooltipItems.length === 0) return '';
+                                const dataIndex = tooltipItems[0].dataIndex;
+                                const group = aggregatedData[dataIndex];
+                                if (!group) return '';
+                                return [`측정 횟수: ${group.count}회`];
+                            }
+                        }
+                    },
+                    legend: { position: 'top' },
+                    annotation: { annotations }
+                },
+                scales: {
+                    x: { title: { display: true, text: modeLabel } },
+                    y: { title: { display: true, text: `${cdType} 값` } }
+                },
+                onClick: (event) => {
+                    const chart = event.chart;
+                    if (!chart) return;
+                    const canvasPosition = Chart.helpers.getRelativePosition(event, chart);
+                    Object.keys(annotations).forEach(aKey => {
+                        const ann = annotations[aKey];
+                        if (ann.changePointData) {
+                            const dataIndex = Math.round(
+                                canvasPosition.x / (chart.chartArea.width / Math.max(labels.length - 1, 1))
+                            );
+                            if (dataIndex === ann.xMin) showChangePointDetails(ann.changePointData);
+                        }
+                    });
+                }
+            }
+        });
+
+        // 변경점 클릭 이벤트
+        trendChart.canvas.addEventListener('click', function(event) {
+            const rect = trendChart.canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            Object.keys(annotations).forEach(aKey => {
+                const ann = annotations[aKey];
+                if (ann.changePointData) {
+                    const annX = trendChart.chartArea.left +
+                        (ann.xMin / Math.max(labels.length - 1, 1)) * trendChart.chartArea.width;
+                    if (Math.abs(x - annX) <= 20) showChangePointDetails(ann.changePointData);
+                }
+            });
+        });
     }
 
     // 이벤트 리스너 설정
@@ -1027,6 +1411,28 @@
         if (toggleChangePointsBtn) {
             toggleChangePointsBtn.addEventListener('click', toggleChangePoints);
         }
+
+        // 뷰 모드 토글 버튼 이벤트 (회차별/주별/월별)
+        ['measurement', 'weekly', 'monthly'].forEach(mode => {
+            const btn = document.getElementById(`view-mode-${mode}`);
+            if (!btn) return;
+            btn.addEventListener('click', function() {
+                if (currentViewMode === mode) return;
+                currentViewMode = mode;
+
+                // 버튼 활성 상태 업데이트
+                document.querySelectorAll('#view-mode-group .btn').forEach(b => {
+                    b.classList.remove('active');
+                });
+                this.classList.add('active');
+
+                // 데이터가 있으면 차트 및 테이블 재렌더링
+                if (currentMeasurements && currentMeasurements.length > 0) {
+                    updateTrendChart(currentMeasurements, currentStats, currentChangePoints);
+                    updateChartDataTable(currentMeasurements);
+                }
+            });
+        });
     }
     
     // 차트를 클립보드에 복사하는 함수
