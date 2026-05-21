@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>기간 분석 - ETCH 공정 관리 시스템</title>
+    <link rel="stylesheet" href="../../../lib/css/source-sans-pro.css">
+    <link rel="stylesheet" href="../../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../../lib/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <style>
+        .matrix-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .matrix-controls label { margin-bottom: 0; font-weight: 600; }
+
+        .matrix-wrapper { overflow-x: auto; position: relative; }
+        #matrix-table {
+            border-collapse: collapse;
+            min-width: 100%;
+            font-size: 0.82rem;
+            table-layout: auto;
+        }
+        #matrix-table th,
+        #matrix-table td {
+            border: 1px solid #dee2e6;
+            padding: 4px 7px;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        #matrix-table thead th {
+            background: #343a40;
+            color: #fff;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 3;
+        }
+
+        .col-pg {
+            position: sticky; left: 0; z-index: 2;
+            background: #495057; color: #fff; font-weight: 700;
+            min-width: 90px; text-align: center;
+        }
+        .col-proc {
+            position: sticky; left: 90px; z-index: 2;
+            background: #6c757d; color: #fff; font-weight: 600;
+            min-width: 90px; text-align: center;
+        }
+        .col-target {
+            position: sticky; left: 180px; z-index: 2;
+            background: #f8f9fa; font-weight: 600; min-width: 110px;
+        }
+        thead th.col-pg  { background: #212529; }
+        thead th.col-proc { background: #343a40; }
+        thead th.col-target { background: #495057; }
+
+        .cell-data { text-align: center; min-width: 105px; }
+        .cell-mean { font-weight: 700; font-size: 0.88rem; }
+        .cell-delta { font-size: 0.78rem; color: #495057; }
+        .cell-delta.up   { color: #dc3545; }
+        .cell-delta.down { color: #0d6efd; }
+        .cell-sigma-row { font-size: 0.78rem; color: #6c757d; margin-top: 1px; }
+        .cell-trend { font-size: 0.82rem; }
+        .trend-up   { color: #dc3545; }
+        .trend-down { color: #0d6efd; }
+        .trend-flat { color: #6c757d; }
+        .cell-empty { text-align: center; color: #adb5bd; font-size: 0.85rem; }
+
+        .sigma-1 { background-color: #fff9c4; }
+        .sigma-2 { background-color: #ffcc80; }
+        .sigma-3 { background-color: #ef9a9a; }
+
+        #loading-overlay {
+            display: none; position: absolute; inset: 0;
+            background: rgba(255,255,255,0.7); z-index: 10;
+            align-items: center; justify-content: center;
+            font-size: 1.2rem; color: #495057;
+        }
+        #loading-overlay.active { display: flex; }
+
+        .legend-box {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 3px 10px; border-radius: 4px; font-size: 0.8rem;
+        }
+        .legend-swatch {
+            width: 14px; height: 14px; border-radius: 2px; border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+
+    <!-- ── 사이드바 ── -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="../../../etch_index.html" class="brand-link text-center">
+            <span class="brand-text font-weight-light">ETCH 공정 관리 시스템</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    <li class="nav-item">
+                        <a href="../../../etch_index.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i><p>대시보드</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="../input.html" class="nav-link">
+                            <i class="nav-icon fas fa-edit"></i><p>데이터 입력</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="../view.html" class="nav-link">
+                            <i class="nav-icon fas fa-table"></i><p>데이터 조회</p>
+                        </a>
+                    </li>
+                    <li class="nav-item menu-open">
+                        <a href="#" class="nav-link active">
+                            <i class="nav-icon fas fa-chart-bar"></i>
+                            <p>데이터 분석<i class="right fas fa-angle-left"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="trend.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i><p>추이 분석</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="spc.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i><p>SPC 분석</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="distribution.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i><p>분포 분석</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="boxplot.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i><p>박스플롯 분석</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="matrix.html" class="nav-link active">
+                                    <i class="far fa-dot-circle nav-icon"></i><p>기간 분석</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-file-alt"></i>
+                            <p>보고서<i class="right fas fa-angle-left"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="../reports/trend_view.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i><p>요약 보고서</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../reports/detail_view.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i><p>상세 보고서</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a href="../settings.html" class="nav-link">
+                            <i class="nav-icon fas fa-cog"></i><p>설정</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="../bulk_upload.html" class="nav-link">
+                            <i class="nav-icon fas fa-upload"></i><p>데이터 일괄 업로드</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="../change_points.html" class="nav-link">
+                            <i class="nav-icon fas fa-exchange-alt"></i><p>변경점 관리</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="../../alarms/spc_alarms.html" class="nav-link">
+                            <i class="nav-icon fas fa-bell"></i><p>SPC 알람 관리</p>
+                        </a>
+                    </li>
+                    <li class="nav-item mt-3">
+                        <a href="../../../index.html" class="nav-link bg-info process-switch">
+                            <i class="nav-icon fas fa-sync-alt"></i><p>PHOTO 공정으로 전환</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- ── 콘텐츠 ── -->
+    <div class="content-wrapper">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1><i class="fas fa-th mr-2"></i>기간 분석</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="../../../etch_index.html">홈</a></li>
+                            <li class="breadcrumb-item active">기간 분석</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">모니터링 설정</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="matrix-controls">
+                            <label>집계 단위:</label>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-primary active" id="btn-weekly">주별</button>
+                                <button type="button" class="btn btn-outline-primary" id="btn-monthly">월별</button>
+                            </div>
+
+                            <label class="ml-3">표시 기간:</label>
+                            <select class="form-control form-control-sm" id="periods-select" style="width:auto;">
+                                <option value="8">8기간</option>
+                                <option value="12" selected>12기간</option>
+                                <option value="16">16기간</option>
+                                <option value="24">24기간</option>
+                            </select>
+
+                            <button type="button" class="btn btn-sm btn-success ml-3" id="btn-refresh">
+                                <i class="fas fa-sync-alt mr-1"></i>새로고침
+                            </button>
+                        </div>
+
+                        <div class="mt-2 d-flex align-items-center flex-wrap" style="gap:8px;">
+                            <small class="text-muted mr-2">색상 기준 (기간 평균의 σ 편차):</small>
+                            <span class="legend-box"><span class="legend-swatch" style="background:#fff;"></span>±1σ 이내</span>
+                            <span class="legend-box sigma-1"><span class="legend-swatch" style="background:#fff9c4;"></span>±1σ~2σ</span>
+                            <span class="legend-box sigma-2"><span class="legend-swatch" style="background:#ffcc80;"></span>±2σ~3σ</span>
+                            <span class="legend-box sigma-3"><span class="legend-swatch" style="background:#ef9a9a;"></span>±3σ 초과</span>
+                            <span class="ml-3 text-muted" style="font-size:0.8rem;">
+                                추세: <span class="trend-up">▲</span> 연속 상승
+                                <span class="trend-down ml-1">▼</span> 연속 하락
+                                <span class="trend-flat ml-1">→</span> 혼재
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title" id="matrix-title">FICD 주간 평균 매트릭스</h3>
+                    </div>
+                    <div class="card-body p-0" style="position:relative;">
+                        <div id="loading-overlay" class="active">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>데이터 로딩 중...
+                        </div>
+                        <div id="error-msg" class="alert alert-warning m-3" style="display:none;"></div>
+                        <div class="matrix-wrapper">
+                            <table id="matrix-table">
+                                <thead id="matrix-thead"></thead>
+                                <tbody id="matrix-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <footer class="main-footer">
+        <div class="float-right d-none d-sm-block"><b>Version</b> 1.0.0</div>
+        <strong>ETCH 공정 관리 시스템</strong>
+    </footer>
+</div>
+
+<script src="../../../lib/js/jquery-3.6.0.min.js"></script>
+<script src="../../../lib/js/bootstrap.bundle.min.js"></script>
+<script src="../../../lib/js/adminlte.min.js"></script>
+<script>
+const PROCESS_TYPE = 'ETCH';
+const BASE_URL = '';
+
+let currentMode = 'weekly';
+let currentPeriods = 12;
+
+function fmtNum(v, dec = 4) {
+    if (v === null || v === undefined) return '-';
+    return parseFloat(v).toFixed(dec);
+}
+
+function sigmaClass(mean, overallMean, sigma) {
+    if (mean === null || overallMean === null || !sigma || sigma === 0) return '';
+    const diff = Math.abs(mean - overallMean) / sigma;
+    if (diff > 3) return 'sigma-3';
+    if (diff > 2) return 'sigma-2';
+    if (diff > 1) return 'sigma-1';
+    return '';
+}
+
+function trendClass(t) {
+    if (t === '▲') return 'trend-up';
+    if (t === '▼') return 'trend-down';
+    if (t === '→') return 'trend-flat';
+    return '';
+}
+
+function deltaClass(d) {
+    if (d === null || d === undefined) return '';
+    if (d > 0) return 'up';
+    if (d < 0) return 'down';
+    return '';
+}
+
+function renderMatrix(data) {
+    const thead = document.getElementById('matrix-thead');
+    const tbody = document.getElementById('matrix-tbody');
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+
+    const { periods, period_labels, groups } = data;
+
+    if (!groups || groups.length === 0) {
+        document.getElementById('error-msg').style.display = 'block';
+        document.getElementById('error-msg').textContent = '표시할 데이터가 없습니다.';
+        return;
+    }
+
+    const hRow = document.createElement('tr');
+    hRow.innerHTML = `
+        <th class="col-pg">제품군</th>
+        <th class="col-proc">공정</th>
+        <th class="col-target">타겟</th>
+    `;
+    periods.forEach((pk, idx) => {
+        const th = document.createElement('th');
+        th.className = 'cell-data';
+        th.textContent = period_labels[idx] || pk;
+        hRow.appendChild(th);
+    });
+    thead.appendChild(hRow);
+
+    groups.forEach(pg => {
+        let pgRowCount = 0;
+        pg.processes.forEach(proc => { pgRowCount += proc.targets.length; });
+
+        let pgWritten = false;
+        pg.processes.forEach(proc => {
+            const procRowCount = proc.targets.length;
+            let procWritten = false;
+
+            proc.targets.forEach(tgt => {
+                const tr = document.createElement('tr');
+
+                if (!pgWritten) {
+                    const td = document.createElement('td');
+                    td.className = 'col-pg';
+                    td.rowSpan = pgRowCount;
+                    td.textContent = pg.product_group_name;
+                    tr.appendChild(td);
+                    pgWritten = true;
+                }
+
+                if (!procWritten) {
+                    const td = document.createElement('td');
+                    td.className = 'col-proc';
+                    td.rowSpan = procRowCount;
+                    td.textContent = proc.process_name;
+                    tr.appendChild(td);
+                    procWritten = true;
+                }
+
+                const tdTgt = document.createElement('td');
+                tdTgt.className = 'col-target';
+                tdTgt.textContent = tgt.target_name;
+                tr.appendChild(tdTgt);
+
+                periods.forEach(pk => {
+                    const cell = tgt.cells[pk];
+                    const td = document.createElement('td');
+                    td.className = 'cell-data';
+
+                    if (!cell) {
+                        td.innerHTML = '<span class="cell-empty">-</span>';
+                    } else {
+                        const sc = sigmaClass(cell.mean, tgt.overall_mean, tgt.period_sigma);
+                        if (sc) td.classList.add(sc);
+
+                        const deltaStr = cell.delta !== null
+                            ? `<span class="cell-delta ${deltaClass(cell.delta)}">${cell.delta > 0 ? '+' : ''}${fmtNum(cell.delta, 4)}</span>`
+                            : '';
+
+                        const trendStr = cell.trend
+                            ? `<span class="cell-trend ${trendClass(cell.trend)}">${cell.trend}</span>`
+                            : '';
+
+                        const stdStr = cell.std !== null ? fmtNum(cell.std, 4) : '-';
+
+                        td.innerHTML = `
+                            <div class="cell-mean">${fmtNum(cell.mean, 4)} ${deltaStr}</div>
+                            <div class="cell-sigma-row">σ ${stdStr} (n=${cell.n || 0}) ${trendStr}</div>
+                        `;
+                    }
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+        });
+    });
+}
+
+async function loadMatrix() {
+    const loading = document.getElementById('loading-overlay');
+    const errMsg = document.getElementById('error-msg');
+    loading.classList.add('active');
+    errMsg.style.display = 'none';
+
+    const titleEl = document.getElementById('matrix-title');
+    titleEl.textContent = currentMode === 'weekly'
+        ? `FICD 주간 평균 매트릭스 (최근 ${currentPeriods}주)`
+        : `FICD 월간 평균 매트릭스 (최근 ${currentPeriods}개월)`;
+
+    try {
+        const url = `/api/monitoring/matrix?process_type=${PROCESS_TYPE}&mode=${currentMode}&periods=${currentPeriods}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderMatrix(data);
+    } catch (e) {
+        errMsg.style.display = 'block';
+        errMsg.textContent = `데이터 로딩 실패: ${e.message}`;
+    } finally {
+        loading.classList.remove('active');
+    }
+}
+
+function setPeriodOptions(values, selected) {
+    const sel = document.getElementById('periods-select');
+    sel.innerHTML = '';
+    values.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = String(v);
+        opt.textContent = `${v}기간`;
+        if (v === selected) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
+document.getElementById('btn-weekly').addEventListener('click', () => {
+    currentMode = 'weekly';
+    currentPeriods = 12;
+    setPeriodOptions([8, 12, 16, 24], 12);
+    document.getElementById('btn-weekly').classList.replace('btn-outline-primary', 'btn-primary');
+    document.getElementById('btn-monthly').classList.replace('btn-primary', 'btn-outline-primary');
+    document.getElementById('btn-weekly').classList.add('active');
+    document.getElementById('btn-monthly').classList.remove('active');
+    loadMatrix();
+});
+
+document.getElementById('btn-monthly').addEventListener('click', () => {
+    currentMode = 'monthly';
+    currentPeriods = 6;
+    setPeriodOptions([3, 6, 12, 24], 6);
+    document.getElementById('btn-monthly').classList.replace('btn-outline-primary', 'btn-primary');
+    document.getElementById('btn-weekly').classList.replace('btn-primary', 'btn-outline-primary');
+    document.getElementById('btn-monthly').classList.add('active');
+    document.getElementById('btn-weekly').classList.remove('active');
+    loadMatrix();
+});
+
+document.getElementById('periods-select').addEventListener('change', (e) => {
+    currentPeriods = parseInt(e.target.value);
+    loadMatrix();
+});
+
+document.getElementById('btn-refresh').addEventListener('click', loadMatrix);
+
+loadMatrix();
+</script>
+</body>
+</html>

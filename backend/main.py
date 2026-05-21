@@ -34,6 +34,7 @@ from backend.routers import spc_alarms as spc_alarms_router
 from backend.routers import ai_analysis as ai_analysis_router
 from backend.routers import devices as devices_router
 from backend.routers import spc_memos as spc_memos_router
+from backend.routers import matrix_monitoring as matrix_monitoring_router
 
 # 데이터베이스 테이블 생성 (에러 발생 시 서버는 계속 실행)
 try:
@@ -86,6 +87,7 @@ app.include_router(spc_alarms_router.router)
 app.include_router(ai_analysis_router.router)
 app.include_router(devices_router.router)
 app.include_router(spc_memos_router.router)
+app.include_router(matrix_monitoring_router.router)
 print("✅ 모든 API 라우터 등록 완료")
 
 
