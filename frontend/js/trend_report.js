@@ -785,20 +785,12 @@ class ChartManager {
                     pdf.rect(x, y, accentW, titleH, 'F');
 
                     if (target) {
-                        // ── 제품군 (소자) ──
-                        pdf.setFontSize(5.5);
-                        pdf.setTextColor(120, 130, 140);
-                        pdf.text(
-                            `${target.productGroupName}  ›  ${target.processName}`,
-                            x + accentW + 2, y + 2.8
-                        );
-
-                        // ── 타겟명 (대자) ──
-                        pdf.setFontSize(7.5);
+                        // ── 제품군 > 공정 > 타겟 ──
+                        pdf.setFontSize(7);
                         pdf.setTextColor(30, 40, 50);
                         pdf.text(
-                            target.targetName,
-                            x + accentW + 2, y + titleH - 1.5,
+                            `${target.productGroupName}  >  ${target.processName}  >  ${target.targetName}`,
+                            x + accentW + 2, y + titleH / 2 + 1.2,
                             { maxWidth: chartWidth - accentW - 22 }
                         );
                     }
