@@ -738,14 +738,25 @@ class ChartManager {
             const margin     = { top: 10, bottom: 5, left: 12, right: 12 };
             const cols = 2, rows = 3;
             const gapX = 8, gapY = 5;
-            const titleH = 6; // 제목 영역 높이(mm)
+            const titleH = 7; // 제목 영역 높이(mm)
+            const accentW = 2.5; // 왼쪽 액센트 바 너비
 
             const chartWidth  = (pageWidth  - margin.left - margin.right  - (cols - 1) * gapX) / cols;
             const chartHeight = (pageHeight - margin.top  - margin.bottom - rows * titleH - (rows - 1) * gapY) / rows;
 
-            const chartIds     = Object.keys(this.charts);
+            const chartIds      = Object.keys(this.charts);
             const chartsPerPage = cols * rows;
-            const totalPages   = Math.ceil(chartIds.length / chartsPerPage);
+            const totalPages    = Math.ceil(chartIds.length / chartsPerPage);
+
+            // Cp 클래스 → RGB 변환 헬퍼
+            const cpColor = (badge) => {
+                if (!badge) return null;
+                if (badge.classList.contains('bg-success')) return [40, 167, 69];
+                if (badge.classList.contains('bg-info'))    return [23, 162, 184];
+                if (badge.classList.contains('bg-warning')) return [255, 153, 0];
+                if (badge.classList.contains('bg-danger'))  return [220, 53, 69];
+                return [108, 117, 125]; // secondary
+            };
 
             for (let page = 0; page < totalPages; page++) {
                 if (page > 0) pdf.addPage();
@@ -760,19 +771,56 @@ class ChartManager {
                     const x = margin.left + col * (chartWidth + gapX);
                     const y = margin.top  + row * (chartHeight + titleH + gapY);
 
-                    // 제목 텍스트 (pdf.text로 직접 그림)
-                    const target = targetManager.getTargetById(chartInfo.targetId);
+                    const target  = targetManager.getTargetById(chartInfo.targetId);
+                    const cpBadge = document.querySelector(`#chart-card-${chartInfo.targetId} .cp-badge`);
+                    const color   = cpColor(cpBadge);
+
+                    // ── 제목 배경 (연한 회색) ──
+                    pdf.setFillColor(245, 247, 250);
+                    pdf.rect(x, y, chartWidth, titleH, 'F');
+
+                    // ── 왼쪽 액센트 바 (Cp 색상 or 기본 파란색) ──
+                    const [ar, ag, ab] = color || [52, 144, 220];
+                    pdf.setFillColor(ar, ag, ab);
+                    pdf.rect(x, y, accentW, titleH, 'F');
+
                     if (target) {
-                        // Cp 값 DOM에서 읽기
-                        const cpBadge = document.querySelector(`#chart-card-${chartInfo.targetId} .cp-badge`);
-                        const cpText  = cpBadge ? `  [${cpBadge.textContent.trim()}]` : '';
-                        const title   = `${target.productGroupName} - ${target.processName} - ${target.targetName}${cpText}`;
-                        pdf.setFontSize(7);
-                        pdf.setTextColor(40, 40, 40);
-                        pdf.text(title, x, y + 4, { maxWidth: chartWidth });
+                        // ── 제품군 (소자) ──
+                        pdf.setFontSize(5.5);
+                        pdf.setTextColor(120, 130, 140);
+                        pdf.text(
+                            `${target.productGroupName}  ›  ${target.processName}`,
+                            x + accentW + 2, y + 2.8
+                        );
+
+                        // ── 타겟명 (대자) ──
+                        pdf.setFontSize(7.5);
+                        pdf.setTextColor(30, 40, 50);
+                        pdf.text(
+                            target.targetName,
+                            x + accentW + 2, y + titleH - 1.5,
+                            { maxWidth: chartWidth - accentW - 22 }
+                        );
                     }
 
-                    // Chart.js 캔버스를 직접 이미지로 추출 (html2canvas 불필요)
+                    // ── Cp 뱃지 (우측) ──
+                    if (cpBadge && color) {
+                        const cpText  = cpBadge.textContent.trim();
+                        const badgeW  = 18, badgeH = titleH;
+                        const bx      = x + chartWidth - badgeW;
+                        pdf.setFillColor(...color);
+                        pdf.rect(bx, y, badgeW, badgeH, 'F');
+                        pdf.setFontSize(7);
+                        pdf.setTextColor(255, 255, 255);
+                        pdf.text(cpText, bx + badgeW / 2, y + titleH / 2 + 1.2, { align: 'center' });
+                    }
+
+                    // ── 하단 구분선 ──
+                    pdf.setDrawColor(210, 215, 220);
+                    pdf.setLineWidth(0.2);
+                    pdf.line(x, y + titleH, x + chartWidth, y + titleH);
+
+                    // ── 차트 이미지 ──
                     const canvas = document.getElementById(chartId);
                     if (canvas) {
                         const imgData = canvas.toDataURL('image/png');
