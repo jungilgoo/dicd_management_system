@@ -271,8 +271,6 @@ class ChartManager {
 
         const labels = aggregated.map(g => g.label);
         const avgValues = aggregated.map(g => g.avgValue);
-        const minValues = aggregated.map(g => g.minValue);
-        const maxValues = aggregated.map(g => g.maxValue);
 
         const datasets = [
             {
@@ -284,19 +282,6 @@ class ChartManager {
                 pointRadius: 4,
                 pointHoverRadius: 6,
                 fill: false,
-                tension: 0.1
-            },
-            {
-                label: '범위',
-                data: maxValues.map((max, i) => max != null && minValues[i] != null ? max - minValues[i] : null),
-                borderColor: 'rgba(52, 144, 220, 0)',
-                backgroundColor: 'rgba(52, 144, 220, 0.12)',
-                borderWidth: 0,
-                pointRadius: 0,
-                fill: {
-                    target: '+1',
-                    above: 'rgba(52, 144, 220, 0.12)'
-                },
                 tension: 0.1
             }
         ];
