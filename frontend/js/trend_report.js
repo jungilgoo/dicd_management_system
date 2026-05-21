@@ -722,84 +722,73 @@ class ChartManager {
     
     // PDF로 차트 내보내기
     async exportToPDF() {
-        // 차트가 없는 경우
         if (Object.keys(this.charts).length === 0) {
             alert('내보낼 차트가 없습니다.');
             return;
         }
-        
+
         try {
-            // 로딩 표시
             document.getElementById('loading-indicator').style.display = 'block';
-            
-            // jsPDF 초기화
+
             const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('l', 'mm', 'a4'); // 가로 방향으로 변경
+            const pdf = new jsPDF('l', 'mm', 'a4');
 
-            // 페이지 설정
-            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageWidth  = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = { top: 8, bottom: 5, left: 12, right: 12 };
+            const margin     = { top: 10, bottom: 5, left: 12, right: 12 };
+            const cols = 2, rows = 3;
+            const gapX = 8, gapY = 5;
+            const titleH = 6; // 제목 영역 높이(mm)
 
-            // 차트 배치를 위한 설정 - 2x3 그리드
-            const titleSpace = 2;
-            const chartWidth = (pageWidth - margin.left - margin.right - 8) / 2;
-            const chartHeight = (pageHeight - margin.top - margin.bottom - titleSpace - 10) / 3;
+            const chartWidth  = (pageWidth  - margin.left - margin.right  - (cols - 1) * gapX) / cols;
+            const chartHeight = (pageHeight - margin.top  - margin.bottom - rows * titleH - (rows - 1) * gapY) / rows;
 
-            const chartIds = Object.keys(this.charts);
-            const chartsPerPage = 6;
-            const totalPages = Math.ceil(chartIds.length / chartsPerPage);
+            const chartIds     = Object.keys(this.charts);
+            const chartsPerPage = cols * rows;
+            const totalPages   = Math.ceil(chartIds.length / chartsPerPage);
 
             for (let page = 0; page < totalPages; page++) {
                 if (page > 0) pdf.addPage();
 
-                const chartsOnPage = Math.min(chartsPerPage, chartIds.length - page * chartsPerPage);
+                const count = Math.min(chartsPerPage, chartIds.length - page * chartsPerPage);
 
-                for (let i = 0; i < chartsOnPage; i++) {
-                    const chartId = chartIds[page * chartsPerPage + i];
+                for (let i = 0; i < count; i++) {
+                    const chartId   = chartIds[page * chartsPerPage + i];
                     const chartInfo = this.charts[chartId];
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    const x = margin.left + col * (chartWidth + gapX);
+                    const y = margin.top  + row * (chartHeight + titleH + gapY);
 
-                    const row = Math.floor(i / 2);
-                    const col = i % 2;
-                    const x = margin.left + col * (chartWidth + 8);
-                    const y = margin.top + titleSpace + row * (chartHeight + 5);
+                    // 제목 텍스트 (pdf.text로 직접 그림)
+                    const target = targetManager.getTargetById(chartInfo.targetId);
+                    if (target) {
+                        // Cp 값 DOM에서 읽기
+                        const cpBadge = document.querySelector(`#chart-card-${chartInfo.targetId} .cp-badge`);
+                        const cpText  = cpBadge ? `  [${cpBadge.textContent.trim()}]` : '';
+                        const title   = `${target.productGroupName} - ${target.processName} - ${target.targetName}${cpText}`;
+                        pdf.setFontSize(7);
+                        pdf.setTextColor(40, 40, 40);
+                        pdf.text(title, x, y + 4, { maxWidth: chartWidth });
+                    }
 
-                    // 차트 카드를 html2canvas로 캡처 (제목+차트 포함)
-                    const chartCard = document.getElementById(`chart-card-${chartInfo.targetId}`);
-                    if (chartCard) {
-                        const canvas = await html2canvas(chartCard, {
-                            scale: 2,
-                            useCORS: true,
-                            logging: false,
-                            backgroundColor: '#ffffff'
-                        });
-                        const imgData = canvas.toDataURL('image/jpeg', 0.92);
-                        const imgAspect = canvas.width / canvas.height;
-
-                        let imgW = chartWidth;
-                        let imgH = imgW / imgAspect;
-                        if (imgH > chartHeight) {
-                            imgH = chartHeight;
-                            imgW = imgH * imgAspect;
-                        }
-                        const xOffset = (chartWidth - imgW) / 2;
-                        pdf.addImage(imgData, 'JPEG', x + xOffset, y, imgW, imgH);
+                    // Chart.js 캔버스를 직접 이미지로 추출 (html2canvas 불필요)
+                    const canvas = document.getElementById(chartId);
+                    if (canvas) {
+                        const imgData = canvas.toDataURL('image/png');
+                        pdf.addImage(imgData, 'PNG', x, y + titleH, chartWidth, chartHeight);
                     }
                 }
             }
-            
-            // PDF 저장
-            const now = new Date();
-            const dateStr = now.toISOString().split('T')[0];
-            // ETCH 공정은 FICD, PHOTO 공정은 DICD
-            const cdType = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
+
+            const dateStr = new Date().toISOString().split('T')[0];
+            const cdType  = window.PROCESS_TYPE === 'ETCH' ? 'FICD' : 'DICD';
             pdf.save(`${cdType}_Monitoring_${dateStr}.pdf`);
-            
+
         } catch (error) {
             console.error('PDF 내보내기 오류:', error);
             alert('PDF 내보내기 중 오류가 발생했습니다.');
         } finally {
-            // 로딩 숨기기
             document.getElementById('loading-indicator').style.display = 'none';
         }
     }
