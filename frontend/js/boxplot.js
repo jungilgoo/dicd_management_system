@@ -653,8 +653,9 @@ function generateBoxplotTitle() {
                 '7': '최근 7일',
                 '14': '최근 14일',
                 '30': '최근 30일',
-                '60': '최근 60일',
-                '90': '최근 90일'
+                '90': '최근 90일',
+                '180': '최근 6개월',
+                '365': '최근 1년'
             };
             periodText = periodMap[periodValue] || '최근 30일';
         }
@@ -781,7 +782,7 @@ window.requestBoxplotAiAnalysis = async function() {
         const ed = document.getElementById('end-date')?.value || '';
         periodDesc = `${sd} ~ ${ed}`;
     } else {
-        const periodMap = {'7':'최근 7일','14':'최근 14일','30':'최근 30일','60':'최근 60일','90':'최근 90일'};
+        const periodMap = {'7':'최근 7일','14':'최근 14일','30':'최근 30일','90':'최근 90일','180':'최근 6개월','365':'최근 1년'};
         periodDesc = periodMap[periodValue] || `최근 ${periodValue}일`;
     }
 
