@@ -1779,56 +1779,87 @@
     window.restoreSettings = function(settings) {
         if (!settings || !settings.productGroupId) return;
 
-        function waitFor(checkFn, maxMs) {
-            return new Promise(function(resolve) {
-                var start = Date.now();
-                var timer = setInterval(function() {
-                    if (checkFn() || Date.now() - start > maxMs) {
-                        clearInterval(timer);
-                        resolve();
-                    }
-                }, 100);
-            });
+        async function applySettings() {
+            try {
+                // 1. 제품군 옵션 로드 대기 (최대 6초)
+                var pgSel = document.getElementById('product-group');
+                for (var i = 0; i < 60 && pgSel.options.length <= 1; i++) {
+                    await new Promise(function(r) { setTimeout(r, 100); });
+                }
+                if (pgSel.options.length <= 1) return;
+
+                pgSel.value = String(settings.productGroupId);
+                if (pgSel.value !== String(settings.productGroupId)) return;
+                selectedProductGroupId = pgSel.value;
+
+                if (!settings.processId) return;
+
+                // 2. 공정 목록 직접 API 호출
+                var procSel = document.getElementById('process');
+                procSel.innerHTML = '<option value="">로딩 중...</option>';
+                procSel.disabled = true;
+
+                var processes = await api.getProcesses(settings.productGroupId);
+                if (!processes || processes.length === 0) return;
+
+                var procHtml = '<option value="">공정 선택</option>';
+                processes.forEach(function(p) {
+                    procHtml += '<option value="' + p.id + '">' + p.name + '</option>';
+                });
+                procSel.innerHTML = procHtml;
+                procSel.disabled = false;
+
+                procSel.value = String(settings.processId);
+                if (procSel.value !== String(settings.processId)) return;
+                selectedProcessId = procSel.value;
+
+                if (!settings.targetId) return;
+
+                // 3. 타겟 목록 직접 API 호출
+                var tgtSel = document.getElementById('target');
+                tgtSel.innerHTML = '<option value="">로딩 중...</option>';
+                tgtSel.disabled = true;
+
+                var targets = await api.getTargets(settings.processId, window.PROCESS_TYPE);
+                if (!targets || targets.length === 0) return;
+
+                var tgtHtml = '<option value="">타겟 선택</option>';
+                targets.forEach(function(t) {
+                    tgtHtml += '<option value="' + t.id + '">' + t.name + '</option>';
+                });
+                tgtSel.innerHTML = tgtHtml;
+                tgtSel.disabled = false;
+
+                tgtSel.value = String(settings.targetId);
+                if (tgtSel.value !== String(settings.targetId)) return;
+                selectedTargetId = tgtSel.value;
+
+            } catch (e) {
+                console.error('[Trend] restoreSettings 오류:', e);
+            }
         }
 
-        (async function() {
-            // 제품군 목록 로드 대기
-            await waitFor(function() {
+        // 제품군 옵션이 이미 로드된 경우 즉시 실행, 아니면 로드 후 실행
+        var pgSel = document.getElementById('product-group');
+        if (pgSel && pgSel.options.length > 1) {
+            applySettings();
+        } else {
+            // DOMContentLoaded 이후 product-group 옵션 변경을 감지
+            var observer = new MutationObserver(function(mutations, obs) {
                 var sel = document.getElementById('product-group');
-                return sel && sel.options.length > 1;
-            }, 5000);
-
-            var pgSel = document.getElementById('product-group');
-            if (!pgSel) return;
-            pgSel.value = String(settings.productGroupId);
-            pgSel.dispatchEvent(new Event('change'));
-
-            if (!settings.processId) return;
-
-            // 공정 목록 로드 대기
-            await waitFor(function() {
-                var sel = document.getElementById('process');
-                return sel && sel.options.length > 1 && !sel.disabled;
-            }, 5000);
-
-            var procSel = document.getElementById('process');
-            if (!procSel) return;
-            procSel.value = String(settings.processId);
-            procSel.dispatchEvent(new Event('change'));
-
-            if (!settings.targetId) return;
-
-            // 타겟 목록 로드 대기
-            await waitFor(function() {
-                var sel = document.getElementById('target');
-                return sel && sel.options.length > 1 && !sel.disabled;
-            }, 5000);
-
-            var tgtSel = document.getElementById('target');
-            if (!tgtSel) return;
-            tgtSel.value = String(settings.targetId);
-            tgtSel.dispatchEvent(new Event('change'));
-        })();
+                if (sel && sel.options.length > 1) {
+                    obs.disconnect();
+                    applySettings();
+                }
+            });
+            var target = document.getElementById('product-group');
+            if (target) {
+                observer.observe(target, { childList: true });
+            } else {
+                // 아직 DOM이 준비되지 않은 경우 폴링
+                applySettings();
+            }
+        }
     };
 
 })();

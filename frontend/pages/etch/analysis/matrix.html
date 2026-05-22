@@ -266,9 +266,7 @@
 
                             <label class="ml-3">표시 기간:</label>
                             <select class="form-control form-control-sm" id="periods-select" style="width:auto;">
-                                <option value="8">8기간</option>
                                 <option value="12" selected>12기간</option>
-                                <option value="16">16기간</option>
                                 <option value="24">24기간</option>
                             </select>
 
@@ -572,7 +570,7 @@ function setPeriodOptions(values, selected) {
 document.getElementById('btn-weekly').addEventListener('click', () => {
     currentMode = 'weekly';
     currentPeriods = 12;
-    setPeriodOptions([8, 12, 16, 24], 12);
+    setPeriodOptions([12, 24], 12);
     document.getElementById('btn-weekly').classList.replace('btn-outline-primary', 'btn-primary');
     document.getElementById('btn-monthly').classList.replace('btn-primary', 'btn-outline-primary');
     document.getElementById('btn-weekly').classList.add('active');
@@ -582,8 +580,8 @@ document.getElementById('btn-weekly').addEventListener('click', () => {
 
 document.getElementById('btn-monthly').addEventListener('click', () => {
     currentMode = 'monthly';
-    currentPeriods = 6;
-    setPeriodOptions([3, 6, 12, 24], 6);
+    currentPeriods = 12;
+    setPeriodOptions([12, 24], 12);
     document.getElementById('btn-monthly').classList.replace('btn-outline-primary', 'btn-primary');
     document.getElementById('btn-weekly').classList.replace('btn-primary', 'btn-outline-primary');
     document.getElementById('btn-monthly').classList.add('active');
