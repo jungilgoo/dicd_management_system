@@ -124,6 +124,47 @@
             outline-offset: -2px;
         }
 
+        /* ── 팝업 디자인 ── */
+        .popup-stat-card {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 5px 18px;
+            min-width: 115px;
+            margin-right: 8px;
+        }
+        .popup-stat-card .stat-label {
+            font-size: 0.68rem;
+            color: #6c757d;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .popup-stat-card .stat-value {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #212529;
+            margin-top: 1px;
+        }
+        .popup-chart-card {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 10px 12px;
+            background: #fff;
+        }
+        .popup-chart-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #6c757d;
+            text-align: center;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
         /* ── 셀 배경 색상 (σ 기준) ── */
         .sigma-1 { background-color: #fff9c4; }
         .sigma-2 { background-color: #ffcc80; }
@@ -364,27 +405,51 @@
 <!-- ── 상세 팝업 모달 ── -->
 <div class="modal fade" id="detail-modal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-xl" role="document" style="max-width:1100px;">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h6 class="modal-title" id="detail-modal-title"></h6>
-                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-            </div>
-            <div class="modal-body py-2">
-                <div class="row">
-                    <div class="col-md-7">
-                        <p class="text-center text-muted mb-1" style="font-size:0.82rem;">전체 기간 흐름</p>
-                        <canvas id="chart-trend" height="200"></canvas>
+        <div class="modal-content" style="border:none; border-radius:8px; overflow:hidden;">
+            <!-- 헤더: 다크 배경 + 브레드크럼 + 타겟명 + 기간 뱃지 -->
+            <div class="modal-header py-3 align-items-start" style="background:#343a40; border-bottom:none;">
+                <div style="flex:1;">
+                    <small id="detail-breadcrumb" style="color:#adb5bd; font-size:0.75rem; letter-spacing:0.04em; display:block; margin-bottom:5px;"></small>
+                    <div class="d-flex align-items-center" style="gap:10px; flex-wrap:wrap;">
+                        <span id="detail-target-name" style="color:#fff; font-weight:700; font-size:1.1rem;"></span>
+                        <span id="detail-period-badge" style="background:#ffc107; color:#212529; font-weight:700; font-size:0.8rem; padding:3px 11px; border-radius:20px; letter-spacing:0.03em;"></span>
                     </div>
-                    <div class="col-md-5" style="position:relative;">
-                        <p class="text-center text-muted mb-1" id="detail-period-label" style="font-size:0.82rem;">기간 내 측정값</p>
-                        <div id="detail-loading" style="display:none; text-align:center; padding:40px; color:#6c757d;">
-                            <i class="fas fa-spinner fa-spin mr-1"></i>로딩 중...
+                </div>
+                <button type="button" class="close" data-dismiss="modal" style="color:#fff; opacity:0.6; margin-left:10px;"><span>&times;</span></button>
+            </div>
+            <!-- 통계 카드 행 -->
+            <div class="d-flex align-items-center px-3 py-2" style="background:#f1f3f5; border-bottom:1px solid #dee2e6;">
+                <div class="popup-stat-card">
+                    <span class="stat-label">전체 평균</span>
+                    <span class="stat-value" id="stat-overall-mean">-</span>
+                </div>
+                <div class="popup-stat-card">
+                    <span class="stat-label">기간 σ</span>
+                    <span class="stat-value" id="stat-period-sigma">-</span>
+                </div>
+            </div>
+            <!-- 차트 영역 -->
+            <div class="modal-body py-3">
+                <div class="row" style="margin:0 -6px;">
+                    <div class="col-md-7" style="padding:0 6px;">
+                        <div class="popup-chart-card">
+                            <div class="popup-chart-title">전체 기간 흐름</div>
+                            <canvas id="chart-trend" height="220"></canvas>
                         </div>
-                        <canvas id="chart-detail" height="200"></canvas>
+                    </div>
+                    <div class="col-md-5" style="padding:0 6px;">
+                        <div class="popup-chart-card">
+                            <div class="popup-chart-title" id="detail-period-label">기간 내 측정값</div>
+                            <div id="detail-loading" style="display:none; text-align:center; padding:60px 0; color:#6c757d;">
+                                <i class="fas fa-spinner fa-spin mr-1"></i>로딩 중...
+                            </div>
+                            <canvas id="chart-detail" height="220"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer py-2">
+            <!-- 푸터 -->
+            <div class="modal-footer py-2" style="background:#f8f9fa;">
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-goto-view">
                     <i class="fas fa-table mr-1"></i>데이터 조회
                 </button>
@@ -411,6 +476,8 @@ let currentPeriods = 12;
 // 팝업용 전역 저장소
 let matrixData = null;
 let targetIndex = {};
+let targetHierarchy = {};   // targetId → {pg_name, proc_name}
+let currentPopupInfo = null;
 let chartTrend = null;
 let chartDetail = null;
 
@@ -455,9 +522,16 @@ function renderMatrix(data) {
     // 팝업용 데이터 인덱스 구성
     matrixData = data;
     targetIndex = {};
+    targetHierarchy = {};
     groups.forEach(pg => {
         pg.processes.forEach(proc => {
-            proc.targets.forEach(t => { targetIndex[t.target_id] = t; });
+            proc.targets.forEach(t => {
+                targetIndex[t.target_id] = t;
+                targetHierarchy[t.target_id] = {
+                    pg_name: pg.product_group_name,
+                    proc_name: proc.process_name,
+                };
+            });
         });
     });
     const labelMap = {};
@@ -667,10 +741,28 @@ function linearRegression(values) {
 // ── 상세 팝업 표시 ────────────────────────────────────────────────
 function showDetailPopup(targetId, targetName, periodKey, periodLabel) {
     const tgt = targetIndex[targetId];
+    const hier = targetHierarchy[targetId] || {};
     if (!tgt || !matrixData) return;
 
-    document.getElementById('detail-modal-title').textContent =
-        `${targetName}  |  전체평균: ${fmtNum(tgt.overall_mean)}  |  기간σ: ${fmtNum(tgt.period_sigma)}`;
+    // 현재 팝업 정보 저장 (이동 버튼에서 사용)
+    currentPopupInfo = {
+        targetId,
+        targetName,
+        pg_name: hier.pg_name || '',
+        proc_name: hier.proc_name || '',
+    };
+
+    // 헤더 채우기
+    document.getElementById('detail-breadcrumb').textContent =
+        hier.pg_name && hier.proc_name ? `${hier.pg_name}  ›  ${hier.proc_name}` : '';
+    document.getElementById('detail-target-name').textContent = targetName;
+    document.getElementById('detail-period-badge').textContent = periodLabel;
+
+    // 통계 카드
+    document.getElementById('stat-overall-mean').textContent = fmtNum(tgt.overall_mean);
+    document.getElementById('stat-period-sigma').textContent = fmtNum(tgt.period_sigma);
+
+    // 우측 차트 타이틀
     document.getElementById('detail-period-label').textContent =
         `기간 내 측정값 (${periodLabel})`;
 
@@ -824,11 +916,27 @@ $('#detail-modal').on('hidden.bs.modal', function() {
 // 이동 버튼
 document.getElementById('btn-goto-view').addEventListener('click', function() {
     $('#detail-modal').modal('hide');
-    if (window.parent && window.parent.TabManager) window.parent.TabManager.openTab('view');
+    if (window.parent && window.parent.TabManager) {
+        const s = currentPopupInfo || {};
+        window.parent.TabManager.openTab('view', {
+            target_id: s.targetId,
+            target_name: s.targetName,
+            pg_name: s.pg_name,
+            proc_name: s.proc_name,
+        });
+    }
 });
 document.getElementById('btn-goto-trend').addEventListener('click', function() {
     $('#detail-modal').modal('hide');
-    if (window.parent && window.parent.TabManager) window.parent.TabManager.openTab('trend');
+    if (window.parent && window.parent.TabManager) {
+        const s = currentPopupInfo || {};
+        window.parent.TabManager.openTab('trend', {
+            target_id: s.targetId,
+            target_name: s.targetName,
+            pg_name: s.pg_name,
+            proc_name: s.proc_name,
+        });
+    }
 });
 </script>
 </body>
