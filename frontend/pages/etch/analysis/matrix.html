@@ -98,6 +98,31 @@
             width: 14px; height: 14px; border-radius: 2px; border: 1px solid #ccc;
         }
 
+        /* ── 수평 스크롤 플로팅 버튼 ── */
+        .scroll-float-btn {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1050;
+            width: 32px;
+            height: 56px;
+            background: rgba(52, 58, 64, 0.72);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            user-select: none;
+            transition: background 0.15s;
+        }
+        .scroll-float-btn:hover { background: rgba(33, 37, 41, 0.92); }
+        #scroll-left-btn  { left: 262px; }
+        #scroll-right-btn { right: 12px; }
+
         /* ── 팝업 디자인 ── */
         .popup-stat-card {
             display: inline-flex;
@@ -361,6 +386,10 @@
     </div>
 </div>
 
+<!-- ── 수평 스크롤 플로팅 버튼 ── -->
+<button id="scroll-left-btn"  class="scroll-float-btn" title="왼쪽 스크롤">&#9664;</button>
+<button id="scroll-right-btn" class="scroll-float-btn" title="오른쪽 스크롤">&#9654;</button>
+
 <script src="../../../lib/js/jquery-3.6.0.min.js"></script>
 <script src="../../../lib/js/bootstrap.bundle.min.js"></script>
 <script src="../../../lib/js/adminlte.min.js"></script>
@@ -528,6 +557,9 @@ function renderMatrix(data) {
             });
         });
     });
+
+    // 스크롤 버튼 상태 갱신
+    if (window._updateScrollBtns) window._updateScrollBtns();
 }
 
 async function loadMatrix() {
@@ -597,6 +629,92 @@ document.getElementById('periods-select').addEventListener('change', (e) => {
 document.getElementById('btn-refresh').addEventListener('click', loadMatrix);
 
 loadMatrix();
+
+// ── 수평 스크롤 플로팅 버튼 ─────────────────────────────────────
+(function() {
+    var STEP = 16;
+    var INTERVAL = 16;
+    var CLICK_JUMP = 280;
+    var scrollTimer = null;
+    var isHolding = false;
+
+    function getWrapper() { return document.querySelector('.matrix-wrapper'); }
+
+    function updateBtns() {
+        var w = getWrapper();
+        var btnL = document.getElementById('scroll-left-btn');
+        var btnR = document.getElementById('scroll-right-btn');
+        if (!w || !btnL || !btnR) return;
+
+        var scrollable = w.scrollWidth > w.clientWidth + 2;
+        var atLeft  = w.scrollLeft <= 0;
+        var atRight = w.scrollLeft + w.clientWidth >= w.scrollWidth - 2;
+
+        btnL.style.display = (scrollable && !atLeft)  ? 'flex' : 'none';
+        btnR.style.display = (scrollable && !atRight) ? 'flex' : 'none';
+    }
+
+    function startContinuous(dir) {
+        stopScroll();
+        scrollTimer = setInterval(function() {
+            var w = getWrapper();
+            if (w) { w.scrollLeft += dir * STEP; updateBtns(); }
+        }, INTERVAL);
+    }
+
+    function stopScroll() {
+        if (scrollTimer) { clearInterval(scrollTimer); scrollTimer = null; }
+    }
+
+    function bindBtn(id, dir) {
+        var btn = document.getElementById(id);
+        if (!btn) return;
+
+        var holdTimer = null;
+
+        btn.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            isHolding = false;
+            holdTimer = setTimeout(function() {
+                isHolding = true;
+                startContinuous(dir);
+            }, 180);
+        });
+        document.addEventListener('mouseup', function() {
+            clearTimeout(holdTimer);
+            stopScroll();
+        });
+
+        btn.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            isHolding = false;
+            holdTimer = setTimeout(function() {
+                isHolding = true;
+                startContinuous(dir);
+            }, 180);
+        }, { passive: false });
+        document.addEventListener('touchend', function() {
+            clearTimeout(holdTimer);
+            stopScroll();
+        });
+
+        btn.addEventListener('click', function() {
+            if (isHolding) return;
+            var w = getWrapper();
+            if (w) w.scrollBy({ left: dir * CLICK_JUMP, behavior: 'smooth' });
+        });
+    }
+
+    bindBtn('scroll-left-btn',  -1);
+    bindBtn('scroll-right-btn',  1);
+
+    var w = getWrapper();
+    if (w) w.addEventListener('scroll', updateBtns);
+    window.addEventListener('resize', updateBtns);
+
+    window._updateScrollBtns = function() { setTimeout(updateBtns, 50); };
+    updateBtns();
+})();
 
 // ── 셀 클릭 이벤트 (이벤트 위임) ────────────────────────────────
 document.getElementById('matrix-tbody').addEventListener('click', function(e) {
