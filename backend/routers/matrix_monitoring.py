@@ -148,6 +148,7 @@ def get_matrix_data(
     def build_cells(tid: int) -> tuple:
         """
         반환: (cells dict, overall_mean, period_sigma)
+        추세 판단: 빈 기간을 건너뛰고 데이터가 있는 최근 3개 기간의 방향으로 결정
         """
         td = raw.get(tid, {})
         # 표시 기간 내 평균값 목록 (데이터 있는 것만)
@@ -162,34 +163,31 @@ def get_matrix_data(
 
         cells = {}
         prev_mean = None
-        # 추세를 위해 직전 3기간의 증감 방향을 추적
-        direction_history: List[Optional[str]] = []  # '+' / '-' / '='
+        # 데이터가 있는 기간의 방향만 기록 (빈 기간 건너뜀)
+        data_directions: List[str] = []
 
         for k in period_keys:
             if k not in td or td[k]["mean"] is None:
-                direction_history.append(None)
-                prev_mean = None
                 cells[k] = None
+                # prev_mean 유지 (다음 데이터 기간 비교에 사용)
                 continue
 
             m = td[k]["mean"]
             delta = round(m - prev_mean, 4) if prev_mean is not None else None
 
-            # 추세 방향 계산
+            # 방향 계산 (데이터 있는 기간끼리 비교, 빈 기간 건너뜀)
             if delta is not None:
                 if delta > 0:
-                    direction_history.append("+")
+                    data_directions.append("+")
                 elif delta < 0:
-                    direction_history.append("-")
+                    data_directions.append("-")
                 else:
-                    direction_history.append("=")
-            else:
-                direction_history.append(None)
+                    data_directions.append("=")
 
-            # 직전 3기간 연속 방향 (현재 기간 포함)
-            recent = direction_history[-3:]
+            # 데이터 있는 최근 3개 방향으로 추세 판단
+            recent = data_directions[-3:]
             trend = None
-            if len(recent) == 3 and None not in recent:
+            if len(recent) == 3:
                 if all(d == "+" for d in recent):
                     trend = "▲"
                 elif all(d == "-" for d in recent):
