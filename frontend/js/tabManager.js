@@ -67,6 +67,12 @@ window.TabManager = (function() {
             getUrl: () => getPagePrefix() + 'analysis/boxplot.html',
             closable: true
         },
+        'matrix': {
+            title: '기간 분析',
+            icon: 'fas fa-th',
+            getUrl: () => getPagePrefix() + 'analysis/matrix.html',
+            closable: true
+        },
         'reports': {
             title: '요약 보고서',
             icon: 'fas fa-file-alt',
@@ -183,10 +189,16 @@ window.TabManager = (function() {
             openTab('distribution');
         });
 
-        // 박스플롯 분석
+        // 박스플롯 분析
         $(`a[href="${prefix}analysis/boxplot.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('boxplot');
+        });
+
+        // 기간 분析 (매트릭스 모니터링)
+        $(`a[href="${prefix}analysis/matrix.html"]`).on('click', function(e) {
+            e.preventDefault();
+            openTab('matrix');
         });
 
         // 요약 보고서
