@@ -115,6 +115,15 @@
             font-size: 0.85rem;
         }
 
+        /* ── 클릭 가능한 데이터 셀 ── */
+        .cell-data[data-target-id] {
+            cursor: pointer;
+        }
+        .cell-data[data-target-id]:hover {
+            outline: 2px solid #4472c4;
+            outline-offset: -2px;
+        }
+
         /* ── 셀 배경 색상 (σ 기준) ── */
         .sigma-1 { background-color: #fff9c4; }
         .sigma-2 { background-color: #ffcc80; }
@@ -352,15 +361,58 @@
     </footer>
 </div>
 
+<!-- ── 상세 팝업 모달 ── -->
+<div class="modal fade" id="detail-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="max-width:1100px;">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="detail-modal-title"></h6>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body py-2">
+                <div class="row">
+                    <div class="col-md-7">
+                        <p class="text-center text-muted mb-1" style="font-size:0.82rem;">전체 기간 흐름</p>
+                        <canvas id="chart-trend" height="200"></canvas>
+                    </div>
+                    <div class="col-md-5" style="position:relative;">
+                        <p class="text-center text-muted mb-1" id="detail-period-label" style="font-size:0.82rem;">기간 내 측정값</p>
+                        <div id="detail-loading" style="display:none; text-align:center; padding:40px; color:#6c757d;">
+                            <i class="fas fa-spinner fa-spin mr-1"></i>로딩 중...
+                        </div>
+                        <canvas id="chart-detail" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-goto-view">
+                    <i class="fas fa-table mr-1"></i>데이터 조회
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-goto-trend">
+                    <i class="fas fa-chart-line mr-1"></i>추이 분석
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="../../lib/js/jquery-3.6.0.min.js"></script>
 <script src="../../lib/js/bootstrap.bundle.min.js"></script>
 <script src="../../lib/js/adminlte.min.js"></script>
+<script src="../../lib/js/chart.min.js"></script>
 <script>
 const PROCESS_TYPE = 'PHOTO';
 const BASE_URL = '';
 
 let currentMode = 'weekly';
 let currentPeriods = 12;
+
+// 팝업용 전역 저장소
+let matrixData = null;
+let targetIndex = {};
+let chartTrend = null;
+let chartDetail = null;
 
 // ── 유틸리티 ──────────────────────────────────────────────────────
 function fmtNum(v, dec = 3) {
@@ -399,6 +451,17 @@ function renderMatrix(data) {
     tbody.innerHTML = '';
 
     const { periods, period_labels, groups } = data;
+
+    // 팝업용 데이터 인덱스 구성
+    matrixData = data;
+    targetIndex = {};
+    groups.forEach(pg => {
+        pg.processes.forEach(proc => {
+            proc.targets.forEach(t => { targetIndex[t.target_id] = t; });
+        });
+    });
+    const labelMap = {};
+    periods.forEach((pk, i) => { labelMap[pk] = period_labels[i]; });
 
     if (!groups || groups.length === 0) {
         document.getElementById('error-msg').style.display = 'block';
@@ -466,6 +529,10 @@ function renderMatrix(data) {
                     const cell = tgt.cells[pk];
                     const td = document.createElement('td');
                     td.className = 'cell-data';
+                    td.dataset.targetId = tgt.target_id;
+                    td.dataset.targetName = tgt.target_name;
+                    td.dataset.periodKey = pk;
+                    td.dataset.periodLabel = labelMap[pk] || pk;
 
                     if (!cell) {
                         td.innerHTML = '<span class="cell-empty">-</span>';
@@ -569,6 +636,200 @@ document.getElementById('btn-refresh').addEventListener('click', loadMatrix);
 
 // 초기 로딩
 loadMatrix();
+
+// ── 셀 클릭 이벤트 (이벤트 위임) ────────────────────────────────
+document.getElementById('matrix-tbody').addEventListener('click', function(e) {
+    const td = e.target.closest('td[data-target-id]');
+    if (!td) return;
+    showDetailPopup(
+        parseInt(td.dataset.targetId),
+        td.dataset.targetName,
+        td.dataset.periodKey,
+        td.dataset.periodLabel
+    );
+});
+
+// ── 선형 회귀 (추세선) ────────────────────────────────────────────
+function linearRegression(values) {
+    const valid = values.map((v, i) => ({v, i})).filter(x => x.v !== null && x.v !== undefined);
+    if (valid.length < 2) return values.map(() => null);
+    const n = valid.length;
+    const meanX = valid.reduce((s, x) => s + x.i, 0) / n;
+    const meanY = valid.reduce((s, x) => s + x.v, 0) / n;
+    let num = 0, den = 0;
+    valid.forEach(({v, i}) => { num += (i - meanX) * (v - meanY); den += (i - meanX) ** 2; });
+    const slope = den !== 0 ? num / den : 0;
+    const intercept = meanY - slope * meanX;
+    return values.map((v, i) => v !== null && v !== undefined
+        ? parseFloat((slope * i + intercept).toFixed(4)) : null);
+}
+
+// ── 상세 팝업 표시 ────────────────────────────────────────────────
+function showDetailPopup(targetId, targetName, periodKey, periodLabel) {
+    const tgt = targetIndex[targetId];
+    if (!tgt || !matrixData) return;
+
+    document.getElementById('detail-modal-title').textContent =
+        `${targetName}  |  전체평균: ${fmtNum(tgt.overall_mean)}  |  기간σ: ${fmtNum(tgt.period_sigma)}`;
+    document.getElementById('detail-period-label').textContent =
+        `기간 내 측정값 (${periodLabel})`;
+
+    if (chartTrend) { chartTrend.destroy(); chartTrend = null; }
+    if (chartDetail) { chartDetail.destroy(); chartDetail = null; }
+
+    // ── 왼쪽: 전체 기간 흐름 차트 ──
+    const periods = matrixData.periods;
+    const labels = matrixData.period_labels;
+    const means = periods.map(pk => {
+        const c = tgt.cells[pk];
+        return (c && c.mean !== null) ? c.mean : null;
+    });
+    const pointColors = periods.map(pk => pk === periodKey ? '#dc3545' : 'rgba(68,114,196,0.85)');
+    const pointRadii = periods.map(pk => pk === periodKey ? 9 : 4);
+    const trendLineFull = linearRegression(means);
+
+    chartTrend = new Chart(
+        document.getElementById('chart-trend').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: '기간 평균',
+                    data: means,
+                    borderColor: '#4472c4',
+                    backgroundColor: 'rgba(68,114,196,0.08)',
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: pointColors,
+                    pointRadius: pointRadii,
+                    pointHoverRadius: 9,
+                    tension: 0.3,
+                    spanGaps: true,
+                    order: 1,
+                },
+                {
+                    label: '전체 평균',
+                    data: means.map(() => tgt.overall_mean),
+                    borderColor: '#28a745',
+                    borderDash: [6, 3],
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    spanGaps: true,
+                    order: 2,
+                },
+                {
+                    label: '추세선',
+                    data: trendLineFull,
+                    borderColor: '#dc3545',
+                    borderDash: [8, 4],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    spanGaps: true,
+                    order: 3,
+                },
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.raw)}` } }
+            },
+            scales: { y: { ticks: { callback: v => fmtNum(v) } } }
+        }
+    });
+
+    // ── 오른쪽: 기간 내 개별 측정값 ──
+    document.getElementById('detail-loading').style.display = 'block';
+    document.getElementById('chart-detail').style.display = 'none';
+
+    fetch(`/api/monitoring/matrix/detail?target_id=${targetId}&period_key=${encodeURIComponent(periodKey)}&mode=${currentMode}`)
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(d => {
+            document.getElementById('detail-loading').style.display = 'none';
+            document.getElementById('chart-detail').style.display = 'block';
+
+            const mLabels = d.measurements.map(m => m.created_at);
+            const mValues = d.measurements.map(m => m.avg_value);
+            const validVals = mValues.filter(v => v !== null);
+            const mean = validVals.length > 0
+                ? validVals.reduce((a, b) => a + b, 0) / validVals.length : null;
+            const cellData = tgt.cells[periodKey];
+            const sigma = cellData ? cellData.std : null;
+            const detailTrend = linearRegression(mValues);
+
+            const ds = [{
+                label: '측정값',
+                data: mValues,
+                borderColor: '#4472c4',
+                backgroundColor: 'rgba(68,114,196,0.12)',
+                pointRadius: 5,
+                tension: 0.2,
+                spanGaps: true,
+                order: 1,
+            }];
+
+            if (mean !== null) {
+                ds.push({ label: `평균(${fmtNum(mean)})`, data: mValues.map(() => mean),
+                    borderColor: '#28a745', borderDash: [6, 3], borderWidth: 1.5, pointRadius: 0, order: 3 });
+            }
+            if (sigma !== null && mean !== null) {
+                const s = sigma;
+                ds.push({ label: '+1σ', data: mValues.map(() => parseFloat((mean+s).toFixed(4))),
+                    borderColor: '#ffc107', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, order: 4 });
+                ds.push({ label: '-1σ', data: mValues.map(() => parseFloat((mean-s).toFixed(4))),
+                    borderColor: '#ffc107', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, order: 4 });
+                ds.push({ label: '+2σ', data: mValues.map(() => parseFloat((mean+2*s).toFixed(4))),
+                    borderColor: '#fd7e14', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, order: 5 });
+                ds.push({ label: '-2σ', data: mValues.map(() => parseFloat((mean-2*s).toFixed(4))),
+                    borderColor: '#fd7e14', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, order: 5 });
+            }
+            if (detailTrend.some(v => v !== null)) {
+                ds.push({ label: '추세선', data: detailTrend,
+                    borderColor: '#dc3545', borderDash: [8, 4], borderWidth: 2, pointRadius: 0, order: 2 });
+            }
+
+            chartDetail = new Chart(
+                document.getElementById('chart-detail').getContext('2d'), {
+                type: 'line',
+                data: { labels: mLabels, datasets: ds },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } },
+                        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.raw)}` } }
+                    },
+                    scales: {
+                        x: { ticks: { maxRotation: 45, font: { size: 10 } } },
+                        y: { ticks: { callback: v => fmtNum(v), font: { size: 10 } } }
+                    }
+                }
+            });
+        })
+        .catch(() => {
+            document.getElementById('detail-loading').innerHTML =
+                '<span class="text-danger"><i class="fas fa-exclamation-circle mr-1"></i>데이터 로딩 실패</span>';
+            document.getElementById('detail-loading').style.display = 'block';
+        });
+
+    $('#detail-modal').modal('show');
+}
+
+// 모달 닫힐 때 차트 정리
+$('#detail-modal').on('hidden.bs.modal', function() {
+    if (chartTrend) { chartTrend.destroy(); chartTrend = null; }
+    if (chartDetail) { chartDetail.destroy(); chartDetail = null; }
+});
+
+// 이동 버튼
+document.getElementById('btn-goto-view').addEventListener('click', function() {
+    $('#detail-modal').modal('hide');
+    if (window.parent && window.parent.TabManager) window.parent.TabManager.openTab('view');
+});
+document.getElementById('btn-goto-trend').addEventListener('click', function() {
+    $('#detail-modal').modal('hide');
+    if (window.parent && window.parent.TabManager) window.parent.TabManager.openTab('trend');
+});
 </script>
 </body>
 </html>

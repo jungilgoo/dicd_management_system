@@ -235,3 +235,54 @@ def get_matrix_data(
         "period_labels": [_period_label(k, mode) for k in period_keys],
         "groups": list(pg_map.values()),
     }
+
+
+def _parse_period_date_range(period_key: str, mode: str):
+    """period_key → (start_datetime, end_datetime)"""
+    if mode == "weekly":
+        year = int(period_key[:4])
+        week = int(period_key[6:])
+        monday = datetime.strptime(f"{year}-W{week:02d}-1", "%G-W%V-%u")
+        sunday = monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
+        return monday, sunday
+    else:
+        year, month = int(period_key[:4]), int(period_key[5:])
+        start = datetime(year, month, 1)
+        if month == 12:
+            end = datetime(year + 1, 1, 1) - timedelta(seconds=1)
+        else:
+            end = datetime(year, month + 1, 1) - timedelta(seconds=1)
+        return start, end
+
+
+@router.get("/matrix/detail", response_model=Dict[str, Any])
+def get_matrix_detail(
+    target_id: int = Query(..., description="타겟 ID"),
+    period_key: str = Query(..., description="기간 키 (예: 2025-W20, 2025-05)"),
+    mode: str = Query("weekly", description="집계 단위 (weekly, monthly)"),
+    db: Session = Depends(database.get_db),
+):
+    start_date, end_date = _parse_period_date_range(period_key, mode)
+
+    measurements = (
+        db.query(models.Measurement)
+        .filter(
+            models.Measurement.target_id == target_id,
+            models.Measurement.created_at >= start_date,
+            models.Measurement.created_at <= end_date,
+        )
+        .order_by(models.Measurement.created_at)
+        .all()
+    )
+
+    return {
+        "target_id": target_id,
+        "period_key": period_key,
+        "measurements": [
+            {
+                "created_at": m.created_at.strftime("%m/%d %H:%M"),
+                "avg_value": round(float(m.avg_value), 4) if m.avg_value is not None else None,
+            }
+            for m in measurements
+        ],
+    }
