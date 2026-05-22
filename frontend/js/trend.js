@@ -1775,4 +1775,60 @@
         }
     };
 
+    // ── 탭에서 전달받은 설정 복원 (기간 분석 팝업 이동 버튼 등) ──────────
+    window.restoreSettings = function(settings) {
+        if (!settings || !settings.productGroupId) return;
+
+        function waitFor(checkFn, maxMs) {
+            return new Promise(function(resolve) {
+                var start = Date.now();
+                var timer = setInterval(function() {
+                    if (checkFn() || Date.now() - start > maxMs) {
+                        clearInterval(timer);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        (async function() {
+            // 제품군 목록 로드 대기
+            await waitFor(function() {
+                var sel = document.getElementById('product-group');
+                return sel && sel.options.length > 1;
+            }, 5000);
+
+            var pgSel = document.getElementById('product-group');
+            if (!pgSel) return;
+            pgSel.value = String(settings.productGroupId);
+            pgSel.dispatchEvent(new Event('change'));
+
+            if (!settings.processId) return;
+
+            // 공정 목록 로드 대기
+            await waitFor(function() {
+                var sel = document.getElementById('process');
+                return sel && sel.options.length > 1 && !sel.disabled;
+            }, 5000);
+
+            var procSel = document.getElementById('process');
+            if (!procSel) return;
+            procSel.value = String(settings.processId);
+            procSel.dispatchEvent(new Event('change'));
+
+            if (!settings.targetId) return;
+
+            // 타겟 목록 로드 대기
+            await waitFor(function() {
+                var sel = document.getElementById('target');
+                return sel && sel.options.length > 1 && !sel.disabled;
+            }, 5000);
+
+            var tgtSel = document.getElementById('target');
+            if (!tgtSel) return;
+            tgtSel.value = String(settings.targetId);
+            tgtSel.dispatchEvent(new Event('change'));
+        })();
+    };
+
 })();

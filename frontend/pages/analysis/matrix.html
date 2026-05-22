@@ -406,38 +406,21 @@
 <div class="modal fade" id="detail-modal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-xl" role="document" style="max-width:1100px;">
         <div class="modal-content" style="border:none; border-radius:8px; overflow:hidden;">
-            <!-- 헤더: 다크 배경 + 브레드크럼 + 타겟명 + 기간 뱃지 -->
-            <div class="modal-header py-3 align-items-start" style="background:#343a40; border-bottom:none;">
-                <div style="flex:1;">
-                    <small id="detail-breadcrumb" style="color:#adb5bd; font-size:0.75rem; letter-spacing:0.04em; display:block; margin-bottom:5px;"></small>
-                    <div class="d-flex align-items-center" style="gap:10px; flex-wrap:wrap;">
-                        <span id="detail-target-name" style="color:#fff; font-weight:700; font-size:1.1rem;"></span>
-                        <span id="detail-period-badge" style="background:#ffc107; color:#212529; font-weight:700; font-size:0.8rem; padding:3px 11px; border-radius:20px; letter-spacing:0.03em;"></span>
-                    </div>
-                </div>
-                <button type="button" class="close" data-dismiss="modal" style="color:#fff; opacity:0.6; margin-left:10px;"><span>&times;</span></button>
-            </div>
-            <!-- 통계 카드 행 -->
-            <div class="d-flex align-items-center px-3 py-2" style="background:#f1f3f5; border-bottom:1px solid #dee2e6;">
-                <div class="popup-stat-card">
-                    <span class="stat-label">전체 평균</span>
-                    <span class="stat-value" id="stat-overall-mean">-</span>
-                </div>
-                <div class="popup-stat-card">
-                    <span class="stat-label">기간 σ</span>
-                    <span class="stat-value" id="stat-period-sigma">-</span>
-                </div>
+            <!-- 헤더: 제품군 > 공정 > 타겟 -->
+            <div class="modal-header py-2" style="background:#343a40; border-bottom:none;">
+                <span id="detail-header-title" style="color:#fff; font-weight:700; font-size:0.95rem;"></span>
+                <button type="button" class="close" data-dismiss="modal" style="color:#fff; opacity:0.6;"><span>&times;</span></button>
             </div>
             <!-- 차트 영역 -->
             <div class="modal-body py-3">
                 <div class="row" style="margin:0 -6px;">
-                    <div class="col-md-7" style="padding:0 6px;">
+                    <div class="col-md-6" style="padding:0 6px;">
                         <div class="popup-chart-card">
                             <div class="popup-chart-title">전체 기간 흐름</div>
                             <canvas id="chart-trend" height="220"></canvas>
                         </div>
                     </div>
-                    <div class="col-md-5" style="padding:0 6px;">
+                    <div class="col-md-6" style="padding:0 6px;">
                         <div class="popup-chart-card">
                             <div class="popup-chart-title" id="detail-period-label">기간 내 측정값</div>
                             <div id="detail-loading" style="display:none; text-align:center; padding:60px 0; color:#6c757d;">
@@ -528,7 +511,9 @@ function renderMatrix(data) {
             proc.targets.forEach(t => {
                 targetIndex[t.target_id] = t;
                 targetHierarchy[t.target_id] = {
+                    pg_id: pg.product_group_id,
                     pg_name: pg.product_group_name,
+                    proc_id: proc.process_id,
                     proc_name: proc.process_name,
                 };
             });
@@ -748,19 +733,15 @@ function showDetailPopup(targetId, targetName, periodKey, periodLabel) {
     currentPopupInfo = {
         targetId,
         targetName,
+        pg_id: hier.pg_id || null,
         pg_name: hier.pg_name || '',
+        proc_id: hier.proc_id || null,
         proc_name: hier.proc_name || '',
     };
 
-    // 헤더 채우기
-    document.getElementById('detail-breadcrumb').textContent =
-        hier.pg_name && hier.proc_name ? `${hier.pg_name}  ›  ${hier.proc_name}` : '';
-    document.getElementById('detail-target-name').textContent = targetName;
-    document.getElementById('detail-period-badge').textContent = periodLabel;
-
-    // 통계 카드
-    document.getElementById('stat-overall-mean').textContent = fmtNum(tgt.overall_mean);
-    document.getElementById('stat-period-sigma').textContent = fmtNum(tgt.period_sigma);
+    // 헤더: 제품군 > 공정 > 타겟
+    const headerParts = [hier.pg_name, hier.proc_name, targetName].filter(Boolean);
+    document.getElementById('detail-header-title').textContent = headerParts.join('  >  ');
 
     // 우측 차트 타이틀
     document.getElementById('detail-period-label').textContent =
@@ -800,7 +781,7 @@ function showDetailPopup(targetId, targetName, periodKey, periodLabel) {
                     order: 1,
                 },
                 {
-                    label: '전체 평균',
+                    label: `전체 평균 (${fmtNum(tgt.overall_mean)})`,
                     data: means.map(() => tgt.overall_mean),
                     borderColor: '#28a745',
                     borderDash: [6, 3],
@@ -867,13 +848,13 @@ function showDetailPopup(targetId, targetName, periodKey, periodLabel) {
             }
             if (sigma !== null && mean !== null) {
                 const s = sigma;
-                ds.push({ label: '+1σ', data: mValues.map(() => parseFloat((mean+s).toFixed(4))),
+                ds.push({ label: '±1σ', data: mValues.map(() => parseFloat((mean+s).toFixed(4))),
                     borderColor: '#ffc107', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, order: 4 });
-                ds.push({ label: '-1σ', data: mValues.map(() => parseFloat((mean-s).toFixed(4))),
+                ds.push({ label: '', data: mValues.map(() => parseFloat((mean-s).toFixed(4))),
                     borderColor: '#ffc107', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, order: 4 });
-                ds.push({ label: '+2σ', data: mValues.map(() => parseFloat((mean+2*s).toFixed(4))),
+                ds.push({ label: '±2σ', data: mValues.map(() => parseFloat((mean+2*s).toFixed(4))),
                     borderColor: '#fd7e14', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, order: 5 });
-                ds.push({ label: '-2σ', data: mValues.map(() => parseFloat((mean-2*s).toFixed(4))),
+                ds.push({ label: '', data: mValues.map(() => parseFloat((mean-2*s).toFixed(4))),
                     borderColor: '#fd7e14', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, order: 5 });
             }
             if (detailTrend.some(v => v !== null)) {
@@ -888,8 +869,15 @@ function showDetailPopup(targetId, targetName, periodKey, periodLabel) {
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } },
-                        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.raw)}` } }
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                font: { size: 10 },
+                                filter: (item) => item.text !== ''
+                            }
+                        },
+                        tooltip: { callbacks: { label: ctx => ctx.dataset.label ? `${ctx.dataset.label}: ${fmtNum(ctx.raw)}` : fmtNum(ctx.raw) } }
                     },
                     scales: {
                         x: { ticks: { maxRotation: 45, font: { size: 10 } } },
@@ -919,10 +907,9 @@ document.getElementById('btn-goto-view').addEventListener('click', function() {
     if (window.parent && window.parent.TabManager) {
         const s = currentPopupInfo || {};
         window.parent.TabManager.openTab('view', {
-            target_id: s.targetId,
-            target_name: s.targetName,
-            pg_name: s.pg_name,
-            proc_name: s.proc_name,
+            productGroupId: s.pg_id,
+            processId: s.proc_id,
+            targetId: s.targetId,
         });
     }
 });
@@ -931,10 +918,9 @@ document.getElementById('btn-goto-trend').addEventListener('click', function() {
     if (window.parent && window.parent.TabManager) {
         const s = currentPopupInfo || {};
         window.parent.TabManager.openTab('trend', {
-            target_id: s.targetId,
-            target_name: s.targetName,
-            pg_name: s.pg_name,
-            proc_name: s.proc_name,
+            productGroupId: s.pg_id,
+            processId: s.proc_id,
+            targetId: s.targetId,
         });
     }
 });
