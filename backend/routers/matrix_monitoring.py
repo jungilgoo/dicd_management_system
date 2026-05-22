@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy import func, text, bindparam
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 import math
@@ -128,8 +128,8 @@ def get_matrix_data(
           AND created_at >= :start_date
         GROUP BY target_id, {period_key_expr}
         ORDER BY target_id, {period_key_expr}
-    """)
-    rows = db.execute(sql, {"target_ids": tuple(target_ids), "start_date": start_date}).fetchall()
+    """).bindparams(bindparam("target_ids", expanding=True))
+    rows = db.execute(sql, {"target_ids": list(target_ids), "start_date": start_date}).fetchall()
 
     # target_id → {period_key: {mean, std, n}} 인덱스 빌드
     raw: Dict[int, Dict[str, Dict]] = {}
