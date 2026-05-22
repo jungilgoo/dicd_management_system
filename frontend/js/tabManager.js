@@ -68,7 +68,7 @@ window.TabManager = (function() {
             closable: true
         },
         'matrix': {
-            title: '기간 분析',
+            title: '기간 분석',
             icon: 'fas fa-th',
             getUrl: () => getPagePrefix() + 'analysis/matrix.html',
             closable: true
@@ -195,7 +195,7 @@ window.TabManager = (function() {
             openTab('boxplot');
         });
 
-        // 기간 분析 (매트릭스 모니터링)
+        // 기간 분석 (매트릭스 모니터링)
         $(`a[href="${prefix}analysis/matrix.html"]`).on('click', function(e) {
             e.preventDefault();
             openTab('matrix');
