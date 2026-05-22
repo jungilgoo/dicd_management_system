@@ -23,9 +23,10 @@
 
         /* ── 테이블 공통 ── */
         .matrix-wrapper {
-            overflow-x: auto;
+            overflow: auto;
             position: relative;
             max-width: 100%;
+            max-height: calc(100vh - 215px);
         }
         #matrix-table {
             border-collapse: collapse;
@@ -79,9 +80,9 @@
             min-width: 110px;
             text-align: center;
         }
-        thead th.col-pg  { background: #212529; }
-        thead th.col-proc { background: #343a40; }
-        thead th.col-target { background: #495057; }
+        thead th.col-pg  { background: #212529; z-index: 4; }
+        thead th.col-proc { background: #343a40; z-index: 4; }
+        thead th.col-target { background: #495057; z-index: 4; }
 
         /* ── 데이터 셀 ── */
         .cell-data {
