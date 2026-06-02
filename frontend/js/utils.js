@@ -178,6 +178,12 @@ function prepareApiDateParams(periodType, startDate, endDate) {
             case '90':
                 days = 90;
                 break;
+            case '180':
+                days = 180;
+                break;
+            case '365':
+                days = 365;
+                break;
         }
         
         return { days };
