@@ -207,6 +207,7 @@
             
             Object.keys(equipmentSettings).forEach(equipmentNumber => {
                 const equipmentSetting = equipmentSettings[equipmentNumber];
+                if (equipmentSetting.isActive === false) return;
                 const waferCount = equipmentSetting.waferCount || 1;
                 const waferMeasurements = [];
                 
@@ -725,9 +726,9 @@
             regenerateChartFilters();
             
             // 첫 번째 장비로 필터 설정
-            const firstEquipmentNumber = Object.keys(equipmentSettings)[0];
+            const firstEquipmentNumber = getSortedEquipmentNumbers()[0];
             if (firstEquipmentNumber) {
-                currentChartEquipmentFilter = firstEquipmentNumber;
+                currentChartEquipmentFilter = firstEquipmentNumber.toString();
                 const equipmentSetting = equipmentSettings[currentChartEquipmentFilter];
                 document.getElementById('current-chart-equipment').textContent = equipmentSetting.name;
             }
@@ -1132,7 +1133,7 @@
     async function loadEquipmentSettings() {
         try {
             // 서버에서 장비 설정 로드
-            const equipmentList = await api.getPRThicknessEquipments();
+            const equipmentList = await api.getPRThicknessEquipments({ include_inactive: true });
             
             // 서버 데이터가 있으면 변환
             if (equipmentList && equipmentList.length > 0) {
@@ -1143,7 +1144,8 @@
                         target: equipment.target_thickness,
                         specMin: equipment.spec_min,
                         specMax: equipment.spec_max,
-                        waferCount: equipment.wafer_count || 1
+                        waferCount: equipment.wafer_count || 1,
+                        isActive: equipment.is_active !== false
                     };
                 });
                 
@@ -1212,6 +1214,7 @@
                 const specMin = parseInt(document.getElementById(`equipment-spec-min-${equipmentNumber}`).value);
                 const specMax = parseInt(document.getElementById(`equipment-spec-max-${equipmentNumber}`).value);
                 const waferCount = parseInt(document.getElementById(`equipment-wafer-count-${equipmentNumber}`).value);
+                const isActive = document.getElementById(`equipment-active-${equipmentNumber}`).checked;
                 
                 // 유효성 검사
                 if (!name || !target || !specMin || !specMax || !waferCount) {
@@ -1235,7 +1238,8 @@
                     target: target,
                     specMin: specMin,
                     specMax: specMax,
-                    waferCount: waferCount
+                    waferCount: waferCount,
+                    isActive: isActive
                 };
             });
             
@@ -1253,12 +1257,16 @@
                             target_thickness: setting.target,
                             spec_min: setting.specMin,
                             spec_max: setting.specMax,
-                            wafer_count: setting.waferCount || 1
+                            wafer_count: setting.waferCount || 1,
+                            is_active: setting.isActive !== false
                         }
                     ])
                 )
             };
             await api.bulkUpsertPRThicknessEquipments(settingsForServer);
+            if (api.clearCache) {
+                api.clearCache(`${api.endpoints.PR_THICKNESS}/equipments`);
+            }
             
             // localStorage에도 저장 (백업용)
             localStorage.setItem('prThicknessEquipmentSettings', JSON.stringify(equipmentSettings));
@@ -1296,7 +1304,8 @@
             target: 25000,
             specMin: 24000,
             specMax: 26000,
-            waferCount: 1
+            waferCount: 1,
+            isActive: true
         };
         
         // UI 업데이트
@@ -1375,7 +1384,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                         <div class="input-group input-group-sm">
                             <input type="number" class="form-control text-center" 
                                    value="${setting.waferCount || 1}" min="1" max="10" step="1" 
@@ -1383,6 +1392,14 @@
                             <div class="input-group-append">
                                 <span class="input-group-text">매</span>
                             </div>
+                        </div>
+                    </div>
+                    <div class="col-md-1 text-center">
+                        <div class="custom-control custom-switch d-inline-block">
+                            <input type="checkbox" class="custom-control-input" 
+                                   id="equipment-active-${equipmentNumber}"
+                                   ${setting.isActive !== false ? 'checked' : ''}>
+                            <label class="custom-control-label" for="equipment-active-${equipmentNumber}">활성</label>
                         </div>
                     </div>
                     <div class="col-md-1 text-center">
@@ -1410,7 +1427,24 @@
         container.innerHTML = html;
     }
     
+    function getSortedEquipmentNumbers(includeInactive = false) {
+        return Object.keys(equipmentSettings)
+            .map(num => parseInt(num))
+            .filter(equipmentNumber => {
+                const setting = equipmentSettings[equipmentNumber];
+                return includeInactive || setting.isActive !== false;
+            })
+            .sort((a, b) => a - b);
+    }
+
     function regenerateAllTabs() {
+        const activeEquipments = getSortedEquipmentNumbers();
+        if (currentEquipmentFilter !== 'all' && !activeEquipments.includes(parseInt(currentEquipmentFilter))) {
+            currentEquipmentFilter = 'all';
+        }
+        if (!activeEquipments.includes(parseInt(currentChartEquipmentFilter))) {
+            currentChartEquipmentFilter = activeEquipments.length > 0 ? activeEquipments[0].toString() : '1';
+        }
         // 데이터 입력 탭 재생성
         regenerateInputTab();
         
@@ -1426,9 +1460,7 @@
         if (!container) return;
         
         let html = '';
-        const sortedEquipments = Object.keys(equipmentSettings)
-            .map(num => parseInt(num))
-            .sort((a, b) => a - b);
+        const sortedEquipments = getSortedEquipmentNumbers();
         
         sortedEquipments.forEach(equipmentNumber => {
             const setting = equipmentSettings[equipmentNumber];
@@ -1534,13 +1566,11 @@
         if (!container) return;
         
         let html = '';
-        const sortedEquipments = Object.keys(equipmentSettings)
-            .map(num => parseInt(num))
-            .sort((a, b) => a - b);
+        const sortedEquipments = getSortedEquipmentNumbers();
         
-        sortedEquipments.forEach((equipmentNumber, index) => {
+        sortedEquipments.forEach((equipmentNumber) => {
             const setting = equipmentSettings[equipmentNumber];
-            const isActive = index === 0 ? 'btn-primary active' : 'btn-outline-secondary';
+            const isActive = currentChartEquipmentFilter === equipmentNumber.toString() ? 'btn-primary active' : 'btn-outline-secondary';
             
             html += `
                 <button type="button" class="btn ${isActive} btn-sm mr-2 mb-2 chart-equipment-filter-btn" 
@@ -1571,9 +1601,7 @@
             </button>
         `;
         
-        const sortedEquipments = Object.keys(equipmentSettings)
-            .map(num => parseInt(num))
-            .sort((a, b) => a - b);
+        const sortedEquipments = getSortedEquipmentNumbers();
         
         sortedEquipments.forEach((equipmentNumber) => {
             const setting = equipmentSettings[equipmentNumber];

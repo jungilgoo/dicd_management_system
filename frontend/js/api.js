@@ -503,8 +503,8 @@ class API {
 
     // PR Thickness 관련 메서드
     // 장비 설정 관련
-    async getPRThicknessEquipments() {
-        return this.get(`${this.endpoints.PR_THICKNESS}/equipments`);
+    async getPRThicknessEquipments(params = {}) {
+        return this.get(`${this.endpoints.PR_THICKNESS}/equipments`, params);
     }
 
     async createPRThicknessEquipment(data) {

@@ -28,7 +28,7 @@ class PRThicknessEquipmentBase(BaseModel):
 
 
 class PRThicknessEquipmentCreate(PRThicknessEquipmentBase):
-    pass
+    is_active: bool = True
 
 
 class PRThicknessEquipmentUpdate(BaseModel):
@@ -37,6 +37,7 @@ class PRThicknessEquipmentUpdate(BaseModel):
     spec_min: Optional[int] = Field(None, ge=1, le=99999)
     spec_max: Optional[int] = Field(None, ge=1, le=99999)
     wafer_count: Optional[int] = Field(None, ge=1, le=10)
+    is_active: Optional[bool] = None
 
 
 class PRThicknessEquipment(PRThicknessEquipmentBase):

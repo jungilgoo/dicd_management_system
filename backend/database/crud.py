@@ -719,7 +719,8 @@ def create_pr_thickness_equipment(db: Session, equipment: pr_thickness.PRThickne
         target_thickness=equipment.target_thickness,
         spec_min=equipment.spec_min,
         spec_max=equipment.spec_max,
-        wafer_count=equipment.wafer_count
+        wafer_count=equipment.wafer_count,
+        is_active=equipment.is_active
     )
     db.add(db_equipment)
     db.commit()
@@ -727,32 +728,37 @@ def create_pr_thickness_equipment(db: Session, equipment: pr_thickness.PRThickne
     return db_equipment
 
 
-def get_pr_thickness_equipments(db: Session):
+def get_pr_thickness_equipments(db: Session, include_inactive: bool = False):
     """모든 PR Thickness 장비 조회"""
-    return db.query(models.PRThicknessEquipment).filter(
-        models.PRThicknessEquipment.is_active == True
-    ).order_by(models.PRThicknessEquipment.equipment_number).all()
+    query = db.query(models.PRThicknessEquipment)
+    if not include_inactive:
+        query = query.filter(models.PRThicknessEquipment.is_active == True)
+    return query.order_by(models.PRThicknessEquipment.equipment_number).all()
 
 
-def get_pr_thickness_equipment(db: Session, equipment_id: int):
+def get_pr_thickness_equipment(db: Session, equipment_id: int, include_inactive: bool = False):
     """특정 PR Thickness 장비 조회"""
-    return db.query(models.PRThicknessEquipment).filter(
-        models.PRThicknessEquipment.id == equipment_id,
-        models.PRThicknessEquipment.is_active == True
-    ).first()
+    query = db.query(models.PRThicknessEquipment).filter(
+        models.PRThicknessEquipment.id == equipment_id
+    )
+    if not include_inactive:
+        query = query.filter(models.PRThicknessEquipment.is_active == True)
+    return query.first()
 
 
-def get_pr_thickness_equipment_by_number(db: Session, equipment_number: int):
+def get_pr_thickness_equipment_by_number(db: Session, equipment_number: int, include_inactive: bool = False):
     """장비 번호로 PR Thickness 장비 조회"""
-    return db.query(models.PRThicknessEquipment).filter(
-        models.PRThicknessEquipment.equipment_number == equipment_number,
-        models.PRThicknessEquipment.is_active == True
-    ).first()
+    query = db.query(models.PRThicknessEquipment).filter(
+        models.PRThicknessEquipment.equipment_number == equipment_number
+    )
+    if not include_inactive:
+        query = query.filter(models.PRThicknessEquipment.is_active == True)
+    return query.first()
 
 
 def update_pr_thickness_equipment(db: Session, equipment_id: int, equipment: pr_thickness.PRThicknessEquipmentUpdate):
     """PR Thickness 장비 업데이트"""
-    db_equipment = get_pr_thickness_equipment(db, equipment_id)
+    db_equipment = get_pr_thickness_equipment(db, equipment_id, include_inactive=True)
     if db_equipment:
         for field, value in equipment.dict(exclude_unset=True).items():
             setattr(db_equipment, field, value)
@@ -773,7 +779,7 @@ def delete_pr_thickness_equipment(db: Session, equipment_id: int):
 
 def upsert_pr_thickness_equipment(db: Session, equipment: pr_thickness.PRThicknessEquipmentCreate):
     """PR Thickness 장비 생성 또는 업데이트"""
-    existing = get_pr_thickness_equipment_by_number(db, equipment.equipment_number)
+    existing = get_pr_thickness_equipment_by_number(db, equipment.equipment_number, include_inactive=True)
     if existing:
         # 업데이트
         for field, value in equipment.dict().items():

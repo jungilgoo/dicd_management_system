@@ -715,3 +715,9 @@
 - **결과**:
   -
 - **배포 상태**: GitHub push 완료 / 서버 배포 완료
+- 2026-06-11 PR Thickness 장비 활성/비활성 토글 작업 기록:
+  - 장비 조회 API에 include_inactive 옵션 추가
+  - 장비 설정 저장 시 is_active 저장
+  - 장비 설정 UI에 활성 토글 추가
+  - 데이터 입력/차트/조회 필터에서 비활성 장비 제외
+  - 검증: python compileall, node --check

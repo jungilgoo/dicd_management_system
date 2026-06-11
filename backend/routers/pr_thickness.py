@@ -18,10 +18,13 @@ router = APIRouter(
 # ===== 장비 설정 관련 엔드포인트 =====
 
 @router.get("/equipments", response_model=List[pr_thickness.PRThicknessEquipment])
-def get_equipments(db: Session = Depends(database.get_db)):
+def get_equipments(
+    include_inactive: bool = Query(False, description="비활성 장비 포함 여부"),
+    db: Session = Depends(database.get_db)
+):
     """모든 PR Thickness 장비 설정 조회"""
     try:
-        equipments = crud.get_pr_thickness_equipments(db)
+        equipments = crud.get_pr_thickness_equipments(db, include_inactive=include_inactive)
         return equipments
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"장비 설정 조회 실패: {str(e)}")
@@ -44,7 +47,7 @@ def create_equipment(
     """PR Thickness 장비 설정 생성"""
     try:
         # 장비 번호 중복 확인
-        existing = crud.get_pr_thickness_equipment_by_number(db, equipment_data.equipment_number)
+        existing = crud.get_pr_thickness_equipment_by_number(db, equipment_data.equipment_number, include_inactive=True)
         if existing:
             raise HTTPException(status_code=400, detail=f"장비 번호 {equipment_data.equipment_number}는 이미 존재합니다")
         
@@ -321,7 +324,7 @@ def initialize_equipments(db: Session = Depends(database.get_db)):
     """PR Thickness 장비 기본 설정 (최소 3개 장비 생성)"""
     try:
         # 기존 장비가 있는지 확인
-        existing_equipments = crud.get_pr_thickness_equipments(db)
+        existing_equipments = crud.get_pr_thickness_equipments(db, include_inactive=True)
         if existing_equipments:
             return existing_equipments
         
